@@ -4,24 +4,29 @@
 
 #include "pmacFilterControl.h"
 
-#include "nlohmann_json/json.hpp"
-using json = nlohmann::json;
-
 
 static const std::string SHUTDOWN = "shutdown";
 static const std::string LOW1 = "low1";
 static const std::string LOW2 = "low2";
 static const std::string HIGH1 = "high1";
 static const std::string HIGH2 = "high2";
+static const std::vector<std::string> THRESHOLD_PRECEDENCE = {HIGH2, HIGH1, LOW2, LOW1};
+static const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {{HIGH2, 2}, {HIGH1, 1}, {LOW2, -2}, {LOW1, -1}};
+
+static const std::string COMMAND = "command";
+static const std::string COMMAND_CONFIGURE = "configure";
+static const std::string COMMAND_PARAMS = "params";
+static const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
 
 
-PMACFilterController::PMACFilterController(std::string& control_port, std::string& data_endpoint) :
+PMACFilterController::PMACFilterController(const std::string& control_port, const std::string& data_endpoint) :
     control_channel_endpoint_("tcp://*:" + control_port),
     data_channel_endpoint_("tcp://" + data_endpoint),
     zmq_context_(),
     zmq_control_socket_(zmq_context_, ZMQ_REP),
     zmq_data_socket_(zmq_context_, ZMQ_SUB),
-    shutdown_(false)
+    shutdown_(false),
+    pixel_count_threshold_(2)
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
     this->zmq_data_socket_.connect(data_channel_endpoint_.c_str());
@@ -34,28 +39,49 @@ PMACFilterController::~PMACFilterController()
     this->zmq_data_socket_.close();
 }
 
+bool PMACFilterController::_configure(const json& config) {
+    std::cout << "Received new config: " << config.dump() << std::endl;
+
+    bool success = false;
+    if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLD)) {
+        this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
+        success = true;
+    }
+
+    return success;
+}
+
 void PMACFilterController::run() {
     // Start data handler thread
     this->listenThread_ = std::thread(std::bind(&PMACFilterController::_process_data_channel, this));
 
     // Listen for control messages
-    std::string identity, command;
+    std::string request_str;
     while (!this->shutdown_) {
-        zmq::message_t command_msg;
-        this->zmq_control_socket_.recv(&command_msg);
-        command = std::string(static_cast<char*>(command_msg.data()), command_msg.size());
+        zmq::message_t request_msg;
+        this->zmq_control_socket_.recv(&request_msg);
+        request_str = std::string(static_cast<char*>(request_msg.data()), request_msg.size());
 
+        json request = json::parse(request_str);
+        bool success;
         std::string response;
-        if (command == SHUTDOWN) {
+        if (request[COMMAND] == SHUTDOWN) {
             std::cout << "Shutting down" << std::endl;
-            response = "ACK | ";
             this->shutdown_ = true;
+            success = true;
+        } else if (request[COMMAND] == COMMAND_CONFIGURE) {
+            success = this->_configure(request[COMMAND_PARAMS]);
         } else {
-            std::cout << "Unknown command received: " << command << std::endl;
-            response = "NACK | Unknown command: ";
+            std::cout << "Unknown command received: " << request << std::endl;
+            success = false;
         }
 
-        response += command;
+        if (success) {
+            response = "ACK | " + request_str;
+        } else {
+            response = "NACK | " + request_str;
+        }
+
         zmq::message_t response_msg(response.size());
         memcpy(response_msg.data(), response.c_str(), response.size());
         this->zmq_control_socket_.send(response_msg, 0);
@@ -80,12 +106,22 @@ void PMACFilterController::_process_data_channel() {
     }
 }
 
-void PMACFilterController::_process_data_message(std::string& data_message) {
+void PMACFilterController::_process_data_message(const std::string& data_message) {
     json histogram = json::parse(data_message);
-    std::cout << "low2: " << histogram[LOW2] << std::endl;
-    std::cout << "low1: " << histogram[LOW1] << std::endl;
-    std::cout << "high1: " << histogram[HIGH1] << std::endl;
-    std::cout << "high2: " << histogram[HIGH2] << std::endl;
+
+    std::vector<std::string>::const_iterator threshold;
+    for (threshold = THRESHOLD_PRECEDENCE.begin(); threshold != THRESHOLD_PRECEDENCE.end(); threshold++) {
+        if (histogram[*threshold] > this->pixel_count_threshold_) {
+            std::cout << *threshold << " threshold triggered: " << histogram[*threshold] << std::endl;
+            int adjustment = THRESHOLD_ADJUSTMENTS.at(*threshold);
+            this->_send_filter_adjustment(adjustment);
+            break;
+        }
+    }
+}
+
+void PMACFilterController::_send_filter_adjustment(int adjustment) {
+    std::cout << "Send filter adjustment " << adjustment << std::endl;
 }
 
 bool PMACFilterController::_poll(long timeout_ms)

@@ -12,7 +12,8 @@ int main(int argc, char** argv)
     int rc = zmq_connect(socket, endpoint);
     assert(rc == 0);
 
-    char request[] = "shutdown";
+    char request[50];
+    strcpy(request, argv[1]);
     rc = zmq_send(socket, request, strlen(request), 0);
     assert(rc != -1);
 
