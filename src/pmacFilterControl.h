@@ -1,4 +1,5 @@
 #include <thread>
+
 #include "zmq/zmq.hpp"
 
 #ifndef PMAC_FILTER_CONTROLLER_H_
@@ -27,6 +28,7 @@ class PMACFilterController
 
         void _process_data_channel();
         bool _poll(long timeout_ms);
+        void _process_data_message(std::string& data_message);
 };
 
 #endif  // PMAC_FILTER_CONTROLLER_H_

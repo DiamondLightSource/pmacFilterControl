@@ -4,8 +4,15 @@
 
 #include "pmacFilterControl.h"
 
+#include "nlohmann_json/json.hpp"
+using json = nlohmann::json;
 
-const static std::string SHUTDOWN = "shutdown";
+
+static const std::string SHUTDOWN = "shutdown";
+static const std::string LOW1 = "low1";
+static const std::string LOW2 = "low2";
+static const std::string HIGH1 = "high1";
+static const std::string HIGH2 = "high2";
 
 
 PMACFilterController::PMACFilterController(std::string& control_port, std::string& data_endpoint) :
@@ -34,7 +41,6 @@ void PMACFilterController::run() {
     // Listen for control messages
     std::string identity, command;
     while (!this->shutdown_) {
-        zmq::message_t identity_msg;
         zmq::message_t command_msg;
         this->zmq_control_socket_.recv(&command_msg);
         command = std::string(static_cast<char*>(command_msg.data()), command_msg.size());
@@ -69,8 +75,17 @@ void PMACFilterController::_process_data_channel() {
             bool received_message = this->zmq_data_socket_.recv(&zmq_message);
             message = std::string(static_cast<char*>(zmq_message.data()), zmq_message.size());
             std::cout << "Data received: " << message << std::endl;
+            this->_process_data_message(message);
         }
     }
+}
+
+void PMACFilterController::_process_data_message(std::string& data_message) {
+    json histogram = json::parse(data_message);
+    std::cout << "low2: " << histogram[LOW2] << std::endl;
+    std::cout << "low1: " << histogram[LOW1] << std::endl;
+    std::cout << "high1: " << histogram[HIGH1] << std::endl;
+    std::cout << "high2: " << histogram[HIGH2] << std::endl;
 }
 
 bool PMACFilterController::_poll(long timeout_ms)
