@@ -12,6 +12,7 @@ static const std::string COMMAND_CONFIGURE = "configure";
 static const std::string PARAMS = "params";
 static const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
 // Data message keys
+static const std::string FRAME_NUMBER = "frame_number";
 static const std::string PARAMETERS = "parameters";
 static const std::string PARAM_LOW1 = "low1";
 static const std::string PARAM_LOW2 = "low2";
@@ -33,7 +34,8 @@ PMACFilterController::PMACFilterController(const std::string& control_port, cons
     zmq_control_socket_(zmq_context_, ZMQ_REP),
     zmq_data_socket_(zmq_context_, ZMQ_SUB),
     shutdown_(false),
-    pixel_count_threshold_(2)
+    pixel_count_threshold_(2),
+    last_actioned_frame_(0)
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
     this->zmq_data_socket_.connect(data_channel_endpoint_.c_str());
@@ -114,8 +116,14 @@ void PMACFilterController::_process_data_channel() {
 }
 
 void PMACFilterController::_process_data_message(const std::string& data_message) {
-    json histogram = json::parse(data_message);
+    json data = json::parse(data_message);
 
+    if (data[FRAME_NUMBER] = this->last_actioned_frame_ + 1) {
+        // Don't process two frames in succession as changes won't have taken effect
+        return;
+    }
+
+    json histogram = data[PARAMETERS];
     std::vector<std::string>::const_iterator threshold;
     for (threshold = THRESHOLD_PRECEDENCE.begin(); threshold != THRESHOLD_PRECEDENCE.end(); threshold++) {
         if (histogram[*threshold] > this->pixel_count_threshold_) {
@@ -125,6 +133,8 @@ void PMACFilterController::_process_data_message(const std::string& data_message
             break;
         }
     }
+
+    this->last_actioned_frame_ = data[FRAME_NUMBER];
 }
 
 void PMACFilterController::_send_filter_adjustment(int adjustment) {

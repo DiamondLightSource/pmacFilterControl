@@ -29,6 +29,8 @@ class PMACFilterController
         bool shutdown_;
         // Threshold for a histogram bin above which some action should be taken
         uint64_t pixel_count_threshold_;
+        // Record of which frame number was last processed to ignore the subsequent frame
+        uint64_t last_actioned_frame_;
 
         bool _configure(const json& config);
         void _process_data_channel();
