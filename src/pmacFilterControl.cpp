@@ -5,18 +5,25 @@
 #include "pmacFilterControl.h"
 
 
-static const std::string SHUTDOWN = "shutdown";
-static const std::string LOW1 = "low1";
-static const std::string LOW2 = "low2";
-static const std::string HIGH1 = "high1";
-static const std::string HIGH2 = "high2";
-static const std::vector<std::string> THRESHOLD_PRECEDENCE = {HIGH2, HIGH1, LOW2, LOW1};
-static const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {{HIGH2, 2}, {HIGH1, 1}, {LOW2, -2}, {LOW1, -1}};
-
+// Configure message keys
 static const std::string COMMAND = "command";
+static const std::string COMMAND_SHUTDOWN = "shutdown";
 static const std::string COMMAND_CONFIGURE = "configure";
-static const std::string COMMAND_PARAMS = "params";
+static const std::string PARAMS = "params";
 static const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
+// Data message keys
+static const std::string PARAMETERS = "parameters";
+static const std::string PARAM_LOW1 = "low1";
+static const std::string PARAM_LOW2 = "low2";
+static const std::string PARAM_HIGH1 = "high1";
+static const std::string PARAM_HIGH2 = "high2";
+// Filter calculation definitions
+static const std::vector<std::string> THRESHOLD_PRECEDENCE = {
+    PARAM_HIGH2, PARAM_HIGH1, PARAM_LOW2, PARAM_LOW1
+};
+static const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
+    {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}
+};
 
 
 PMACFilterController::PMACFilterController(const std::string& control_port, const std::string& data_endpoint) :
@@ -65,12 +72,12 @@ void PMACFilterController::run() {
         json request = json::parse(request_str);
         bool success;
         std::string response;
-        if (request[COMMAND] == SHUTDOWN) {
+        if (request[COMMAND] == COMMAND_SHUTDOWN) {
             std::cout << "Shutting down" << std::endl;
             this->shutdown_ = true;
             success = true;
         } else if (request[COMMAND] == COMMAND_CONFIGURE) {
-            success = this->_configure(request[COMMAND_PARAMS]);
+            success = this->_configure(request[PARAMS]);
         } else {
             std::cout << "Unknown command received: " << request << std::endl;
             success = false;
