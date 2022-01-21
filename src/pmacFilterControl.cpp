@@ -27,10 +27,14 @@ static const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
     {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}
 };
 // Other constants
-int64_t NO_FRAMES_PROCESSED = -1;  // An invalid value that always passes the ignore frame checks
+// - An invalid value that always passes the ignore frame checks
+int64_t NO_FRAMES_PROCESSED = -1;
 
 
-PMACFilterController::PMACFilterController(const std::string& control_port, const std::string& data_endpoint) :
+PMACFilterController::PMACFilterController(
+    const std::string& control_port,
+    const std::string& data_endpoint
+) :
     control_channel_endpoint_("tcp://*:" + control_port),
     data_channel_endpoint_("tcp://" + data_endpoint),
     zmq_context_(),
@@ -42,7 +46,7 @@ PMACFilterController::PMACFilterController(const std::string& control_port, cons
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
     this->zmq_data_socket_.connect(data_channel_endpoint_.c_str());
-    this->zmq_data_socket_.setsockopt(ZMQ_SUBSCRIBE, "", 0);  // No topic filter
+    this->zmq_data_socket_.setsockopt(ZMQ_SUBSCRIBE, "", 0);  // "" -> No topic filter
 }
 
 PMACFilterController::~PMACFilterController()
@@ -65,14 +69,18 @@ bool PMACFilterController::_configure(const json& config) {
 
 void PMACFilterController::run() {
     // Start data handler thread
-    this->listenThread_ = std::thread(std::bind(&PMACFilterController::_process_data_channel, this));
+    this->listenThread_ = std::thread(
+        std::bind(&PMACFilterController::_process_data_channel, this)
+    );
 
     // Listen for control messages
     std::string request_str;
     while (!this->shutdown_) {
         zmq::message_t request_msg;
         this->zmq_control_socket_.recv(&request_msg);
-        request_str = std::string(static_cast<char*>(request_msg.data()), request_msg.size());
+        request_str = std::string(
+            static_cast<char*>(request_msg.data()), request_msg.size()
+        );
 
         json request = json::parse(request_str);
         bool success;
@@ -115,7 +123,9 @@ void PMACFilterController::_process_data_channel() {
         if (this->_poll(100)) {
             zmq::message_t zmq_message;
             bool received_message = this->zmq_data_socket_.recv(&zmq_message);
-            message = std::string(static_cast<char*>(zmq_message.data()), zmq_message.size());
+            message = std::string(
+                static_cast<char*>(zmq_message.data()), zmq_message.size()
+            );
             std::cout << "Data received: " << message << std::endl;
             this->_process_data_message(message);
         }
@@ -140,7 +150,8 @@ void PMACFilterController::_process_data_message(const std::string& data_message
     std::vector<std::string>::const_iterator threshold;
     for (threshold = THRESHOLD_PRECEDENCE.begin(); threshold != THRESHOLD_PRECEDENCE.end(); threshold++) {
         if (histogram[*threshold] > this->pixel_count_threshold_) {
-            std::cout << *threshold << " threshold triggered: " << histogram[*threshold] << std::endl;
+            std::cout << *threshold << " threshold triggered: "
+                << histogram[*threshold] << std::endl;
             int adjustment = THRESHOLD_ADJUSTMENTS.at(*threshold);
             this->_send_filter_adjustment(adjustment);
             break;
@@ -165,7 +176,8 @@ bool PMACFilterController::_poll(long timeout_ms)
 int main(int argc, char** argv)
 {
     if (argc != 3) {
-        std::cout << "Must pass control_port and data_endpoint, e.g. '10000 127.0.0.1:10000'" << std::endl;
+        std::cout << "Must pass control_port and data_endpoint - "
+            << "e.g. '10000 127.0.0.1:10000'" << std::endl;
         return 1;
     }
 

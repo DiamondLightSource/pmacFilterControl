@@ -1,0 +1,191 @@
+// ############################################################
+// PLC to adjust fast attenuators
+// Author: Gary Yendell
+//
+// Macros:
+//   PLC = $(PLC) - PLC number to use
+//   HEARTBEAT_GPIO = $(HEARTBEAT_GPIO) - GPIO heartbeat for PLC
+//   STATE_GPIO = $(STATE_GPIO) - GPIO state for PLC
+//
+// Variables Used:
+//   P$(PLC_NUMBER)01, P$(PLC_NUMBER)02
+// ############################################################
+
+//// GPIO
+
+#define GPIO_Heartbeat M(31 + $(HEARTBEAT_GPIO=1))
+#define GPIO_State M(31 + $(STATE_GPIO=2))
+// GPIO State Enum
+#define GPIO_STATE_BAD 0
+#define GPIO_STATE_OK 1
+
+//// Status/Error Reporting
+
+#define State P$(PLC_NUMBER)01
+// State Enum
+#define STARTING 0
+#define WAITING 1
+#define ACTIVE 2
+#define ERROR 3
+
+#define Error P$(PLC_NUMBER)02
+// Error Enum
+#define NO_ERROR 0
+#define MAX_ATTENUATION_ERROR 1
+#define MOVE_FAILURE_ERROR 2
+
+#define ErrorReset P$(PLC_NUMBER)03
+
+// A client can read this bitmask and parse out various statuses from the bits
+#define StatusBitMask M4000
+Attenuation->u.user:0
+#define MinAttenuationStatus M4001
+MinAttenuationStatus->u.user:0.0.1
+
+//// Attenuation Logic
+
+#define AttenuationChange P$(PLC_NUMBER)02
+
+// We point Attenuation to an address and point filters to each bit of that address.
+// This links each filter to a single bit of Attenuation, with each bit representing
+// whether a filter should be in or out to produce the correct Attenuation.
+
+// Attenuation Bit Mask - [0,15]
+#define AttenuationDemand M4020
+AttenuationDemand->u.user:1
+// Attenuation Bits - 0 or 1
+#define Filter1Demand M4021
+#define Filter2Demand M4022
+#define Filter3Demand M4023
+#define Filter4Demand M4024
+Filter1Demand->u.user:1.0.1
+Filter2Demand->u.user:1.1.1
+Filter3Demand->u.user:1.2.1
+Filter4Demand->u.user:1.3.1
+
+// Store of current positions [0,1]
+#define Filter1Position P$(PLC_NUMBER)03
+#define Filter2Position P$(PLC_NUMBER)04
+#define Filter3Position P$(PLC_NUMBER)05
+#define Filter4Position P$(PLC_NUMBER)06
+
+// Temporary store for calculated relative move for each filter
+#define Filter1Move
+#define Filter2Move
+#define Filter3Move
+#define Filter4Move
+
+//// Other Constants
+
+#define FILTER_TRAVEL 100  // Counts
+#define SHUTTER_CLOSED_POSITION 1000  // Counts
+#define MAX_ATTENUATION 15  // All filters in: 1 + 2 + 4 + 8
+#define SHUTTER_CLOSED_POSITION XXXX
+
+//// Timer for hearbeat
+// Conversion from ticks to milliseconds
+#define Milliseconds 8388608 / I10
+// This variable will decrement by one every tick, forever
+#define Timer I(5111 + ($(PLC_NUMBER) & 30) * 50 + $(PLC_NUMBER) % 2)
+
+
+Close
+Open PLC $(PLC_NUMBER)
+Clear
+
+GPIO_Heartbeat = 0
+GPIO_State = GPIO_STATE_BAD
+State = STARTING
+Error = NO_ERROR
+
+While(1=1) {
+
+    If (ErrorReset == 1) {
+        ErrorReset = 0
+        State = STARTING
+    }
+
+    // Error must be cleared to re-enter this loop
+    While (State != ERROR) {
+        // Limit Heartbeat rate
+        If (Timer < 0) {
+            GPIO_Heartbeat ^= 1  // Toggle Heartbeat - 0 -> 1, 1 -> 0
+            Timer = 500 * Milliseconds  // Reset timer
+        }
+
+        GPIO_State = GPIO_STATE_OK
+        State = WAITING
+
+        // Wait for an external input
+        If (AttenuationChange != 0) {
+            State = ACTIVE
+
+            // Add change to the active attenuation demand - the demand is always relative
+            AttenuationDemand += AttenuationChange
+            AttenuationChange = 0  // Reset client input
+
+            If (AttenuationDemand > MAX_ATTENUATION) {
+                // We can do no more - close the shutter
+                #5J=SHUTTER_CLOSED_POSITION
+                TODO: GoSub All filters in
+                State = ERROR
+                Error = MAX_ATTENUATION_ERROR
+            }
+            Else If (Attenuation <= 0) {
+                Attenuation = 0
+                MinAttenuationStatus = 1
+            }
+
+            If (State != ERROR) {
+                // Move filters based on the bits of the updated attenuation demand
+                // First we move any filters that are out, but should be in
+                // Then we move any filters that are in, but should be out
+                // This ensures attenuation is always at least as high as the demand
+                //
+                // The logic of both of these moves is the same: if the following is satisfied
+                //   - Demand does not match position already
+                //   - Demand matches current move type (in or out)
+                // then FilterXMove will be set to +/-FILTER_TRAVEL and it will move
+                // If not, it will be zero and the relative jog will not move the filter
+
+                // FilterXDemand == 1 -> Move filter in (positive move)
+                Filter1Move = ((Filter1Demand ^ Filter1Position) & (1 & Filter1Demand)) * FILTER_TRAVEL
+                Filter2Move = ((Filter2Demand ^ Filter2Position) & (1 & Filter2Demand)) * FILTER_TRAVEL
+                Filter3Move = ((Filter3Demand ^ Filter3Position) & (1 & Filter3Demand)) * FILTER_TRAVEL
+                Filter4Move = ((Filter4Demand ^ Filter4Position) & (1 & Filter4Demand)) * FILTER_TRAVEL
+
+                #1J^(Filter1Move) #2J^(Filter2Move) #3J^(Filter3Move) #4J^(Filter4Move)
+
+                // FilterXDemand == 0 -> Move filter out (negative move)
+                Filter1Move = ((Filter1Demand ^ Filter1Position) & (0 & Filter1Demand)) * -FILTER_TRAVEL
+                Filter2Move = ((Filter2Demand ^ Filter2Position) & (0 & Filter2Demand)) * -FILTER_TRAVEL
+                Filter3Move = ((Filter3Demand ^ Filter3Position) & (0 & Filter3Demand)) * -FILTER_TRAVEL
+                Filter4Move = ((Filter4Demand ^ Filter4Position) & (0 & Filter4Demand)) * -FILTER_TRAVEL
+
+                // Make sure previous move is finished before we move filters out
+                Dwell 0
+
+                #1J^(Filter1Move) #2J^(Filter2Move) #3J^(Filter3Move) #4J^(Filter4Move)
+
+                // TODO: Can we do any verification of the moves without an encoder?
+
+                // Store new positions
+                Filter1Position = Filter1Demand
+                Filter2Position = Filter2Demand
+                Filter3Position = Filter3Demand
+                Filter4Position = Filter4Demand
+            }
+
+            If (State == ERROR) {
+                GPIO_State = GPIO_STATE_BAD
+            }
+
+        }  // Active if block
+
+    }  // Healthy Loop
+
+}  // Forever Loop - Waits for error reset
+
+Close
+
+Enable PLC $(PLC_NUMBER)

@@ -10,7 +10,10 @@ using json = nlohmann::json;
 class PMACFilterController
 {
     public:
-        PMACFilterController(const std::string& data_endpoint, const std::string& control_port);
+        PMACFilterController(
+            const std::string& data_endpoint,
+            const std::string& control_port
+        );
         ~PMACFilterController();
         void run();
 
@@ -29,7 +32,8 @@ class PMACFilterController
         bool shutdown_;
         // Threshold for a histogram bin above which some action should be taken
         uint64_t pixel_count_threshold_;
-        // The frame number of the last frame that was successfully processed - used to decide to ignore some frames
+        // The frame number of the last frame that was successfully processed
+        // - Used to decide to ignore some frames
         int64_t last_processed_frame_;
 
         bool _configure(const json& config);
