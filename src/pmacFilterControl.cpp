@@ -162,7 +162,8 @@ void PMACFilterController::_process_data_message(const std::string& data_message
 }
 
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
-    std::cout << "Send filter adjustment " << adjustment << std::endl;
+    std::string command = "M4020=" + std::to_string(adjustment);
+    std::cout << command << std::endl;
 }
 
 bool PMACFilterController::_poll(long timeout_ms)
