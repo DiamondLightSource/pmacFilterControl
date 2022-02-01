@@ -149,23 +149,25 @@ While(1=1) {
                 // If not, it will be zero and the relative jog will not move the filter
 
                 // FilterXDemand == 1 -> Move filter in (positive move)
-                Filter1Move = ((Filter1Demand ^ Filter1Position) & (1 & Filter1Demand)) * FILTER_TRAVEL
-                Filter2Move = ((Filter2Demand ^ Filter2Position) & (1 & Filter2Demand)) * FILTER_TRAVEL
-                Filter3Move = ((Filter3Demand ^ Filter3Position) & (1 & Filter3Demand)) * FILTER_TRAVEL
-                Filter4Move = ((Filter4Demand ^ Filter4Position) & (1 & Filter4Demand)) * FILTER_TRAVEL
+                Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (1 & Filter1Demand)) * FILTER_TRAVEL
+                Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (1 & Filter2Demand)) * FILTER_TRAVEL
+                Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (1 & Filter3Demand)) * FILTER_TRAVEL
+                Motor[4].ProgJogPos = ((Filter4Demand ^ Filter4Position) & (1 & Filter4Demand)) * FILTER_TRAVEL
 
-                #1J^(Filter1Move) #2J^(Filter2Move) #3J^(Filter3Move) #4J^(Filter4Move)
+                // Do relative jog on all four axes
+                #1,2,3,4J:*
 
                 // FilterXDemand == 0 -> Move filter out (negative move)
-                Filter1Move = ((Filter1Demand ^ Filter1Position) & (0 & Filter1Demand)) * -FILTER_TRAVEL
-                Filter2Move = ((Filter2Demand ^ Filter2Position) & (0 & Filter2Demand)) * -FILTER_TRAVEL
-                Filter3Move = ((Filter3Demand ^ Filter3Position) & (0 & Filter3Demand)) * -FILTER_TRAVEL
-                Filter4Move = ((Filter4Demand ^ Filter4Position) & (0 & Filter4Demand)) * -FILTER_TRAVEL
+                Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (0 & Filter1Demand)) * -FILTER_TRAVEL
+                Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (0 & Filter2Demand)) * -FILTER_TRAVEL
+                Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (0 & Filter3Demand)) * -FILTER_TRAVEL
+                Motor[4].ProgJogPos = ((Filter4Demand ^ Filter4Position) & (0 & Filter4Demand)) * -FILTER_TRAVEL
 
                 // Make sure previous move is finished before we move filters out
                 Dwell 0
 
-                #1J^(Filter1Move) #2J^(Filter2Move) #3J^(Filter3Move) #4J^(Filter4Move)
+                // Do relative jog on all four axes
+                #1,2,3,4J:*
 
                 // TODO: Can we do any verification of the moves without an encoder?
 
