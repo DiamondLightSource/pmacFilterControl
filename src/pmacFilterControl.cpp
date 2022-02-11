@@ -2,6 +2,10 @@
 
 #include <iostream>
 
+#ifdef ARM
+#include "gplib.h"
+#endif
+
 #include "pmacFilterControl.h"
 
 
@@ -178,8 +182,10 @@ json PMACFilterController::_parse_json_string(const std::string& json_string) {
 }
 
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
-    std::string command = "M4020=" + std::to_string(adjustment);
-    std::cout << command << std::endl;
+#ifdef ARM
+    pshm->M[4020] = adjustment;
+#endif
+    std::cout << "Setting M4020 to " << adjustment << std::endl;
 }
 
 bool PMACFilterController::_poll(long timeout_ms)
@@ -202,7 +208,15 @@ int main(int argc, char** argv)
     std::string data_endpoint(argv[2]);
     PMACFilterController pfc(control_port, data_endpoint);
 
+#ifdef ARM
+    InitLibrary();
+#endif
+
     pfc.run();
+
+#ifdef ARM
+    CloseLibrary();
+#endif
 
     return 0;
 }
