@@ -5,7 +5,7 @@
 #include "pmacFilterControl.h"
 
 
-// Configure message keys
+// Control message keys
 static const std::string COMMAND = "command";
 static const std::string COMMAND_SHUTDOWN = "shutdown";
 static const std::string COMMAND_CONFIGURE = "configure";
@@ -55,13 +55,24 @@ PMACFilterController::~PMACFilterController()
     this->zmq_data_socket_.close();
 }
 
-bool PMACFilterController::_configure(const json& config) {
-    std::cout << "Received new config: " << config.dump() << std::endl;
-
+bool PMACFilterController::_handle_request(const json& request) {
     bool success = false;
-    if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLD)) {
-        this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
+
+    if (request[COMMAND] == COMMAND_SHUTDOWN) {
+        std::cout << "Shutting down" << std::endl;
+        this->shutdown_ = true;
         success = true;
+    } else if (request[COMMAND] == COMMAND_RESET) {
+        std::cout << "Resetting frame counter" << std::endl;
+        this->last_processed_frame_ = NO_FRAMES_PROCESSED;
+        success = true;
+    } else if (request[COMMAND] == COMMAND_CONFIGURE) {
+        json config = request[PARAMS];
+        std::cout << "Received new config: " << config.dump() << std::endl;
+        if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLD)) {
+            this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
+            success = true;
+        }
     }
 
     return success;
@@ -82,24 +93,14 @@ void PMACFilterController::run() {
             static_cast<char*>(request_msg.data()), request_msg.size()
         );
 
-        json request = json::parse(request_str);
-        bool success;
-        std::string response;
-        if (request[COMMAND] == COMMAND_SHUTDOWN) {
-            std::cout << "Shutting down" << std::endl;
-            this->shutdown_ = true;
-            success = true;
-        } else if (request[COMMAND] == COMMAND_RESET) {
-            std::cout << "Resetting frame counter" << std::endl;
-            this->last_processed_frame_ = NO_FRAMES_PROCESSED;
-            success = true;
-        } else if (request[COMMAND] == COMMAND_CONFIGURE) {
-            success = this->_configure(request[PARAMS]);
-        } else {
-            std::cout << "Unknown command received: " << request << std::endl;
-            success = false;
+        std::cout << "Request received: " << request_str << std::endl;
+        bool success = false;
+        json request = this->_parse_json_string(request_str);
+        if (!request.is_null()) {
+            success = this->_handle_request(request);
         }
 
+        std::string response;
         if (success) {
             response = "ACK | " + request_str;
         } else {
@@ -111,6 +112,8 @@ void PMACFilterController::run() {
         this->zmq_control_socket_.send(response_msg, 0);
     }
 
+    std::cout << "Shutting down" << std::endl;
+
     this->listenThread_.join();
     std::cout << "Finished run" << std::endl;
 }
@@ -118,23 +121,25 @@ void PMACFilterController::run() {
 void PMACFilterController::_process_data_channel() {
     std::cout << "Listening on " << data_channel_endpoint_ << std::endl;
 
-    std::string message;
+    std::string data_str;
     while (!this->shutdown_) {
         if (this->_poll(100)) {
-            zmq::message_t zmq_message;
-            bool received_message = this->zmq_data_socket_.recv(&zmq_message);
-            message = std::string(
-                static_cast<char*>(zmq_message.data()), zmq_message.size()
+            zmq::message_t data_message;
+            this->zmq_data_socket_.recv(&data_message);
+            data_str = std::string(
+                static_cast<char*>(data_message.data()), data_message.size()
             );
-            std::cout << "Data received: " << message << std::endl;
-            this->_process_data_message(message);
+            std::cout << "Data received: " << data_str << std::endl;
+
+            json data = this->_parse_json_string(data_str);
+            if (!data.is_null()) {
+                this->_process_data(data);
+            }
         }
     }
 }
 
-void PMACFilterController::_process_data_message(const std::string& data_message) {
-    json data = json::parse(data_message);
-
+void PMACFilterController::_process_data(const json& data) {
     if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
         std::cout << "Ignoring frame " << data[FRAME_NUMBER]
             << " - already processed " << this->last_processed_frame_ << std::endl;
@@ -159,6 +164,17 @@ void PMACFilterController::_process_data_message(const std::string& data_message
     }
 
     this->last_processed_frame_ = data[FRAME_NUMBER];
+}
+
+json PMACFilterController::_parse_json_string(const std::string& json_string) {
+    json _json;
+    if (json::accept(json_string)) {
+        _json = json::parse(json_string);
+    } else {
+        std::cout << "Not valid JSON:\n" << json_string << std::endl;
+    }
+
+    return _json;
 }
 
 void PMACFilterController::_send_filter_adjustment(int adjustment) {

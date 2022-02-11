@@ -36,10 +36,11 @@ class PMACFilterController
         // - Used to decide to ignore some frames
         int64_t last_processed_frame_;
 
-        bool _configure(const json& config);
+        bool _handle_request(const json& request);
         void _process_data_channel();
         bool _poll(long timeout_ms);
-        void _process_data_message(const std::string& data_message);
+        void _process_data(const json& data);
+        json _parse_json_string(const std::string& json_string);
         void _send_filter_adjustment(int adjustment);
 };
 
