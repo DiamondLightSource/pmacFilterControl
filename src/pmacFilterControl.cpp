@@ -63,7 +63,7 @@ bool PMACFilterController::_handle_request(const json& request) {
     bool success = false;
 
     if (request[COMMAND] == COMMAND_SHUTDOWN) {
-        std::cout << "Shutting down" << std::endl;
+        std::cout << "Received shutdown command" << std::endl;
         this->shutdown_ = true;
         success = true;
     } else if (request[COMMAND] == COMMAND_RESET) {
@@ -74,6 +74,7 @@ bool PMACFilterController::_handle_request(const json& request) {
         json config = request[PARAMS];
         std::cout << "Received new config: " << config.dump() << std::endl;
         if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLD)) {
+            // TODO: Falls over if value is string
             this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
             success = true;
         }
@@ -119,7 +120,6 @@ void PMACFilterController::run() {
     std::cout << "Shutting down" << std::endl;
 
     this->listenThread_.join();
-    std::cout << "Finished run" << std::endl;
 }
 
 void PMACFilterController::_process_data_channel() {
@@ -158,9 +158,10 @@ void PMACFilterController::_process_data(const json& data) {
     json histogram = data[PARAMETERS];
     std::vector<std::string>::const_iterator threshold;
     for (threshold = THRESHOLD_PRECEDENCE.begin(); threshold != THRESHOLD_PRECEDENCE.end(); threshold++) {
+        // TODO: Should threshold be inclusive?
         if (histogram[*threshold] > this->pixel_count_threshold_) {
-            std::cout << *threshold << " threshold triggered: "
-                << histogram[*threshold] << std::endl;
+            std::cout << *threshold << " threshold triggered" << std::endl;
+            std::cout << "Current threshold: " << this->pixel_count_threshold_ << std::endl;
             int adjustment = THRESHOLD_ADJUSTMENTS.at(*threshold);
             this->_send_filter_adjustment(adjustment);
             break;
@@ -213,6 +214,7 @@ int main(int argc, char** argv)
 #endif
 
     pfc.run();
+    std::cout << "Finished run" << std::endl;
 
 #ifdef ARM
     CloseLibrary();
