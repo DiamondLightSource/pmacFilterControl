@@ -9,11 +9,11 @@ int main(int argc, char** argv)
     void* context = zmq_ctx_new();
     void* socket = zmq_socket(context, ZMQ_REQ);
     char* endpoint = "tcp://127.0.0.1:10001";
-    int rc = zmq_connect(socket, endpoint);
+    int rc = zmq_connect(socket, argv[1]);
     assert(rc == 0);
 
     char request[50];
-    strcpy(request, argv[1]);
+    strcpy(request, argv[2]);
     rc = zmq_send(socket, request, strlen(request), 0);
     assert(rc != -1);
 
