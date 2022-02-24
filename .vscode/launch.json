@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch pmacFilterController",
+            "name": "Launch pmacFilterControl",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/pmacFilterController",
@@ -22,6 +22,68 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "Control pmacFilterControl",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
+            "args": ["tcp://127.0.0.1:10001", "{\\\"command\\\": \\\"${input:Command}\\\"}"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Configure pmacFilterControl",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
+            "args": ["tcp://127.0.0.1:10001", "{\\\"command\\\": \\\"configure\\\", \\\"params\\\": {\\\"${input:Config}\\\": ${input:Value}}}"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ],
+    "inputs": [
+        {
+          "id": "Command",
+          "description": "Command to send",
+          "type": "pickString",
+          "options": [
+            "shutdown",
+            "reset",
+          ],
+        },
+        {
+          "id": "Config",
+          "description": "Config to send",
+          "type": "pickString",
+          "options": [
+            "pixel_count_threshold",
+          ],
+        },
+        {
+          "id": "Value",
+          "description": "Value to send",
+          "type":"promptString"
         }
     ]
 }
