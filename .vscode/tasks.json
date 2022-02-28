@@ -1,0 +1,49 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "options": {
+        "env": {
+            // Used to mount volume in run_arm_container.sh
+            "PMACFILTERCONTROL_ROOT": "${workspaceFolder}"
+        }
+    },
+    "tasks": [
+        {
+            "label": "Test x86 hello world",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/tools && mkdir -p build && g++ hello.cpp -o build/hello_x86 && ./build/hello_x86",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build ARM container",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/tools && podman build --tag arm-crosscompiler .",
+            "problemMatcher": []
+        },
+        {
+            "label": "Test ARM hello world",
+            "type": "shell",
+            "command": "${workspaceFolder}/tools/run_arm_container.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run command in ARM container",
+            "type": "shell",
+            "command": "${workspaceFolder}/tools/run_arm_container.sh ${input:command}",
+            "problemMatcher": []
+        },
+    ],
+    "inputs": [
+        {
+          "id": "command",
+          "description": "Command to run",
+          "type": "pickString",
+          "options": [
+              "bash",
+              "build",
+              "pmacFilterControl",
+          ],
+        }
+    ]
+}
