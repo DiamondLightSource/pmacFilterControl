@@ -45,20 +45,22 @@ RUN apt-get install -y \
 
 RUN mkdir /build && cd /build
 
+RUN apt install -y g++-arm-linux-gnueabihf
+
 # Build zeromq for ARM
 RUN git clone https://github.com/zeromq/libzmq.git && cd libzmq && \
     ./autogen.sh && \
     mkdir prefix && \
     # http://wiki.zeromq.org/build:arm
-    ./configure --host=arm-none-linux-gnueabi CC=arm-linux-gnueabi-gcc CXX=arm-linux-gnueabi-g++ --prefix=/build/libzmq/prefix/ && \
+    ./configure --host=arm-none-linux-gnueabihf CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ --prefix=/build/libzmq/prefix/ && \
     make -j8 && make install
 
 RUN apt install -y cmake
 
 # Make sure we can find standard lib and zeromq
-ENV LD_LIBRARY_PATH=/usr/arm-linux-gnueabi/lib:/build/libzmq/prefix/lib
+ENV LD_LIBRARY_PATH=/usr/arm-linux-gnueabihf/lib:/build/libzmq/prefix/lib
 
 WORKDIR /build
 
 # Default command - Build and run hello world
-CMD bash -c 'cd /build/pmacFilterControl/tools && mkdir -p build && arm-linux-gnueabi-g++ -o build/hello_arm hello.cpp && qemu-arm -L /usr/arm-linux-gnueabi/ ./build/hello_arm'
+CMD bash -c "cd /build/pmacFilterControl/tools && mkdir -p build && arm-linux-gnueabihf-g++ -o build/hello_arm hello.cpp && qemu-arm -L /usr/arm-linux-gnueabihf/ ./build/hello_arm"
