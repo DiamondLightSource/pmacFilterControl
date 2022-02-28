@@ -1,11 +1,12 @@
 FROM ubuntu:20.04
 
-RUN apt-get update -y
+RUN apt update -y
 
 # Install tzdata without user input
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt -y install tzdata
 
-RUN apt-get install -y \
+# General packages
+RUN apt install -y \
     apt-utils \
     build-essential \
     automake \
@@ -24,7 +25,7 @@ RUN apt-get install -y \
     ca-certificates \
     runit
 # Split to avoid too many files error in build
-RUN apt-get install -y \
+RUN apt install -y \
     bash \
     python \
     sed \
@@ -34,18 +35,15 @@ RUN apt-get install -y \
     curl \
     wget
 
-# Cross-compiler
+# Cross-compiler and emulator
 RUN dpkg --add-architecture armel
-RUN apt install -y crossbuild-essential-armel
-
-# The cross-compiling emulator
-RUN apt-get install -y \
+RUN apt install -y \
+    crossbuild-essential-armel \
+    g++-arm-linux-gnueabihf \
     qemu-user \
     qemu-user-static
 
 RUN mkdir /build && cd /build
-
-RUN apt install -y g++-arm-linux-gnueabihf
 
 # Build zeromq for ARM
 RUN git clone https://github.com/zeromq/libzmq.git && cd libzmq && \
@@ -55,6 +53,7 @@ RUN git clone https://github.com/zeromq/libzmq.git && cd libzmq && \
     ./configure --host=arm-none-linux-gnueabihf CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ --prefix=/build/libzmq/prefix/ && \
     make -j8 && make install
 
+# CMake to build pmacFilterControl
 RUN apt install -y cmake
 
 # Make sure we can find standard lib and zeromq

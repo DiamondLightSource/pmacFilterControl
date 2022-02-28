@@ -5,7 +5,7 @@
     "options": {
         "env": {
             // Used to mount volume in run_arm_container.sh
-            "PMACFILTERCONTROL_ROOT": "${workspaceFolder}"
+            "PMACFILTERCONTROL": "${workspaceFolder}"
         }
     },
     "tasks": [
