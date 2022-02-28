@@ -191,10 +191,10 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 
 bool PMACFilterController::_poll(long timeout_ms)
 {
-  zmq::pollitem_t pollitems[] = {{this->zmq_data_socket_, 0, ZMQ_POLLIN, 0}};
-  zmq::poll(pollitems, 1, timeout_ms);
+    zmq::pollitem_t pollitems[] = {{this->zmq_data_socket_, 0, ZMQ_POLLIN, 0}};
+    zmq::poll(pollitems, 1, timeout_ms);
 
-  return (pollitems[0].revents & ZMQ_POLLIN);
+    return (pollitems[0].revents & ZMQ_POLLIN);
 }
 
 int main(int argc, char** argv)
