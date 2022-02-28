@@ -8,7 +8,7 @@
             "name": "Launch pmacFilterControl",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/vscode_prefix/bin/pmacFilterController",
+            "program": "${workspaceFolder}/vscode_prefix/bin/pmacFilterControl",
             "args": ["10001", "127.0.0.1:10000"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
