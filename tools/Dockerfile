@@ -43,6 +43,9 @@ RUN apt install -y \
     qemu-user \
     qemu-user-static
 
+# CMake to build pmacFilterControl
+RUN apt install -y cmake
+
 RUN mkdir /build && cd /build
 
 # Build zeromq for ARM
@@ -52,9 +55,6 @@ RUN git clone https://github.com/zeromq/libzmq.git && cd libzmq && \
     # http://wiki.zeromq.org/build:arm
     ./configure --host=arm-none-linux-gnueabihf CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ --prefix=/build/libzmq/prefix/ && \
     make -j8 && make install
-
-# CMake to build pmacFilterControl
-RUN apt install -y cmake
 
 # Make sure we can find standard lib and zeromq
 ENV LD_LIBRARY_PATH=/usr/arm-linux-gnueabihf/lib:/build/libzmq/prefix/lib
