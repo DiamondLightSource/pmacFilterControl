@@ -14,6 +14,7 @@ int main(int argc, char** argv)
 
     char request[50];
     strcpy(request, argv[2]);
+    printf("Sending '%s'\n", request);
     rc = zmq_send(socket, request, strlen(request), 0);
     assert(rc != -1);
 
