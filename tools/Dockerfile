@@ -59,7 +59,11 @@ RUN git clone https://github.com/zeromq/libzmq.git && cd libzmq && \
 # Make sure we can find standard lib and zeromq
 ENV LD_LIBRARY_PATH=/usr/arm-linux-gnueabihf/lib:/build/libzmq/prefix/lib
 
+# The built files will be copied to PowerPMAC:/root/lib
+# Link ARM toolchain libs to /root/lib inside the container to build in the same location
+RUN ln -s /usr/arm-linux-gnueabihf/lib /root/lib
+
 WORKDIR /build
 
 # Default command - Build and run hello world
-CMD bash -c "cd /build/pmacFilterControl/tools && mkdir -p build && arm-linux-gnueabihf-g++ -o build/hello_arm hello.cpp && qemu-arm -L /usr/arm-linux-gnueabihf/ ./build/hello_arm"
+CMD bash -c "cd /build/pmacFilterControl/tools && mkdir -p build && arm-linux-gnueabihf-g++ -o build/hello_arm hello.cpp && qemu-arm -L /root/ ./build/hello_arm"
