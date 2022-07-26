@@ -1,4 +1,7 @@
+#include <functional>
+#include <map>
 #include <thread>
+#include <vector>
 
 #include "zmq/zmq.hpp"
 #include "nlohmann_json/json.hpp"
