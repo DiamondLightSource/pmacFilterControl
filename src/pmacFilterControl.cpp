@@ -184,10 +184,10 @@ json PMACFilterController::_parse_json_string(const std::string& json_string) {
 
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
 #ifdef __ARM_ARCH
-    std::cout << "Setting M4020 to " << adjustment << std::endl;
-    pshm->M[4020] = adjustment;
+    std::cout << "Setting P4020 to " << adjustment << std::endl;
+    pshm->P[4020] = adjustment;
 #else
-    std::cout << "Not setting M4020 to " << adjustment << std::endl;
+    std::cout << "Not setting P4020 to " << adjustment << std::endl;
 #endif
 }
 
