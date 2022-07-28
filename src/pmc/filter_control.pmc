@@ -3,9 +3,9 @@
 // Author: Gary Yendell
 //
 // Macros:
-//   PLC = $(PLC) - PLC number to use
-//   HEARTBEAT_GPIO = $(HEARTBEAT_GPIO) - GPIO heartbeat for PLC
-//   STATE_GPIO = $(STATE_GPIO) - GPIO state for PLC
+//   PLC = $(PLC=20) - PLC number to use
+//   HEARTBEAT_GPIO = $(HEARTBEAT_GPIO=1) - GPIO heartbeat for PLC
+//   STATE_GPIO = $(STATE_GPIO=2) - GPIO state for PLC
 //
 // Variables Used:
 //   P4001 - P4100
@@ -94,7 +94,7 @@ GPIO_State = GPIO_STATE_BAD
 State = STARTING
 Error = NO_ERROR
 
-While(1=1) {
+While (1=1) {
 
     If (ErrorReset == 1) {
         ErrorReset = 0
@@ -123,7 +123,7 @@ While(1=1) {
             If (AttenuationDemand > MAX_ATTENUATION) {
                 // We can do no more - close the shutter
                 #5J=SHUTTER_CLOSED_POSITION
-                TODO: GoSub All filters in
+                // TODO: GoSub All filters in
                 State = ERROR
                 Error = MAX_ATTENUATION_ERROR
             }
@@ -133,18 +133,21 @@ While(1=1) {
             }
 
             If (State != ERROR) {
-                // Move filters based on the bits of the updated attenuation demand
-                // First we move any filters that are out, but should be in
-                // Then we move any filters that are in, but should be out
-                // This ensures attenuation is always at least as high as the demand
+                // Move filters based on the bits of the updated AttenuationDemand
+                // FilterXDemand points to the bits of AttenuationDemand, so automatically update when it is changed
                 //
-                // The logic of both of these moves is the same: if the following is satisfied
-                //   - Demand does not match position already
-                //   - Demand matches current move type (in or out)
-                // then FilterXMove will be set to +/-FILTER_TRAVEL and it will move
-                // If not, it will be zero and the relative jog will not move the filter
+                // First move any filters that are out, but should be in, then move any filters that are in, but
+                // should be out. This ensures attenuation is always at least as high as the demand.
+                //
+                // The logic of both of these moves is the same:
+                // if the following is satisfied
+                //   - Demand does not match position already - Demand ^ Position
+                //   - Demand matches current move type (in or out) 0/1 ^ Demand
+                // then FilterXMove will be set to +/-FILTER_TRAVEL and it will move in the relative jog
+                // else FilterXMove will be zero and the relative jog will not move the filter
 
-                // FilterXDemand == 1 -> Move filter in (positive move)
+                // FilterXDemand == 1 -> Move filter in (positive move) ----┐---------------------┐
+                //                                                          V                     V
                 Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (1 & Filter1Demand)) * FILTER_TRAVEL
                 Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (1 & Filter2Demand)) * FILTER_TRAVEL
                 Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (1 & Filter3Demand)) * FILTER_TRAVEL
@@ -153,7 +156,8 @@ While(1=1) {
                 // Do relative jog on all four axes
                 #1,2,3,4J:*
 
-                // FilterXDemand == 0 -> Move filter out (negative move)
+                // FilterXDemand == 0 -> Move filter out (negative move) ---┐---------------------┐
+                //                                                          V                     V
                 Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (0 & Filter1Demand)) * -FILTER_TRAVEL
                 Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (0 & Filter2Demand)) * -FILTER_TRAVEL
                 Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (0 & Filter3Demand)) * -FILTER_TRAVEL
