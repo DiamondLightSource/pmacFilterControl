@@ -8,7 +8,7 @@
 //   STATE_GPIO = $(STATE_GPIO) - GPIO state for PLC
 //
 // Variables Used:
-//   P$(PLC_NUMBER)01, P$(PLC_NUMBER)02
+//   P4001 - P4100
 // ############################################################
 
 //// GPIO
@@ -21,30 +21,32 @@
 
 //// Status/Error Reporting
 
-#define State P$(PLC_NUMBER)01
-// State Enum
-#define STARTING 0
-#define WAITING 1
-#define ACTIVE 2
-#define ERROR 3
-
-#define Error P$(PLC_NUMBER)02
-// Error Enum
-#define NO_ERROR 0
-#define MAX_ATTENUATION_ERROR 1
-#define MOVE_FAILURE_ERROR 2
-
-#define ErrorReset P$(PLC_NUMBER)03
-
 // A client can read this bitmask and parse out various statuses from the bits
 #define StatusBitMask M4000
 Attenuation->u.user:0
 #define MinAttenuationStatus M4001
 MinAttenuationStatus->u.user:0.0.1
 
+#define State P4001
+// State Enum
+#define STARTING 0
+#define WAITING 1
+#define ACTIVE 2
+#define ERROR 3
+
+#define Error P4002
+// Error Enum
+#define NO_ERROR 0
+#define MAX_ATTENUATION_ERROR 1
+#define MOVE_FAILURE_ERROR 2
+
+// Error reset for client
+#define ErrorReset P4010
+
 //// Attenuation Logic
 
-#define AttenuationChange P$(PLC_NUMBER)02
+// Attenuation change demand for client
+#define AttenuationChange P4020
 
 // We point Attenuation to an address and point filters to each bit of that address.
 // This links each filter to a single bit of Attenuation, with each bit representing
@@ -64,16 +66,10 @@ Filter3Demand->u.user:1.2.1
 Filter4Demand->u.user:1.3.1
 
 // Store of current positions [0,1]
-#define Filter1Position P$(PLC_NUMBER)03
-#define Filter2Position P$(PLC_NUMBER)04
-#define Filter3Position P$(PLC_NUMBER)05
-#define Filter4Position P$(PLC_NUMBER)06
-
-// Temporary store for calculated relative move for each filter
-#define Filter1Move
-#define Filter2Move
-#define Filter3Move
-#define Filter4Move
+#define Filter1Position P4021
+#define Filter2Position P4022
+#define Filter3Position P4023
+#define Filter4Position P4024
 
 //// Other Constants
 
