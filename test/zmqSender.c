@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     int rc = zmq_connect(socket, argv[1]);
     assert(rc == 0);
 
-    char request[50];
+    char request[100];
     strcpy(request, argv[2]);
     printf("Sending '%s'\n", request);
     rc = zmq_send(socket, request, strlen(request), 0);
