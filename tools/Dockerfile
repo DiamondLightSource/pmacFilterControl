@@ -56,12 +56,12 @@ RUN git clone https://github.com/zeromq/libzmq.git && cd libzmq && \
     ./configure --host=arm-none-linux-gnueabihf CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ --prefix=/build/libzmq/prefix/ && \
     make -j8 && make install
 
-# Make sure we can find standard lib and zeromq
-ENV LD_LIBRARY_PATH=/usr/arm-linux-gnueabihf/lib:/build/libzmq/prefix/lib
-
 # The built files will be copied to PowerPMAC:/root/lib
 # Link ARM toolchain libs to /root/lib inside the container to build in the same location
 RUN ln -s /usr/arm-linux-gnueabihf/lib /root/lib
+
+# Make sure we can find standard lib, zeromq and pmacFilterControl libs
+ENV LD_LIBRARY_PATH=/usr/arm-linux-gnueabihf/lib:/build/libzmq/prefix/lib:/build/pmacFilterControl/arm_prefix/lib
 
 WORKDIR /build
 
