@@ -2,4 +2,4 @@ substitute "PLC_NUMBER=20"
 substitute "STATE_GPIO=1"
 substitute "HEARTBEAT_GPIO=2"
 
-include "filter_control.pmc"
+include "filter_control.plc"
