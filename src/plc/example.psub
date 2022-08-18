@@ -1,5 +1,6 @@
-substitute "PLC_NUMBER=20"
+substitute "PLC_NUMBER=3"
 substitute "STATE_GPIO=1"
 substitute "HEARTBEAT_GPIO=2"
+substitute "SHUTTER_CLOSED_POSITION=1000"
 
 include "filter_control.plc"

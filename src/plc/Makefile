@@ -1,4 +1,4 @@
 %.plc: %.psub filter_control.plc
-	msi $< >> $@
+	msi $< > $@
 
 install: example.plc

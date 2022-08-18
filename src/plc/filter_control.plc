@@ -4,8 +4,9 @@
 //
 // Macros:
 //   PLC = $(PLC=20) - PLC number to use
-//   HEARTBEAT_GPIO = $(HEARTBEAT_GPIO=1) - GPIO heartbeat for PLC
-//   STATE_GPIO = $(STATE_GPIO=2) - GPIO state for PLC
+//   STATE_GPIO = $(STATE_GPIO=1) - GPIO state for PLC
+//   HEARTBEAT_GPIO = $(HEARTBEAT_GPIO=2) - GPIO heartbeat for PLC
+//   SHUTTER_CLOSED_POSITION = $(SHUTTER_CLOSED_POSITION) - Shutter close position in counts
 //
 // Variables Used:
 //   P4001 - P4100
@@ -23,9 +24,12 @@
 
 // A client can read this bitmask and parse out various statuses from the bits
 #define StatusBitMask M4000
-Attenuation->u.user:0
+StatusBitMask->u.user:$0.0.8
 #define MinAttenuationStatus M4001
-MinAttenuationStatus->u.user:0.0.1
+MinAttenuationStatus->u.user:$0.0.1
+
+#define Version P4000
+Version = 1013
 
 #define State P4001
 // State Enum
@@ -54,16 +58,16 @@ MinAttenuationStatus->u.user:0.0.1
 
 // Attenuation Bit Mask - [0,15]
 #define AttenuationDemand M4020
-AttenuationDemand->u.user:1
+AttenuationDemand->u.user:$10.0.8
 // Attenuation Bits - 0 or 1
 #define Filter1Demand M4021
 #define Filter2Demand M4022
 #define Filter3Demand M4023
 #define Filter4Demand M4024
-Filter1Demand->u.user:1.0.1
-Filter2Demand->u.user:1.1.1
-Filter3Demand->u.user:1.2.1
-Filter4Demand->u.user:1.3.1
+Filter1Demand->u.user:$10.0.1
+Filter2Demand->u.user:$10.1.1
+Filter3Demand->u.user:$10.2.1
+Filter4Demand->u.user:$10.3.1
 
 // Store of current positions [0,1]
 #define Filter1Position P4021
@@ -74,39 +78,37 @@ Filter4Demand->u.user:1.3.1
 //// Other Constants
 
 #define FILTER_TRAVEL 100  // Counts
-#define SHUTTER_CLOSED_POSITION 1000  // Counts
 #define MAX_ATTENUATION 15  // All filters in: 1 + 2 + 4 + 8
-#define SHUTTER_CLOSED_POSITION XXXX
-
-//// Timer for hearbeat
-// Conversion from ticks to milliseconds
-#define Milliseconds 8388608 / I10
-// This variable will decrement by one every tick, forever
-#define Timer I(5111 + ($(PLC_NUMBER) & 30) * 50 + $(PLC_NUMBER) % 2)
 
 
 Close
+Clear PLC $(PLC_NUMBER)
 Open PLC $(PLC_NUMBER)
-Clear
 
 GPIO_Heartbeat = 0
 GPIO_State = GPIO_STATE_BAD
 State = STARTING
 Error = NO_ERROR
+Sys.CdTimer[$(PLC_NUMBER)] = 0
 
-While (1=1) {
+AttenuationDemand = 0  // TODO: We can't assume this
+
+While (1==1) {
 
     If (ErrorReset == 1) {
         ErrorReset = 0
+        Error = 0
         State = STARTING
     }
+
+    AttenuationChange = 0
 
     // Error must be cleared to re-enter this loop
     While (State != ERROR) {
         // Limit Heartbeat rate
-        If (Timer < 0) {
+        If (Sys.CdTimer[$(PLC_NUMBER)] == 0) {
             GPIO_Heartbeat ^= 1  // Toggle Heartbeat - 0 -> 1, 1 -> 0
-            Timer = 500 * Milliseconds  // Reset timer
+            Sys.CdTimer[$(PLC_NUMBER)] = 500  // Reset timer
         }
 
         GPIO_State = GPIO_STATE_OK
@@ -116,21 +118,24 @@ While (1=1) {
         If (AttenuationChange != 0) {
             State = ACTIVE
 
-            // Add change to the active attenuation demand - the demand is always relative
-            AttenuationDemand += AttenuationChange
-            AttenuationChange = 0  // Reset client input
-
-            If (AttenuationDemand > MAX_ATTENUATION) {
+            // Restrict demand >= 0
+            If (AttenuationDemand + AttenuationChange < 0) {
+                AttenuationChange = 0
+                MinAttenuationStatus = 1
+            }
+            // Restrict demand <= MAX_ATTENUATION
+            If (AttenuationDemand + AttenuationChange > MAX_ATTENUATION) {
+                AttenuationChange = 0
                 // We can do no more - close the shutter
-                #5J=SHUTTER_CLOSED_POSITION
+                CMD "#5J=$(SHUTTER_CLOSED_POSITION)"
                 // TODO: GoSub All filters in
                 State = ERROR
                 Error = MAX_ATTENUATION_ERROR
             }
-            Else If (Attenuation <= 0) {
-                Attenuation = 0
-                MinAttenuationStatus = 1
-            }
+
+            // Add change to the active attenuation demand - the demand is always relative
+            AttenuationDemand += AttenuationChange
+            AttenuationChange = 0  // Reset client input
 
             If (State != ERROR) {
                 // Move filters based on the bits of the updated AttenuationDemand
@@ -142,32 +147,39 @@ While (1=1) {
                 // The logic of both of these moves is the same:
                 // if the following is satisfied
                 //   - Demand does not match position already - Demand ^ Position
-                //   - Demand matches current move type (in or out) 0/1 ^ Demand
+                //   - Demand matches current move type (in/out) - 1 &/^ Demand
                 // then FilterXMove will be set to +/-FILTER_TRAVEL and it will move in the relative jog
                 // else FilterXMove will be zero and the relative jog will not move the filter
 
-                // FilterXDemand == 1 -> Move filter in (positive move) ----┐---------------------┐
-                //                                                          V                     V
+                // FilterXDemand == 1 -> Move filter in (positive move) ------┐-------------------┐
+                //                                                            V                   V
                 Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (1 & Filter1Demand)) * FILTER_TRAVEL
                 Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (1 & Filter2Demand)) * FILTER_TRAVEL
                 Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (1 & Filter3Demand)) * FILTER_TRAVEL
                 Motor[4].ProgJogPos = ((Filter4Demand ^ Filter4Position) & (1 & Filter4Demand)) * FILTER_TRAVEL
 
                 // Do relative jog on all four axes
-                #1,2,3,4J:*
-
-                // FilterXDemand == 0 -> Move filter out (negative move) ---┐---------------------┐
-                //                                                          V                     V
-                Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (0 & Filter1Demand)) * -FILTER_TRAVEL
-                Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (0 & Filter2Demand)) * -FILTER_TRAVEL
-                Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (0 & Filter3Demand)) * -FILTER_TRAVEL
-                Motor[4].ProgJogPos = ((Filter4Demand ^ Filter4Position) & (0 & Filter4Demand)) * -FILTER_TRAVEL
+                // CMD "#1,2,3,4J:*"
 
                 // Make sure previous move is finished before we move filters out
-                Dwell 0
+                // while ((M140 & M240 & M340 & M440) != 1) {
+                //     dwell 0
+                // }
+
+                // FilterXDemand == 0 -> Move filter out (negative move) -----┐-------------------┐
+                //                                                            V                   V
+                Motor[1].ProgJogPos = Motor[1].ProgJogPos + ((Filter1Demand ^ Filter1Position) & (1 ^ Filter1Demand)) * -FILTER_TRAVEL
+                Motor[2].ProgJogPos = Motor[2].ProgJogPos + ((Filter2Demand ^ Filter2Position) & (1 ^ Filter2Demand)) * -FILTER_TRAVEL
+                Motor[3].ProgJogPos = Motor[3].ProgJogPos + ((Filter3Demand ^ Filter3Position) & (1 ^ Filter3Demand)) * -FILTER_TRAVEL
+                Motor[4].ProgJogPos = Motor[4].ProgJogPos + ((Filter4Demand ^ Filter4Position) & (1 ^ Filter4Demand)) * -FILTER_TRAVEL
 
                 // Do relative jog on all four axes
-                #1,2,3,4J:*
+                CMD "#1,2,3,4J:*"
+
+                // Make sure previous move is finished before we continue
+                while ((M140 & M240 & M340 & M440) != 1) {
+                    dwell 0
+                }
 
                 // TODO: Can we do any verification of the moves without an encoder?
 
