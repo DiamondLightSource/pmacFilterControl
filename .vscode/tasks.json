@@ -36,14 +36,15 @@
     ],
     "inputs": [
         {
-          "id": "command",
-          "description": "Command to run",
-          "type": "pickString",
-          "options": [
-              "bash",
-              "build",
-              "pmacFilterControl",
-          ],
+            "id": "command",
+            "description": "Command to run",
+            "type": "pickString",
+            "options": [
+                "bash",
+                "build",
+                "rebuild",
+                "pmacFilterControl",
+            ],
         }
     ]
 }

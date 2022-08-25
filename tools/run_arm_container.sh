@@ -16,6 +16,9 @@ mkdir -p ${ARM_BUILD} && rm -rf ${ARM_BUILD}/* && cd ${ARM_BUILD} && \
 mkdir -p ${ARM_PREFIX} && rm -rf ${ARM_PREFIX}/* && \
 cmake .. -DCMAKE_TOOLCHAIN_FILE=${ARM_PMACFILTERCONTROL}/cmake/arm-gcc-toolchain.cmake -DCMAKE_INSTALL_RPATH=/root/lib -DCMAKE_INSTALL_PREFIX=${ARM_PREFIX} -DZEROMQ_ROOTDIR=/build/libzmq/prefix/ && \
 make VERBOSE=1 && make install"
+elif [ $1 == "rebuild" ]; then
+${CONTAINER_RUN} bash -c "\
+cd ${ARM_BUILD} && make VERBOSE=1 && make install"
 elif [ $1 == "pmacFilterControl" ]; then
   ${CONTAINER_RUN} qemu-arm -L /usr/arm-linux-gnueabihf/ ${ARM_PREFIX}/bin/pmacFilterControl 10001 127.0.0.1:10000
 else
