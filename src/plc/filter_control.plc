@@ -75,6 +75,16 @@ Filter4Demand->u.user:$10.3.1
 #define Filter3Position P4023
 #define Filter4Position P4024
 
+#define Filter1Demand1 P4071
+#define Filter2Demand1 P4072
+#define Filter3Demand1 P4073
+#define Filter4Demand1 P4074
+
+#define Filter1Demand2 P4081
+#define Filter2Demand2 P4082
+#define Filter3Demand2 P4083
+#define Filter4Demand2 P4084
+
 //// Other Constants
 
 #define FILTER_TRAVEL 100  // Counts
@@ -151,39 +161,20 @@ While (1==1) {
                 // then FilterXMove will be set to +/-FILTER_TRAVEL and it will move in the relative jog
                 // else FilterXMove will be zero and the relative jog will not move the filter
 
-                // FilterXDemand == 1 -> Move filter in (positive move) ------┐-------------------┐
-                //                                                            V                   V
-                Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (1 & Filter1Demand)) * FILTER_TRAVEL
-                Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (1 & Filter2Demand)) * FILTER_TRAVEL
-                Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (1 & Filter3Demand)) * FILTER_TRAVEL
-                Motor[4].ProgJogPos = ((Filter4Demand ^ Filter4Position) & (1 & Filter4Demand)) * FILTER_TRAVEL
+                Filter1Demand1 = (Filter1Demand | Filter1Position) * FILTER_TRAVEL
+                Filter2Demand1 = (Filter2Demand | Filter2Position) * FILTER_TRAVEL
+                Filter3Demand1 = (Filter3Demand | Filter3Position) * FILTER_TRAVEL
+                Filter4Demand1 = (Filter4Demand | Filter4Position) * FILTER_TRAVEL
+                Filter1Demand2 = Filter1Demand * FILTER_TRAVEL
+                Filter2Demand2 = Filter2Demand * FILTER_TRAVEL
+                Filter3Demand2 = Filter3Demand * FILTER_TRAVEL
+                Filter4Demand2 = Filter4Demand * FILTER_TRAVEL
 
-                // Do relative jog on all four axes
-                CMD "#1,2,3,4J:*"
-
-                // Make sure previous move is finished before we move filters out | 0 -> Moving
-                while ((M140 & M240 & M340 & M440) == 1) {
-                    // Wait while any motor is not moving
-                    dwell 0
-                }
-                while ((M140 & M240 & M340 & M440) == 0) {
-                    // Wait while any motor is moving
-                    dwell 0
-                }
-
-                // FilterXDemand == 0 -> Move filter out (negative move) -----┐-------------------┐
-                //                                                            V                   V
-                Motor[1].ProgJogPos = ((Filter1Demand ^ Filter1Position) & (1 ^ Filter1Demand)) * -FILTER_TRAVEL
-                Motor[2].ProgJogPos = ((Filter2Demand ^ Filter2Position) & (1 ^ Filter2Demand)) * -FILTER_TRAVEL
-                Motor[3].ProgJogPos = ((Filter3Demand ^ Filter3Position) & (1 ^ Filter3Demand)) * -FILTER_TRAVEL
-                Motor[4].ProgJogPos = ((Filter4Demand ^ Filter4Position) & (1 ^ Filter4Demand)) * -FILTER_TRAVEL
-
-                // Do relative jog on all four axes
-                CMD "#1,2,3,4J:*"
+                CMD "&2 #1,2,3,4J/ B1R"
 
                 // Make sure previous move is finished before we move filters out | 0 -> Moving
                 while ((M140 & M240 & M340 & M440) == 1) {
-                    // Wait while any motor is not moving
+                    // Wait while all motors are not moving
                     dwell 0
                 }
                 while ((M140 & M240 & M340 & M440) == 0) {

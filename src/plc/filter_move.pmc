@@ -1,0 +1,34 @@
+#define Filter1Demand1 P4071
+#define Filter2Demand1 P4072
+#define Filter3Demand1 P4073
+#define Filter4Demand1 P4074
+
+#define Filter1Demand2 P4081
+#define Filter2Demand2 P4082
+#define Filter3Demand2 P4083
+#define Filter4Demand2 P4084
+
+&2
+#1->W
+#2->X
+#3->Y
+#4->Z
+#5->0
+#6->0
+#7->0
+#8->0
+
+Close
+Clear PROG 1
+Open PROG 1
+
+Abs Linear
+Frax(W,X,Y,Z)
+TM1
+
+W(Filter1Demand1)X(Filter2Demand1)Y(Filter3Demand1)Z(Filter4Demand1)
+Dwell 0
+W(Filter1Demand2)X(Filter2Demand2)Y(Filter3Demand2)Z(Filter4Demand2)
+Dwell 0
+
+Close
