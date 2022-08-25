@@ -8,6 +8,12 @@
 #include "gplib.h"
 #endif
 
+#define VERSION 105
+
+// Filter travel in counts to move a filter into the beam
+#define FILTER_TRAVEL 100
+
+char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
 
 // Control message keys
 static const std::string COMMAND = "command";
@@ -46,7 +52,12 @@ PMACFilterController::PMACFilterController(
     zmq_data_socket_(zmq_context_, ZMQ_SUB),
     shutdown_(false),
     pixel_count_threshold_(2),
-    last_processed_frame_(NO_FRAMES_PROCESSED)
+    last_processed_frame_(NO_FRAMES_PROCESSED),
+    new_attenuation_(0),
+    current_attenuation_(0),
+    current_demand_(4, 0),
+    post_in_demand_(4, 0),
+    final_demand_(4, 0)
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
     this->zmq_data_socket_.connect(data_channel_endpoint_.c_str());
@@ -144,7 +155,7 @@ void PMACFilterController::_process_data_channel() {
 }
 
 void PMACFilterController::_process_data(const json& data) {
-    if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
+    if (data[FRAME_NUMBER] <= this->last_processed_frame_) {  // TODO: Crashes if no frame number, or parameters
         std::cout << "Ignoring frame " << data[FRAME_NUMBER]
             << " - already processed " << this->last_processed_frame_ << std::endl;
         return;
@@ -172,6 +183,7 @@ void PMACFilterController::_process_data(const json& data) {
 }
 
 json PMACFilterController::_parse_json_string(const std::string& json_string) {
+    // Return value should be checked with is_null() to confirm successful parsing before access
     json _json;
     if (json::accept(json_string)) {
         _json = json::parse(json_string);
@@ -183,12 +195,40 @@ json PMACFilterController::_parse_json_string(const std::string& json_string) {
 }
 
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
+    this->new_attenuation_ = this->current_attenuation_ + adjustment;
+    std::cout << "New attenuation: " << this->new_attenuation_ << std::endl;
+
+    std::cout << "Adjustments (Post In | Final):  " << adjustment << std::endl;
+    for (int i = 0; i < 4; ++i) {
+        this->final_demand_[i] = (this->new_attenuation_ >> i) & 1;
+        this->post_in_demand_[i] = this->final_demand_[i] | this->current_demand_[i];
+        std::cout << this->post_in_demand_[i] << " | " << this->final_demand_[i] << std::endl;
+    }
+
 #ifdef __ARM_ARCH
-    std::cout << "Setting P4020 to " << adjustment << std::endl;
-    pshm->P[4020] = adjustment;
+    // Set demands on ppmac
+    std::cout << "Setting filters " << adjustment << std::endl;
+    pshm->P[4071] = this->post_in_demand_[0] * FILTER_TRAVEL;
+    pshm->P[4072] = this->post_in_demand_[1] * FILTER_TRAVEL;
+    pshm->P[4073] = this->post_in_demand_[2] * FILTER_TRAVEL;
+    pshm->P[4074] = this->post_in_demand_[3] * FILTER_TRAVEL;
+    pshm->P[4081] = this->final_demand_[0] * FILTER_TRAVEL;
+    pshm->P[4082] = this->final_demand_[1] * FILTER_TRAVEL;
+    pshm->P[4083] = this->final_demand_[2] * FILTER_TRAVEL;
+    pshm->P[4084] = this->final_demand_[3] * FILTER_TRAVEL;
+    // Run the motion program
+    std::cout << "Running motion program" << std::endl;
+    CommandTS(RUN_PROG_1);
 #else
-    std::cout << "Not setting P4020 to " << adjustment << std::endl;
+    std::cout << "Not setting adjustment " << adjustment << std::endl;
 #endif
+
+    std::cout << "Current filters:  " << adjustment << std::endl;
+    for (int i = 0; i < 4; ++i) {
+        this->current_demand_[i] = this->final_demand_[i];
+        std::cout << this->current_demand_[i] << std::endl;
+    }
+    this->current_attenuation_ = this->new_attenuation_;
 }
 
 bool PMACFilterController::_poll(long timeout_ms)
@@ -206,6 +246,8 @@ int main(int argc, char** argv)
             << "e.g. '10000 127.0.0.1:10000'" << std::endl;
         return 1;
     }
+
+    std::cout << "Version: " << VERSION << std::endl;
 
     std::string control_port(argv[1]);
     std::string data_endpoint(argv[2]);

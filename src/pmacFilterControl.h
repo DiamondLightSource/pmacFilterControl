@@ -39,6 +39,18 @@ class PMACFilterController
         // - Used to decide to ignore some frames
         int64_t last_processed_frame_;
 
+        // Local store of current value to compare against the next attenuation change
+        int current_attenuation_;
+        // New attenuation value to apply after attenuation change is received
+        int new_attenuation_;
+        // Vectors of individual filter positions for a given attenuation level
+        // Local store of filter positions for calculation of positions after filter in move
+        std::vector<int> current_demand_;
+        // Filter positions after filter in move applied
+        std::vector<int> post_in_demand_;
+        // Filter positions after filter in and out moves applied
+        std::vector<int> final_demand_;
+
         bool _handle_request(const json& request);
         void _process_data_channel();
         bool _poll(long timeout_ms);
