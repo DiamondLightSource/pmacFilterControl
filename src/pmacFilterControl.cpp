@@ -13,6 +13,7 @@
 // Filter travel in counts to move a filter into the beam
 #define FILTER_TRAVEL 100
 
+// Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
 
 // Control message keys
@@ -29,18 +30,34 @@ static const std::string PARAM_LOW1 = "low1";
 static const std::string PARAM_LOW2 = "low2";
 static const std::string PARAM_HIGH1 = "high1";
 static const std::string PARAM_HIGH2 = "high2";
-// Filter calculation definitions
+
+// The priority in which to process the thresholds.
+// If PARAM_HIGH2 is triggered, then apply it, else if PARAM_HIGH1 is triggered, apply that, etc.
 static const std::vector<std::string> THRESHOLD_PRECEDENCE = {
     PARAM_HIGH2, PARAM_HIGH1, PARAM_LOW2, PARAM_LOW1
 };
+
+// The attenuation adjustments to apply for a given threshold
+// PARAM_HIGH2 -> Add 2 levels of attenuation
+// PARAM_HIGH1 -> Add a level of attenuation
+// PARAM_LOW1 -> Subtract 1 level of attenuation
+// PARAM_LOW2 -> Subtract 2 levels of attenuation
 static const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
     {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}
 };
-// Other constants
-// - An invalid value that always passes the ignore frame checks
+
+// An initial invalid value to compare with `last_processed_frame_` that always passes the ignore frame checks
 int64_t NO_FRAMES_PROCESSED = -1;
 
 
+/*!
+    @brief Constructor
+
+    Setup ZeroMQ sockets
+
+    @param[in] control_port Port number to bind control socket to
+    @param[in] data_endpoint Endpoint (<IP>:<PORT>) to subscribe on for data messages
+*/
 PMACFilterController::PMACFilterController(
     const std::string& control_port,
     const std::string& data_endpoint
@@ -64,12 +81,25 @@ PMACFilterController::PMACFilterController(
     this->zmq_data_socket_.setsockopt(ZMQ_SUBSCRIBE, "", 0);  // "" -> No topic filter
 }
 
+/*!
+    @brief Destructor
+
+    Close ZeroMQ sockets
+
+*/
 PMACFilterController::~PMACFilterController()
 {
     this->zmq_control_socket_.close();
     this->zmq_data_socket_.close();
 }
 
+/*!
+    @brief Handle the JSON request from the control channel
+
+    @param[in] request json object of request
+
+    @return true if the request was applied successfully, else false
+*/
 bool PMACFilterController::_handle_request(const json& request) {
     bool success = false;
 
@@ -94,6 +124,9 @@ bool PMACFilterController::_handle_request(const json& request) {
     return success;
 }
 
+/*!
+    @brief Spawn data monitor thread and listen for control requests until shutdown
+*/
 void PMACFilterController::run() {
     // Start data handler thread
     this->listenThread_ = std::thread(
@@ -133,6 +166,11 @@ void PMACFilterController::run() {
     this->listenThread_.join();
 }
 
+/*!
+    @brief Listen on ZeroMQ data channel for messages and hand off for processing
+
+    This function should be run in a spawned thread and will return when `shutdown_`.
+*/
 void PMACFilterController::_process_data_channel() {
     std::cout << "Listening on " << data_channel_endpoint_ << std::endl;
 
@@ -154,6 +192,14 @@ void PMACFilterController::_process_data_channel() {
     }
 }
 
+/*!
+    @brief Handle the JSON request from the control channel
+
+    Determine if the `data` should be processed based on the frame number and then if the histogram values require the
+    attenuation level to be adjusted.
+
+    @param[in] data json structure of data message
+*/
 void PMACFilterController::_process_data(const json& data) {
     if (data[FRAME_NUMBER] <= this->last_processed_frame_) {  // TODO: Crashes if no frame number, or parameters
         std::cout << "Ignoring frame " << data[FRAME_NUMBER]
@@ -182,9 +228,19 @@ void PMACFilterController::_process_data(const json& data) {
     this->last_processed_frame_ = data[FRAME_NUMBER];
 }
 
+/*!
+    @brief Validate and parse json from a string representation to create a json object
+
+    Note that the returned json object can be invalid and should be tested with `is_null()` before access.
+
+    @param[in] json_string String representation of a json structure
+
+    @return json object parsed from string
+*/
 json PMACFilterController::_parse_json_string(const std::string& json_string) {
-    // Return value should be checked with is_null() to confirm successful parsing before access
     json _json;
+    // Call json::accept first to determine if the string is valid json, without throwing an exception, before calling
+    // json::parse, which does throw an exception for invalid json
     if (json::accept(json_string)) {
         _json = json::parse(json_string);
     } else {
@@ -194,6 +250,17 @@ json PMACFilterController::_parse_json_string(const std::string& json_string) {
     return _json;
 }
 
+/*!
+    @brief Send updated attenuation demand to the motion controller
+
+    Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the
+    motion controller and then execute the motion program to move the motors.
+
+    The code to set variables through shared memory is inside of an ARM #ifdef fence, so when compiled for x86 it will
+    just do the calculations and print a message.
+
+    @param[in] adjustment Attenuation levels to change by (can be positive or negative)
+*/
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
     this->new_attenuation_ = this->current_attenuation_ + adjustment;
     std::cout << "New attenuation: " << this->new_attenuation_ << std::endl;
@@ -231,6 +298,15 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     this->current_attenuation_ = this->new_attenuation_;
 }
 
+/*!
+    @brief Poll the ZeroMQ data socket for events
+
+    If this function returns true then a subsequent `recv()` on the socket will return a message.
+
+    @param[in] timeout_ms Poll duration in milliseconds
+
+    @return true if there is a message on the socket, else false (after the timeout has elapsed)
+*/
 bool PMACFilterController::_poll(long timeout_ms)
 {
     zmq::pollitem_t pollitems[] = {{this->zmq_data_socket_, 0, ZMQ_POLLIN, 0}};
@@ -239,6 +315,13 @@ bool PMACFilterController::_poll(long timeout_ms)
     return (pollitems[0].revents & ZMQ_POLLIN);
 }
 
+/*!
+    @brief Application entrypoint
+
+    Validate command line arguments, create PMACFilterController and run.
+
+    @return 0 when shutdown cleanly, 1 when given invalid arguments
+*/
 int main(int argc, char** argv)
 {
     if (argc != 3) {

@@ -1,7 +1,7 @@
-#include <functional>
-#include <map>
-#include <thread>
-#include <vector>
+#include <functional>  // std::bind
+#include <map>  // std::map
+#include <thread>  // std::thread
+#include <vector>  // std::vector
 
 #include "zmq/zmq.hpp"
 #include "nlohmann_json/json.hpp"
@@ -39,9 +39,9 @@ class PMACFilterController
         // - Used to decide to ignore some frames
         int64_t last_processed_frame_;
 
-        // Local store of current value to compare against the next attenuation change
+        // Local store of current attenuation to compare against the next attenuation change request
         int current_attenuation_;
-        // New attenuation value to apply after attenuation change is received
+        // New attenuation value to apply after attenuation change is processed
         int new_attenuation_;
         // Vectors of individual filter positions for a given attenuation level
         // Local store of filter positions for calculation of positions after filter in move
