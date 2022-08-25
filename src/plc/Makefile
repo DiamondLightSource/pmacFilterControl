@@ -1,4 +1,5 @@
-%.plc: %.psub filter_control.plc
+build/%.plc: %.psub %.plc
+	mkdir -p build
 	msi $< > $@
 
-install: example.plc
+install: build/filter_control.plc
