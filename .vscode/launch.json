@@ -9,7 +9,10 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/pmacFilterControl",
-            "args": ["10001", "127.0.0.1:10000"],
+            "args": [
+                "10001",
+                "127.0.0.1:10000"
+            ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -28,7 +31,10 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
-            "args": ["tcp://127.0.0.1:10001", "{\\\"command\\\": \\\"${input:Command}\\\"}"],
+            "args": [
+                "tcp://${input:Host}:10001",
+                "{\\\"command\\\": \\\"${input:Command}\\\"}"
+            ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -47,7 +53,10 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
-            "args": ["tcp://127.0.0.1:10001", "{\\\"command\\\": \\\"configure\\\", \\\"params\\\": {\\\"${input:Config}\\\": ${input:Value}}}"],
+            "args": [
+                "tcp://${input:Host}:10001",
+                "{\\\"command\\\": \\\"configure\\\", \\\"params\\\": {\\\"${input:Config}\\\": ${input:Value}}}"
+            ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -64,26 +73,35 @@
     ],
     "inputs": [
         {
-          "id": "Command",
-          "description": "Command to send",
-          "type": "pickString",
-          "options": [
-            "shutdown",
-            "reset",
-          ],
+            "id": "Host",
+            "description": "Host to send to",
+            "type": "pickString",
+            "options": [
+                "127.0.0.1",
+                "172.23.107.175",
+            ],
         },
         {
-          "id": "Config",
-          "description": "Config to send",
-          "type": "pickString",
-          "options": [
-            "pixel_count_threshold",
-          ],
+            "id": "Command",
+            "description": "Command to send",
+            "type": "pickString",
+            "options": [
+                "shutdown",
+                "reset",
+            ],
         },
         {
-          "id": "Value",
-          "description": "Value to send",
-          "type":"promptString"
+            "id": "Config",
+            "description": "Config to send",
+            "type": "pickString",
+            "options": [
+                "pixel_count_threshold",
+            ],
+        },
+        {
+            "id": "Value",
+            "description": "Value to send",
+            "type": "promptString"
         }
     ]
 }
