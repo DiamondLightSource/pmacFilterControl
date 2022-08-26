@@ -1,6 +1,7 @@
 // An application to listen on a ZMQ channel for histograms and adjust a filter set
 
 #include <iostream>
+#include <functional>  // std::bind
 
 #include "pmacFilterControl.h"
 

@@ -1,4 +1,3 @@
-#include <functional>  // std::bind
 #include <map>  // std::map
 #include <thread>  // std::thread
 #include <vector>  // std::vector
