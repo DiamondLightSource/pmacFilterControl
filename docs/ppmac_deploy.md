@@ -34,6 +34,15 @@ The `arm_prefix` directory can be copied to the ppmac to run pmacFilterControl.
 - In the container bash prompt, run
   - `$ scp -r arm_prefix/* root@<ppmac ip>:/root/prefix/`
 
+Make sure the application isn't already running or the copy may fail with the following
+error:
+
+```{bash}
+$ scp -r arm_prefix/* root@172.23.107.175:/root/prefix/
+...
+scp: /root/prefix/bin/pmacFilterControl: Text file busy
+```
+
 The zmq libraries should also be copied to `/root/` so that the application can find
 them at runtime.
 
