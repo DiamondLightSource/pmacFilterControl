@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <functional>  // std::bind
+#include <time.h>  // timespec, CLOCK_REALTIME
 
 #include "pmacFilterControl.h"
 
@@ -9,7 +10,7 @@
 #include "gplib.h"
 #endif
 
-#define VERSION 105
+#define VERSION 106
 
 // Filter travel in counts to move a filter into the beam
 #define FILTER_TRAVEL 100
@@ -176,8 +177,11 @@ void PMACFilterController::_process_data_channel() {
     std::cout << "Listening on " << data_channel_endpoint_ << std::endl;
 
     std::string data_str;
+    struct timespec start_ts, end_ts;
+    size_t start_ns, end_ns;
     while (!this->shutdown_) {
         if (this->_poll(100)) {
+            clock_gettime(CLOCK_REALTIME, &start_ts);
             zmq::message_t data_message;
             this->zmq_data_socket_.recv(&data_message);
             data_str = std::string(
@@ -189,6 +193,13 @@ void PMACFilterController::_process_data_channel() {
             if (!data.is_null()) {
                 this->_process_data(data);
             }
+            clock_gettime(CLOCK_REALTIME, &end_ts);
+
+            // TODO: Put this in a method
+            start_ns = ((size_t) start_ts.tv_sec * 1000000000) + (size_t) start_ts.tv_nsec;
+            end_ns = ((size_t) end_ts.tv_sec * 1000000000) + (size_t) end_ts.tv_nsec;
+            this->process_time_ = (end_ns - start_ns) / 1000;
+            std::cout << "Process time: " << this->process_time_ << "us" << std::endl;
         }
     }
 }

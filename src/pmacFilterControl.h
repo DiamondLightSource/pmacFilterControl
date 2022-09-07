@@ -50,6 +50,9 @@ class PMACFilterController
         // Filter positions after filter in and out moves applied
         std::vector<int> final_demand_;
 
+        // Duration in microseconds of previous process
+        size_t process_time_;
+
         bool _handle_request(const json& request);
         void _process_data_channel();
         bool _poll(long timeout_ms);
