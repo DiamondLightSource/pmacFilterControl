@@ -22,13 +22,11 @@ Close
 Clear PROG 1
 Open PROG 1
 
-Abs Linear
+Abs Rapid
 Frax(W,X,Y,Z)
-TM1
 
 W(Filter1Demand1)X(Filter2Demand1)Y(Filter3Demand1)Z(Filter4Demand1)
 Dwell 0
 W(Filter1Demand2)X(Filter2Demand2)Y(Filter3Demand2)Z(Filter4Demand2)
-Dwell 0
 
 Close
