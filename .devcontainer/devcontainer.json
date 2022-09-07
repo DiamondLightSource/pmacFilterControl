@@ -40,7 +40,6 @@
     ],
     "runArgs": [
         "-v/dev/ttyS0:/dev/ttyS0",
-        "--privileged",
         "-e HOME",
         "--net=host",
         "--security-opt=label=type:container_runtime_t",
