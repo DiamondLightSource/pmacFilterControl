@@ -1,2 +1,6 @@
 /*prefix*
 /**/*build*
+
+# Ignore copied in libraries
+thirdparty/ppmac
+thirdparty/xenomai
