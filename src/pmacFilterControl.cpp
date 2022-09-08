@@ -277,16 +277,20 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     this->new_attenuation_ = this->current_attenuation_ + adjustment;
     std::cout << "New attenuation: " << this->new_attenuation_ << std::endl;
 
-    std::cout << "Adjustments (Post In | Final):  " << adjustment << std::endl;
+    std::cout << "Adjustments (Current | In | Final):" << std::endl;
     for (int i = 0; i < 4; ++i) {
         this->final_demand_[i] = (this->new_attenuation_ >> i) & 1;
         this->post_in_demand_[i] = this->final_demand_[i] | this->current_demand_[i];
-        std::cout << this->post_in_demand_[i] << " | " << this->final_demand_[i] << std::endl;
+        std::cout << this->current_demand_[i] << " | "
+            << this->post_in_demand_[i] << " | "
+            << this->final_demand_[i] << std::endl;
     }
 
 #ifdef __ARM_ARCH
+    std::cout << "Changing attenuation: "
+        << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
+
     // Set demands on ppmac
-    std::cout << "Setting filters " << adjustment << std::endl;
     pshm->P[4071] = this->post_in_demand_[0] * FILTER_TRAVEL;
     pshm->P[4072] = this->post_in_demand_[1] * FILTER_TRAVEL;
     pshm->P[4073] = this->post_in_demand_[2] * FILTER_TRAVEL;
@@ -295,17 +299,17 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     pshm->P[4082] = this->final_demand_[1] * FILTER_TRAVEL;
     pshm->P[4083] = this->final_demand_[2] * FILTER_TRAVEL;
     pshm->P[4084] = this->final_demand_[3] * FILTER_TRAVEL;
+
     // Run the motion program
-    std::cout << "Running motion program" << std::endl;
     CommandTS(RUN_PROG_1);
 #else
-    std::cout << "Not setting adjustment " << adjustment << std::endl;
+    std::cout << "Not changing attenuation "
+        << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
 #endif
 
-    std::cout << "Current filters:  " << adjustment << std::endl;
+    // Update current values for next incremental change
     for (int i = 0; i < 4; ++i) {
         this->current_demand_[i] = this->final_demand_[i];
-        std::cout << this->current_demand_[i] << std::endl;
     }
     this->current_attenuation_ = this->new_attenuation_;
 }
