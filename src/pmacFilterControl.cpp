@@ -14,9 +14,11 @@
 
 // Filter travel in counts to move a filter into the beam
 #define FILTER_TRAVEL 100
+#define MAX_ATTENUATION 15
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
+char CLOSE_SHUTTER[] = "#5J=1000";
 
 // Control message keys
 static const std::string COMMAND = "command";
@@ -275,6 +277,20 @@ json PMACFilterController::_parse_json_string(const std::string& json_string) {
 */
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
     this->new_attenuation_ = this->current_attenuation_ + adjustment;
+
+    if (this->new_attenuation_ <= 0) {
+        std::cout << "Min Attenuation" << std::endl;
+        this->new_attenuation_ = 0;
+    } else if (this->new_attenuation_ == MAX_ATTENUATION) {
+        std::cout << "Max Attenuation" << std::endl;
+    } else if (this->new_attenuation_ > MAX_ATTENUATION) {
+        std::cout << "Max Attenuation Exceeded " << std::endl;
+        this->new_attenuation_ = MAX_ATTENUATION;
+#ifdef __ARM_ARCH
+        CommandTS(CLOSE_SHUTTER);
+#endif
+    }
+
     std::cout << "New attenuation: " << this->new_attenuation_ << std::endl;
 
     std::cout << "Adjustments (Current | In | Final):" << std::endl;
