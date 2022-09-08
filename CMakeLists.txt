@@ -12,14 +12,21 @@ find_package(ZEROMQ 4.1.4 REQUIRED)
 include_directories(${ZEROMQ_INCLUDE_DIRS}) # Non-system ZeroMQ (C library)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty) # CPP ZeroMQ bindings
 
-# ppmac libs
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libppmac)
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/rtpmac)
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libopener)
-link_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libppmac)
-link_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libmath)
-link_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libopener)
-link_directories(${CMAKE_SOURCE_DIR}/thirdparty/xenomai)
+if(EXISTS "/root/lib/ld-linux-armhf.so.3")
+    set(ARM TRUE)
+    message(STATUS "ARM Build")
+endif()
+
+if(ARM)
+    # ppmac libs
+    include_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libppmac)
+    include_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/rtpmac)
+    include_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libopener)
+    link_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libppmac)
+    link_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libmath)
+    link_directories(${CMAKE_SOURCE_DIR}/thirdparty/ppmac/libopener)
+    link_directories(${CMAKE_SOURCE_DIR}/thirdparty/xenomai)
+endif()
 
 add_subdirectory(src)
 add_subdirectory(test)

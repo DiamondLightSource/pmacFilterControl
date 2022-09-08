@@ -1,3 +1,5 @@
-add_executable(TestZMQSender zmqSender.c)
-target_link_libraries(TestZMQSender ${ZEROMQ_LIBRARIES})
-install(TARGETS TestZMQSender RUNTIME DESTINATION bin)
+if(NOT ARM)
+    add_executable(TestZMQSender zmqSender.c)
+    target_link_libraries(TestZMQSender ${ZEROMQ_LIBRARIES})
+    install(TARGETS TestZMQSender RUNTIME DESTINATION bin)
+endif()

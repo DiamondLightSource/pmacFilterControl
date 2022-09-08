@@ -1,7 +1,7 @@
 add_executable(pmacFilterControl pmacFilterControl.cpp)
 
 # When building within the ARM container, set --dynamic-linker
-if(EXISTS "/root/lib/ld-linux-armhf.so.3")
+if(ARM)
     # Use --disable-new-dtags to set RPATH instead of RUNPATH - see docs for more info
     target_link_options(pmacFilterControl PRIVATE -Wl,--disable-new-dtags,-rpath,/root/prefix/lib/:/root/libzmq/prefix/lib/:/root/lib)
     target_link_options(pmacFilterControl PRIVATE -Wl,-dynamic-linker,/root/lib/ld-linux-armhf.so.3)
