@@ -7,7 +7,7 @@ if(EXISTS "/root/lib/ld-linux-armhf.so.3")
     target_link_options(pmacFilterControl PRIVATE -Wl,-dynamic-linker,/root/lib/ld-linux-armhf.so.3)
     target_link_libraries(pmacFilterControl ${ZEROMQ_LIBRARIES} pthread ppmac math opener pthread_rt xenomai)
 else()
-    target_link_libraries(pmacFilterControl ${ZEROMQ_LIBRARIES})
+    target_link_libraries(pmacFilterControl ${ZEROMQ_LIBRARIES} pthread)
 endif()
 
 install(TARGETS pmacFilterControl RUNTIME DESTINATION bin)
