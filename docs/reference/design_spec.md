@@ -5,7 +5,9 @@ requirements that the system should meet.
 
 ## System Overview
 
-![Design Schematic](./design_schematic.svg)
+```{raw} html
+:file: ../images/design_schematic.svg
+```
 
 ### Hardware
 
@@ -23,7 +25,7 @@ PMAC side via the libraries provided with the system.
 The pmacFilterControl application requires a ZeroMQ publish socket providing json of the
 following form:
 
-```{python}
+```python
 {
     "frame_number": 1,
     "high2": 7,
@@ -57,7 +59,7 @@ software latency should be much lower to fulfill this requirement.
 
 ## Modes of Operation
 
-The system needsto be operated in various modes for different use cases
+The system needs to be operated in various modes for different use cases.
 
 ### 1. Automatic Attenuation
 
@@ -81,12 +83,25 @@ sense.
 
 Automatic adjustment of filters is completely disabled allowing manual control of each
 filter. The system must not try to change the filter positions based on the data stream
-and it should not set max attenuation after a timeout as mode 1 does.
+and it should not set max attenuation after a timeout as mode 1 does. This system itself
+could also provide an API to do the simple moves to avoid any conflict with other
+demands to the motion controller.
 
 ## Filter Motion
 
 Because of mechanics of the system, the filter set in use will determine what whether
 moving into position is a positive or negative move. For a given filter set, two of the
 filters will have to move in the opposite direction to the other two, however the
-directions should be reversed for these axes such that they match.
+directions should be reversed for these axes such that they match. The simplest solution
+to this is probably to allow setting the signed move in counts for each filter. Then the
+size and direction can be defined by a higher control layer and automated when swapping
+between filter sets.
+
+## Measuring Latency
+
+It is proposed to measure the latency by temporarily installing the system with the
+current filter set in place. The software can then be run against data from the detector
+and the current filter set adjusted while the new system tries to compensate. The
+exposure in the detector images should then give an idea of how long the exposure change
+lasted before the system reacted.
 

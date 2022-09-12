@@ -60,7 +60,7 @@ int64_t NO_FRAMES_PROCESSED = -1;
     Setup ZeroMQ sockets
 
     @param[in] control_port Port number to bind control socket to
-    @param[in] data_endpoint Endpoint (<IP>:<PORT>) to subscribe on for data messages
+    @param[in] data_endpoint Endpoint (`IP`:`PORT`) to subscribe on for data messages
 */
 PMACFilterController::PMACFilterController(
     const std::string& control_port,

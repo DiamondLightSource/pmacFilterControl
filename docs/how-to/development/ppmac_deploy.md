@@ -1,4 +1,6 @@
-# Bulding pmacFilterControl for x86
+# Building and Deploying pmacFilterControl
+
+## Bulding pmacFilterControl for x86
 
 pmacFilterControl includes architecture-specific code blocks and the build detects the
 architecture at compile time. This means the same code can be built and deployed for the
@@ -6,14 +8,14 @@ target and built for host to test against locally. The build uses cmake - this i
 configured in `.vscode/settings.json` so can be built using the [CMake extension](https://marketplace.visualstudio.com/items?itemName=twxs.cmake).
 To build manually:
 
-```
+```bash
 $ mkdir prefix
 $ mkdir build && cd build
 $ cmake .. -DCMAKE_INSTALL_PREFIX=../prefix
 $ make install
 ```
 
-# Bulding pmacFilterControl for ppmac
+## Bulding pmacFilterControl for ppmac
 
 A docker container is defined in `tools/Dockerfile` to provide a cross-compiling
 toolchain for ARM. This can be used to build pmacFilterControl for the ppmac. There are
@@ -26,7 +28,7 @@ To build the container run the `Build ARM Container` task - this will create an
 To build pmacFilterControl for ARM run the `Run command in ARM container` task and
 select `build` - it should be installed into `arm_prefix`.
 
-# Deploying pmacFilterControl to ppmac
+## Deploying pmacFilterControl to ppmac
 
 The `arm_prefix` directory can be copied to the ppmac to run pmacFilterControl.
 
@@ -37,7 +39,7 @@ The `arm_prefix` directory can be copied to the ppmac to run pmacFilterControl.
 Make sure the application isn't already running or the copy may fail with the following
 error:
 
-```{bash}
+```bash
 $ scp -r arm_prefix/* root@172.23.107.175:/root/prefix/
 ...
 scp: /root/prefix/bin/pmacFilterControl: Text file busy
@@ -68,7 +70,7 @@ Shutting down
 Finished run
 ```
 
-## Persistent Deployment
+### Persistent Deployment
 
 For testing the relevant directories can be copied directly to the `/root/` directory
 and run from there, however this will be wiped if the ppmac is rebooted. This means any
@@ -79,32 +81,32 @@ The contents of `/.readonly/root` are copied to `/root` on boot, so to make any 
 to `/root` persistent they should be duplicated in `/.readonly/root`. This directory is
 mounted read-only and must be remounted with write permissions:
 
-```{bash}
+```bash
 # mount -o remount,rw /
 ```
 
 then the files can simply be copied over:
 
-```{bash}
+```bash
 # cp -r /root/<directory> /.readonly/root/<directory>
 ```
 
 Now after a reboot the changes will remain in `/root/`.
 
-# Power PMAC Scripts
+## Power PMAC Scripts
 
 There is a plc and a motion program that must be deployed on the ppmac. The plc is used
 for monitoring and the motion program is run by the C++ application to move to the set
 demands.
 
-## Building
+### Building
 
 The plc contains macros that must be expanded using `msi` before downloading to the
 ppmac. To build filter_control.plc run make in `src/plc`:
 
-```{bash}
+```bash
 $ make -C src/plc
-make: Entering directory `/dls_sw/work/tools/RHEL7-x86_64/pmacFilterControl/src/plc'
+make: Entering directory /dls_sw/work/tools/RHEL7-x86_64/pmacFilterControl/src/plc
 mkdir -p build
 msi filter_control.psub > build/filter_control.plc
 ```
@@ -112,12 +114,12 @@ msi filter_control.psub > build/filter_control.plc
 The expanded file will appear in `src/plc/build`. The motion program contains no macros
 so is already valid script.
 
-## Deployment
+### Deployment
 
 This is painful. There are various possible ways, but none of them work well. The manual
 way is:
 
-```{bash}
+```bash
 $ scp src/plc/example.plc root@<ppmac ip>:"/var/ftp/usrflash/Project/PMAC\ Script\ Language/PLC\ Programs/plc3_filter_control.plc"
 # pproj -l
 ```
@@ -129,7 +131,7 @@ If the files are invalid, it may produce some information about the code snippet
 doesn't like, or it may just give a vague error. In the latter case, there might be some
 useful information in the log files, e.g.:
 
-```{bash}
+```bash
 # pproj -l
 ...
 Error: projpp errors = 1

@@ -1,0 +1,6 @@
+sphinx-autobuild
+sphinx-external-toc
+myst-parser
+breathe
+pydata-sphinx-theme
+sphinx-design

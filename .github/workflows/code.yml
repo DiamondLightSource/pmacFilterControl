@@ -1,0 +1,31 @@
+name: Code CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt -y update
+          sudo apt install cmake
+          sudo apt install libzmq3-dev
+
+      - name: Build pmacFilterControl
+        env:
+          INSTALL_PREFIX: ${{ env.INSTALL_PREFIX }}
+        run: |
+          mkdir prefix
+          mkdir build && cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=../prefix
+          make install
+
+      - name: Test
+        run: |
+          prefix/bin/pmacFilterControl --help
