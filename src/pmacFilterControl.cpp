@@ -357,8 +357,12 @@ bool PMACFilterController::_poll(long timeout_ms)
 int main(int argc, char** argv)
 {
     if (argc != 3) {
-        std::cout << "Must pass control_port and data_endpoint - "
-            << "e.g. '10000 127.0.0.1:10000'" << std::endl;
+        std::cout << "Usage: " << argv[0] << " control_port data_endpoint\n"
+            << "e.g. '" << argv[0] << " 10001 127.0.0.1:10000'" << std::endl;
+
+        if (argc == 2 && std::string(argv[1]) == "--help") {
+            return 0;
+        }
         return 1;
     }
 
