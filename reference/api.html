@@ -1,0 +1,565 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>API Reference Documentation &#8212; pmacFilterControl 0.1 documentation</title>
+  <script>
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=9b1a4fa89bdd0e95b23b" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=9b1a4fa89bdd0e95b23b" rel="stylesheet">
+
+  
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/6.1.2/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=9b1a4fa89bdd0e95b23b">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/design-tabs.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'reference/api';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Automatic Attenuation Design Specification" href="design_spec.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="docsearch:language" content="en">
+  </head>
+  
+  
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="180" data-default-mode="">
+
+  
+  <input type="checkbox" class="sidebar-toggle" name="__primary" id="__primary">
+  <label class="overlay overlay-primary" for="__primary"></label>
+
+  
+  <input type="checkbox" class="sidebar-toggle" name="__secondary" id="__secondary">
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+      
+<form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+    </div>
+  </div>
+
+  
+  <nav class="bd-header navbar navbar-expand-lg bd-navbar" id="navbar-main"><div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+      <span class="fas fa-bars"></span>
+  </label>
+  <div id="navbar-start">
+    
+    
+  
+
+
+<a class="navbar-brand logo" href="../index.html">
+
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt="Logo image">
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark" alt="Logo image">
+  
+  
+    <p class="title logo__title">pmacFilterControl</p>
+  
+</a>
+    
+  </div>
+
+  
+  <div class="col-lg-9 navbar-header-items">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <nav class="navbar-nav">
+    <p class="sidebar-header-items__title" role="heading" aria-level="1" aria-label="Site Navigation">
+        Site Navigation
+    </p>
+    <ul id="navbar-main-elements" class="navbar-nav">
+        
+                <li class="nav-item">
+                    <a class="nav-link" href="../explanations/overview.html">
+                        Overview
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/development.html">
+                        Developer Guide
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/docs.html">
+                        Docs
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="design_spec.html">
+                        Automatic Attenuation Design Specification
+                    </a>
+                </li>
+                
+
+                <li class="nav-item current active">
+                    <a class="nav-link" href="#">
+                        API Reference Documentation
+                    </a>
+                </li>
+                
+    </ul>
+</nav>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      <div class="navbar-end-item navbar-end__search-button-container">
+        
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search">
+  <i class="fas fa-search"></i>
+</button>
+      </div>
+      
+      <div class="navbar-end-item">
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle">
+    <a class="theme-switch" data-mode="light"><i class="fas fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="far fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fas fa-adjust"></i></a>
+</span>
+      </div>
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+
+
+  
+  <div class="search-button-container--mobile">
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search">
+  <i class="fas fa-search"></i>
+</button>
+  </div>
+
+  
+
+</div>
+  </nav>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+      
+      <div class="navbar-center-item">
+        <nav class="navbar-nav">
+    <p class="sidebar-header-items__title" role="heading" aria-level="1" aria-label="Site Navigation">
+        Site Navigation
+    </p>
+    <ul id="navbar-main-elements" class="navbar-nav">
+        
+                <li class="nav-item">
+                    <a class="nav-link" href="../explanations/overview.html">
+                        Overview
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/development.html">
+                        Developer Guide
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/docs.html">
+                        Docs
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="design_spec.html">
+                        Automatic Attenuation Design Specification
+                    </a>
+                </li>
+                
+
+                <li class="nav-item current active">
+                    <a class="nav-link" href="#">
+                        API Reference Documentation
+                    </a>
+                </li>
+                
+    </ul>
+</nav>
+      </div>
+      
+      </div>
+    
+
+    
+    
+    <div class="sidebar-header-items__end">
+      
+      <div class="navbar-end-item">
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle">
+    <a class="theme-switch" data-mode="light"><i class="fas fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="far fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fas fa-adjust"></i></a>
+</span>
+      </div>
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+    
+  </div>
+
+  
+
+  
+  <div class="sidebar-end-items sidebar-primary__section">
+    <div class="sidebar-end-items__item">
+    </div>
+  </div>
+
+      </div>
+      <main class="bd-main">
+        
+        
+        <div class="bd-content">
+          <div class="bd-article-container">
+            
+            <div class="bd-header-article">
+                
+            </div>
+            
+            
+            <article class="bd-article" role="main">
+              
+  <section id="api-reference-documentation">
+<h1>API Reference Documentation<a class="headerlink" href="#api-reference-documentation" title="Permalink to this heading">#</a></h1>
+<p>Automatically generated API reference documentation.</p>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv420PMACFilterController">
+<span id="_CPPv320PMACFilterController"></span><span id="_CPPv220PMACFilterController"></span><span id="PMACFilterController"></span><span class="target" id="classPMACFilterController"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PMACFilterController</span></span></span><a class="headerlink" href="#_CPPv420PMACFilterController" title="Permalink to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE">
+<span id="_CPPv3N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE"></span><span id="_CPPv2N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE"></span><span id="PMACFilterController::PMACFilterController__ssCR.ssCR"></span><span class="target" id="classPMACFilterController_1a56d9fcc595f05a7ad7b53cac55c9b4ef"></span><span class="sig-name descname"><span class="n"><span class="pre">PMACFilterController</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data_endpoint</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">control_port</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Constructor. </p>
+<p>Setup ZeroMQ sockets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>control_port</strong> – <strong>[in]</strong> Port number to bind control socket to </p></li>
+<li><p><strong>data_endpoint</strong> – <strong>[in]</strong> Endpoint (<code class="docutils literal notranslate"><span class="pre">IP</span></code>:<code class="docutils literal notranslate"><span class="pre">PORT</span></code>) to subscribe on for data messages </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterControllerD0Ev">
+<span id="_CPPv3N20PMACFilterControllerD0Ev"></span><span id="_CPPv2N20PMACFilterControllerD0Ev"></span><span id="PMACFilterController::~PMACFilterController"></span><span class="target" id="classPMACFilterController_1abf9f18062e4535911757c9bf8927ca47"></span><span class="sig-name descname"><span class="n"><span class="pre">~PMACFilterController</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterControllerD0Ev" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Destructor. </p>
+<p>Close ZeroMQ sockets </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController3runEv">
+<span id="_CPPv3N20PMACFilterController3runEv"></span><span id="_CPPv2N20PMACFilterController3runEv"></span><span id="PMACFilterController::run"></span><span class="target" id="classPMACFilterController_1a85b9053a65948a3a97420a7dba6c6006"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">run</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController3runEv" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Spawn data monitor thread and listen for control requests until shutdown. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-private-functions">Private Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController15_handle_requestERK4json">
+<span id="_CPPv3N20PMACFilterController15_handle_requestERK4json"></span><span id="_CPPv2N20PMACFilterController15_handle_requestERK4json"></span><span id="PMACFilterController::_handle_request__jsonCR"></span><span class="target" id="classPMACFilterController_1a12edd0adbc007c53c70d540a30525a00"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_handle_request</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">request</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController15_handle_requestERK4json" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Handle the JSON request from the control channel. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>request</strong> – <strong>[in]</strong> json object of request</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>true if the request was applied successfully, else false </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController21_process_data_channelEv">
+<span id="_CPPv3N20PMACFilterController21_process_data_channelEv"></span><span id="_CPPv2N20PMACFilterController21_process_data_channelEv"></span><span id="PMACFilterController::_process_data_channel"></span><span class="target" id="classPMACFilterController_1a29854238c3f416b86358cb63151d5ab6"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_process_data_channel</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController21_process_data_channelEv" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Listen on ZeroMQ data channel for messages and hand off for processing. </p>
+<p>This function should be run in a spawned thread and will return when <code class="docutils literal notranslate"><span class="pre">shutdown_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController5_pollEl">
+<span id="_CPPv3N20PMACFilterController5_pollEl"></span><span id="_CPPv2N20PMACFilterController5_pollEl"></span><span id="PMACFilterController::_poll__l"></span><span class="target" id="classPMACFilterController_1a821aa74e0dbd3e51502f9fd880dda893"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_poll</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">long</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">timeout_ms</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController5_pollEl" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Poll the ZeroMQ data socket for events. </p>
+<p>If this function returns true then a subsequent <code class="docutils literal notranslate"><span class="pre">recv()</span></code> on the socket will return a message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>timeout_ms</strong> – <strong>[in]</strong> Poll duration in milliseconds</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>true if there is a message on the socket, else false (after the timeout has elapsed) </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13_process_dataERK4json">
+<span id="_CPPv3N20PMACFilterController13_process_dataERK4json"></span><span id="_CPPv2N20PMACFilterController13_process_dataERK4json"></span><span id="PMACFilterController::_process_data__jsonCR"></span><span class="target" id="classPMACFilterController_1a529ca11d3e1ca5054913f1c0e21e4159"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_process_data</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController13_process_dataERK4json" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Handle the JSON request from the control channel. </p>
+<p>Determine if the <code class="docutils literal notranslate"><span class="pre">data</span></code> should be processed based on the frame number and then if the histogram values require the attenuation level to be adjusted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – <strong>[in]</strong> json structure of data message </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController18_parse_json_stringERKNSt6stringE">
+<span id="_CPPv3N20PMACFilterController18_parse_json_stringERKNSt6stringE"></span><span id="_CPPv2N20PMACFilterController18_parse_json_stringERKNSt6stringE"></span><span id="PMACFilterController::_parse_json_string__ssCR"></span><span class="target" id="classPMACFilterController_1a4a7dab0d855ca15a04b898f921aa5005"></span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_parse_json_string</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">json_string</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController18_parse_json_stringERKNSt6stringE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Validate and parse json from a string representation to create a json object. </p>
+<p>Note that the returned json object can be invalid and should be tested with <code class="docutils literal notranslate"><span class="pre">is_null()</span></code> before access.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>json_string</strong> – <strong>[in]</strong> String representation of a json structure</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>json object parsed from string </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController23_send_filter_adjustmentEi">
+<span id="_CPPv3N20PMACFilterController23_send_filter_adjustmentEi"></span><span id="_CPPv2N20PMACFilterController23_send_filter_adjustmentEi"></span><span id="PMACFilterController::_send_filter_adjustment__i"></span><span class="target" id="classPMACFilterController_1aa6f864ecdb8c115d1ad832b5e6e74296"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_send_filter_adjustment</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">adjustment</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController23_send_filter_adjustmentEi" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Send updated attenuation demand to the motion controller. </p>
+<p>Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the motion controller and then execute the motion program to move the motors.</p>
+<p>The code to set variables through shared memory are inside of an ARM #ifdef fence, so when compiled for x86 it will just do the calculations and print a message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>adjustment</strong> – <strong>[in]</strong> Attenuation levels to change by (can be positive or negative) </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-private-members">Private Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController25control_channel_endpoint_E">
+<span id="_CPPv3N20PMACFilterController25control_channel_endpoint_E"></span><span id="_CPPv2N20PMACFilterController25control_channel_endpoint_E"></span><span id="PMACFilterController::control_channel_endpoint___ss"></span><span class="target" id="classPMACFilterController_1a729a2aecd59d9c48b981b44eab1adeb9"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">control_channel_endpoint_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController25control_channel_endpoint_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController22data_channel_endpoint_E">
+<span id="_CPPv3N20PMACFilterController22data_channel_endpoint_E"></span><span id="_CPPv2N20PMACFilterController22data_channel_endpoint_E"></span><span id="PMACFilterController::data_channel_endpoint___ss"></span><span class="target" id="classPMACFilterController_1a63de76514fe29cdfb6a678cf1b933657"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">data_channel_endpoint_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController22data_channel_endpoint_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController12zmq_context_E">
+<span id="_CPPv3N20PMACFilterController12zmq_context_E"></span><span id="_CPPv2N20PMACFilterController12zmq_context_E"></span><span id="PMACFilterController::zmq_context___zmq::context_t"></span><span class="target" id="classPMACFilterController_1ae0f3a920acc2b319559d414bfa0010a5"></span><span class="n"><span class="pre">zmq</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">context_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">zmq_context_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController12zmq_context_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController19zmq_control_socket_E">
+<span id="_CPPv3N20PMACFilterController19zmq_control_socket_E"></span><span id="_CPPv2N20PMACFilterController19zmq_control_socket_E"></span><span id="PMACFilterController::zmq_control_socket___zmq::socket_t"></span><span class="target" id="classPMACFilterController_1aed30750b5d38b713acd2796582c51220"></span><span class="n"><span class="pre">zmq</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">socket_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">zmq_control_socket_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController19zmq_control_socket_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController16zmq_data_socket_E">
+<span id="_CPPv3N20PMACFilterController16zmq_data_socket_E"></span><span id="_CPPv2N20PMACFilterController16zmq_data_socket_E"></span><span id="PMACFilterController::zmq_data_socket___zmq::socket_t"></span><span class="target" id="classPMACFilterController_1aa2f4b83d25af98a210f7d3a3bb3c6908"></span><span class="n"><span class="pre">zmq</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">socket_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">zmq_data_socket_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController16zmq_data_socket_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13listenThread_E">
+<span id="_CPPv3N20PMACFilterController13listenThread_E"></span><span id="_CPPv2N20PMACFilterController13listenThread_E"></span><span id="PMACFilterController::listenThread___std::thread"></span><span class="target" id="classPMACFilterController_1a54b56dc39be79984d27ff14ab853ee6a"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">thread</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">listenThread_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13listenThread_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController9shutdown_E">
+<span id="_CPPv3N20PMACFilterController9shutdown_E"></span><span id="_CPPv2N20PMACFilterController9shutdown_E"></span><span id="PMACFilterController::shutdown___b"></span><span class="target" id="classPMACFilterController_1add65a09157b16710dea2b2d45b01a47c"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">shutdown_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController9shutdown_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController22pixel_count_threshold_E">
+<span id="_CPPv3N20PMACFilterController22pixel_count_threshold_E"></span><span id="_CPPv2N20PMACFilterController22pixel_count_threshold_E"></span><span id="PMACFilterController::pixel_count_threshold___uint64_t"></span><span class="target" id="classPMACFilterController_1ace6e46461ac52a276e87037ab7443c34"></span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pixel_count_threshold_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController22pixel_count_threshold_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController21last_processed_frame_E">
+<span id="_CPPv3N20PMACFilterController21last_processed_frame_E"></span><span id="_CPPv2N20PMACFilterController21last_processed_frame_E"></span><span id="PMACFilterController::last_processed_frame___int64_t"></span><span class="target" id="classPMACFilterController_1a0e52ee95c8267547b27faf698c4225f0"></span><span class="n"><span class="pre">int64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">last_processed_frame_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController21last_processed_frame_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController20current_attenuation_E">
+<span id="_CPPv3N20PMACFilterController20current_attenuation_E"></span><span id="_CPPv2N20PMACFilterController20current_attenuation_E"></span><span id="PMACFilterController::current_attenuation___i"></span><span class="target" id="classPMACFilterController_1a81128cbbd970c0f2fd38c558667c5407"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">current_attenuation_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController20current_attenuation_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController16new_attenuation_E">
+<span id="_CPPv3N20PMACFilterController16new_attenuation_E"></span><span id="_CPPv2N20PMACFilterController16new_attenuation_E"></span><span id="PMACFilterController::new_attenuation___i"></span><span class="target" id="classPMACFilterController_1a346611b8d1ec00cecaab10913c172e1c"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">new_attenuation_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController16new_attenuation_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController15current_demand_E">
+<span id="_CPPv3N20PMACFilterController15current_demand_E"></span><span id="_CPPv2N20PMACFilterController15current_demand_E"></span><span id="PMACFilterController::current_demand___std::vector:i:"></span><span class="target" id="classPMACFilterController_1a647c4fa07eb2b6dfced919de93c3c81e"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">current_demand_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController15current_demand_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController15post_in_demand_E">
+<span id="_CPPv3N20PMACFilterController15post_in_demand_E"></span><span id="_CPPv2N20PMACFilterController15post_in_demand_E"></span><span id="PMACFilterController::post_in_demand___std::vector:i:"></span><span class="target" id="classPMACFilterController_1ae3465529279c9c6834716115c163c912"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">post_in_demand_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController15post_in_demand_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13final_demand_E">
+<span id="_CPPv3N20PMACFilterController13final_demand_E"></span><span id="_CPPv2N20PMACFilterController13final_demand_E"></span><span id="PMACFilterController::final_demand___std::vector:i:"></span><span class="target" id="classPMACFilterController_1a4f66a281cf05aa9fca0a3d01d7cb38bc"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">final_demand_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13final_demand_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13process_time_E">
+<span id="_CPPv3N20PMACFilterController13process_time_E"></span><span id="_CPPv2N20PMACFilterController13process_time_E"></span><span id="PMACFilterController::process_time___s"></span><span class="target" id="classPMACFilterController_1a09743cef1e0ed988cd173e62680485a1"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">process_time_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13process_time_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+            </article>
+            
+            
+            
+            <footer class="bd-footer-article">
+                <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+  <a class='left-prev' id="prev-link" href="design_spec.html" title="previous page">
+      <i class="fas fa-angle-left"></i>
+      <div class="prev-next-info">
+          <p class="prev-next-subtitle">previous</p>
+          <p class="prev-next-title">Automatic Attenuation Design Specification</p>
+      </div>
+  </a>
+</div>
+            </footer>
+            
+          </div>
+          
+          
+          
+          
+        </div>
+        <footer class="bd-footer-content">
+          <div class="bd-footer-content__inner">
+            
+          </div>
+        </footer>
+        
+      </main>
+    </div>
+  </div>
+
+  
+    
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=9b1a4fa89bdd0e95b23b"></script>
+
+  <footer class="bd-footer"><div class="bd-footer__inner container">
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+  </footer>
+  </body>
+</html>

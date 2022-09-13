@@ -1,0 +1,549 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Notes on cross compiling for ARM PowerPMAC &#8212; pmacFilterControl 0.1 documentation</title>
+  <script>
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=9b1a4fa89bdd0e95b23b" rel="stylesheet">
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=9b1a4fa89bdd0e95b23b" rel="stylesheet">
+
+  
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/6.1.2/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=9b1a4fa89bdd0e95b23b">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/design-tabs.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/development/ppmac_cross_compiling';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Docs" href="../docs.html" />
+    <link rel="prev" title="Building and Deploying pmacFilterControl" href="ppmac_deploy.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="docsearch:language" content="en">
+  </head>
+  
+  
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="180" data-default-mode="">
+
+  
+  <input type="checkbox" class="sidebar-toggle" name="__primary" id="__primary">
+  <label class="overlay overlay-primary" for="__primary"></label>
+
+  
+  <input type="checkbox" class="sidebar-toggle" name="__secondary" id="__secondary">
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+      
+<form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+    </div>
+  </div>
+
+  
+  <nav class="bd-header navbar navbar-expand-lg bd-navbar" id="navbar-main"><div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+      <span class="fas fa-bars"></span>
+  </label>
+  <div id="navbar-start">
+    
+    
+  
+
+
+<a class="navbar-brand logo" href="../../index.html">
+
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <img src="../../_static/dls-logo.svg" class="logo__image only-light" alt="Logo image">
+    <img src="../../_static/dls-logo.svg" class="logo__image only-dark" alt="Logo image">
+  
+  
+    <p class="title logo__title">pmacFilterControl</p>
+  
+</a>
+    
+  </div>
+
+  
+  <div class="col-lg-9 navbar-header-items">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <nav class="navbar-nav">
+    <p class="sidebar-header-items__title" role="heading" aria-level="1" aria-label="Site Navigation">
+        Site Navigation
+    </p>
+    <ul id="navbar-main-elements" class="navbar-nav">
+        
+                <li class="nav-item">
+                    <a class="nav-link" href="../../explanations/overview.html">
+                        Overview
+                    </a>
+                </li>
+                
+
+                <li class="nav-item current active">
+                    <a class="nav-link" href="../development.html">
+                        Developer Guide
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../docs.html">
+                        Docs
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../../reference/design_spec.html">
+                        Automatic Attenuation Design Specification
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../../reference/api.html">
+                        API Reference Documentation
+                    </a>
+                </li>
+                
+    </ul>
+</nav>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      <div class="navbar-end-item navbar-end__search-button-container">
+        
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search">
+  <i class="fas fa-search"></i>
+</button>
+      </div>
+      
+      <div class="navbar-end-item">
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle">
+    <a class="theme-switch" data-mode="light"><i class="fas fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="far fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fas fa-adjust"></i></a>
+</span>
+      </div>
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+
+
+  
+  <div class="search-button-container--mobile">
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search">
+  <i class="fas fa-search"></i>
+</button>
+  </div>
+
+  
+  <label class="sidebar-toggle secondary-toggle" for="__secondary">
+      <span class="fas fa-outdent"></span>
+  </label>
+  
+
+</div>
+  </nav>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+      
+      <div class="navbar-center-item">
+        <nav class="navbar-nav">
+    <p class="sidebar-header-items__title" role="heading" aria-level="1" aria-label="Site Navigation">
+        Site Navigation
+    </p>
+    <ul id="navbar-main-elements" class="navbar-nav">
+        
+                <li class="nav-item">
+                    <a class="nav-link" href="../../explanations/overview.html">
+                        Overview
+                    </a>
+                </li>
+                
+
+                <li class="nav-item current active">
+                    <a class="nav-link" href="../development.html">
+                        Developer Guide
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../docs.html">
+                        Docs
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../../reference/design_spec.html">
+                        Automatic Attenuation Design Specification
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../../reference/api.html">
+                        API Reference Documentation
+                    </a>
+                </li>
+                
+    </ul>
+</nav>
+      </div>
+      
+      </div>
+    
+
+    
+    
+    <div class="sidebar-header-items__end">
+      
+      <div class="navbar-end-item">
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle">
+    <a class="theme-switch" data-mode="light"><i class="fas fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="far fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fas fa-adjust"></i></a>
+</span>
+      </div>
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+    
+  </div>
+
+  
+  <div class="sidebar-start-items sidebar-primary__section">
+    <div class="sidebar-start-items__item"><nav class="bd-links" id="bd-docs-nav" aria-label="Section navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">
+    Section Navigation
+  </p>
+  <div class="bd-toc-item navbar-nav">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="ppmac_deploy.html">
+   Building and Deploying pmacFilterControl
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Notes on cross compiling for ARM PowerPMAC
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+    </div>
+  </div>
+  
+
+  
+  <div class="sidebar-end-items sidebar-primary__section">
+    <div class="sidebar-end-items__item">
+    </div>
+  </div>
+
+      </div>
+      <main class="bd-main">
+        
+        
+        <div class="bd-content">
+          <div class="bd-article-container">
+            
+            <div class="bd-header-article">
+                
+            </div>
+            
+            
+            <article class="bd-article" role="main">
+              
+  <section id="notes-on-cross-compiling-for-arm-powerpmac">
+<h1>Notes on cross compiling for ARM PowerPMAC<a class="headerlink" href="#notes-on-cross-compiling-for-arm-powerpmac" title="Permalink to this heading">#</a></h1>
+<section id="linker-flags">
+<h2>Linker Flags<a class="headerlink" href="#linker-flags" title="Permalink to this heading">#</a></h2>
+<p>To make sure the binary will run when copied across to the ppmac, the ARM libs are
+copied as well, but they will not be used by default. Linker flags are provided to
+embed the dynamic linker and the library paths within the binary. These are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-Wl,--disable-new-dtags,-rpath</span></code> | Set search paths for libraries</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-Wl,-dynamic-linker</span></code> | Set dynamic linker</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">--disable-new-dtags</span></code> flag is used to set <code class="docutils literal notranslate"><span class="pre">RPATH</span></code> rather than <code class="docutils literal notranslate"><span class="pre">RUNPATH</span></code>, which seems
+to be necesary to acheive the desired behaviour when running on the ppmac. The binary
+can be expected with readelf to confirm the RPATH is set:`</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# readelf -d /root/prefix/bin/pmacFilterControl
+
+Dynamic section at offset 0x8fbc8 contains <span class="m">36</span> entries:
+  Tag        Type                         Name/Value
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libzmq.so.5<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libpthread.so.0<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libppmac.so<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libpthread_rt.so.1<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libxenomai.so.0<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libstdc++.so.6<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libgcc_s.so.1<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>libc.so.6<span class="o">]</span>
+ 0x00000001 <span class="o">(</span>NEEDED<span class="o">)</span>                     Shared library: <span class="o">[</span>ld-linux-armhf.so.3<span class="o">]</span>
+ 0x0000000f <span class="o">(</span>RPATH<span class="o">)</span>                      Library rpath: <span class="o">[</span>/root/prefix/lib/:/root/libzmq/prefix/lib/:/root/lib<span class="o">]</span>
+...
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ldd</span></code> is also useful to see what the flags change:</p>
+<ul class="simple">
+<li><p>With the correct flags (and the application runs without setting `LD_LIBRARY_PATH):</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# ldd /root/prefix/bin/pmacFilterControl
+    libzmq.so.5 <span class="o">=</span>&gt; /root/libzmq/prefix/lib/libzmq.so.5 <span class="o">(</span>0x76e4a000<span class="o">)</span>
+    libpthread.so.0 <span class="o">=</span>&gt; /root/lib/libpthread.so.0 <span class="o">(</span>0x76e24000<span class="o">)</span>
+    libppmac.so <span class="o">=</span>&gt; /root/prefix/lib/libppmac.so <span class="o">(</span>0x76ab9000<span class="o">)</span>
+    libpthread_rt.so.1 <span class="o">=</span>&gt; /root/prefix/lib/libpthread_rt.so.1 <span class="o">(</span>0x76a9f000<span class="o">)</span>
+    libxenomai.so.0 <span class="o">=</span>&gt; /root/prefix/lib/libxenomai.so.0 <span class="o">(</span>0x76a89000<span class="o">)</span>
+    libstdc++.so.6 <span class="o">=</span>&gt; /root/lib/libstdc++.so.6 <span class="o">(</span>0x7693f000<span class="o">)</span>
+    libgcc_s.so.1 <span class="o">=</span>&gt; /root/lib/libgcc_s.so.1 <span class="o">(</span>0x76916000<span class="o">)</span>
+    libc.so.6 <span class="o">=</span>&gt; /root/lib/libc.so.6 <span class="o">(</span>0x76817000<span class="o">)</span>
+    /root/lib/ld-linux-armhf.so.3 <span class="o">=</span>&gt; /lib/ld-linux-armhf.so.3 <span class="o">(</span>0x54b12000<span class="o">)</span>
+    libdl.so.2 <span class="o">=</span>&gt; /root/lib/libdl.so.2 <span class="o">(</span>0x76804000<span class="o">)</span>
+    libmath.so <span class="o">=</span>&gt; /opt/ppmac/libmath/libmath.so <span class="o">(</span>0x767e5000<span class="o">)</span>
+    librt.so.1 <span class="o">=</span>&gt; /root/lib/librt.so.1 <span class="o">(</span>0x767ce000<span class="o">)</span>
+    libm.so.6 <span class="o">=</span>&gt; /root/lib/libm.so.6 <span class="o">(</span>0x76765000<span class="o">)</span>
+root@172.23.107.175:/opt/ppmac# /root/prefix/bin/pmacFilterControl
+Must pass control_port and data_endpoint - e.g. <span class="s1">&#39;10000 127.0.0.1:10000&#39;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Without <code class="docutils literal notranslate"><span class="pre">--disable-new-dtags</span></code>:</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# ldd /root/prefix/bin/pmacFilterControl
+/root/prefix/bin/pmacFilterControl: /lib/arm-linux-gnueabihf/libm.so.6: version GLIBC_2.29 not found <span class="o">(</span>required by /root/lib/libstdc++.so.6<span class="o">)</span>
+    libzmq.so.5 <span class="o">=</span>&gt; /root/libzmq/prefix/lib/libzmq.so.5 <span class="o">(</span>0x76e1e000<span class="o">)</span>
+    libpthread.so.0 <span class="o">=</span>&gt; /root/lib/libpthread.so.0 <span class="o">(</span>0x76df8000<span class="o">)</span>
+    libppmac.so <span class="o">=</span>&gt; /root/prefix/lib/libppmac.so <span class="o">(</span>0x76a8d000<span class="o">)</span>
+    libpthread_rt.so.1 <span class="o">=</span>&gt; /root/prefix/lib/libpthread_rt.so.1 <span class="o">(</span>0x76a73000<span class="o">)</span>
+    libxenomai.so.0 <span class="o">=</span>&gt; /root/prefix/lib/libxenomai.so.0 <span class="o">(</span>0x76a5d000<span class="o">)</span>
+    libstdc++.so.6 <span class="o">=</span>&gt; /root/lib/libstdc++.so.6 <span class="o">(</span>0x76913000<span class="o">)</span>
+    libgcc_s.so.1 <span class="o">=</span>&gt; /root/lib/libgcc_s.so.1 <span class="o">(</span>0x768ea000<span class="o">)</span>
+    libc.so.6 <span class="o">=</span>&gt; /root/lib/libc.so.6 <span class="o">(</span>0x767eb000<span class="o">)</span>
+    /root/lib/ld-linux-armhf.so.3 <span class="o">=</span>&gt; /lib/ld-linux-armhf.so.3 <span class="o">(</span>0x54b36000<span class="o">)</span>
+    libdl.so.2 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/libdl.so.2 <span class="o">(</span>0x767d2000<span class="o">)</span>
+    libmath.so <span class="o">=</span>&gt; /opt/ppmac/libmath/libmath.so <span class="o">(</span>0x767b3000<span class="o">)</span>
+    librt.so.1 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/librt.so.1 <span class="o">(</span>0x7679c000<span class="o">)</span>
+    libm.so.6 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/libm.so.6 <span class="o">(</span>0x76728000<span class="o">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Without rpath or dynamic linker set:</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# ldd /root/prefix/bin/pmacFilterControl
+/root/prefix/bin/pmacFilterControl: /usr/lib/arm-linux-gnueabihf/libstdc++.so.6: version GLIBCXX_3.4.22 not found <span class="o">(</span>required by /root/prefix/bin/pmacFilterControl<span class="o">)</span>
+/root/prefix/bin/pmacFilterControl: /usr/lib/arm-linux-gnueabihf/libstdc++.so.6: version GLIBCXX_3.4.21 not found <span class="o">(</span>required by /root/prefix/bin/pmacFilterControl<span class="o">)</span>
+	libzmq.so.5 <span class="o">=</span>&gt; not found
+	libpthread.so.0 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/libpthread.so.0 <span class="o">(</span>0x76e95000<span class="o">)</span>
+	libppmac.so <span class="o">=</span>&gt; not found
+	libpthread_rt.so.1 <span class="o">=</span>&gt; /usr/xenomai/lib/libpthread_rt.so.1 <span class="o">(</span>0x76e7b000<span class="o">)</span>
+	libxenomai.so.0 <span class="o">=</span>&gt; /usr/xenomai/lib/libxenomai.so.0 <span class="o">(</span>0x76e65000<span class="o">)</span>
+	libstdc++.so.6 <span class="o">=</span>&gt; /usr/lib/arm-linux-gnueabihf/libstdc++.so.6 <span class="o">(</span>0x76dae000<span class="o">)</span>
+	libgcc_s.so.1 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/libgcc_s.so.1 <span class="o">(</span>0x76d84000<span class="o">)</span>
+	libc.so.6 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/libc.so.6 <span class="o">(</span>0x76c94000<span class="o">)</span>
+	/lib/ld-linux-armhf.so.3 <span class="o">(</span>0x54b3c000<span class="o">)</span>
+	librt.so.1 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/librt.so.1 <span class="o">(</span>0x76c7e000<span class="o">)</span>
+	libm.so.6 <span class="o">=</span>&gt; /lib/arm-linux-gnueabihf/libm.so.6 <span class="o">(</span>0x76c0a000<span class="o">)</span>
+</pre></div>
+</div>
+</section>
+<section id="wrapped-symbols">
+<h2>Wrapped symbols<a class="headerlink" href="#wrapped-symbols" title="Permalink to this heading">#</a></h2>
+<p>The ppmac libraries are linked using the flags <code class="docutils literal notranslate"><span class="pre">-Wl,--wrap,&lt;function&gt;</span></code>, which invoke some
+linker magic to allow the linker to ignore resolving the given symbol and it can then be
+provided by another library when linking the final binary. This seems to be used to
+patch kernel functions with real-time code using xenomai. Client applications must be
+linked against these xenomai libs - without it gcc will give link errors such as, e.g.,
+<code class="docutils literal notranslate"><span class="pre">libppmac.so:</span> <span class="pre">undefined</span> <span class="pre">reference</span> <span class="pre">to</span> <span class="pre">__wrap_listen</span></code>.</p>
+<section id="example-build-through-power-pmac-ide">
+<h3>Example build through Power PMAC IDE<a class="headerlink" href="#example-build-through-power-pmac-ide" title="Permalink to this heading">#</a></h3>
+<p>The following snippet from the build log in the PowerPMAC IDE shows these flags being
+used and linking against <code class="docutils literal notranslate"><span class="pre">xenomai</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>arm-omron49-linux-gnueabihf-gcc -mhard-float -funsigned-char --sysroot<span class="o">=</span>/opt/armv71-4.1.18-ipipe -I/usr/local/dtlibs/rtpmac -I/usr/local/dtlibs/libppmac -I/usr/local/dtlibs/libopener -I/opt/armv71-4.1.18-ipipe/usr/xenomai/include -I/opt/armv71-4.1.18-ipipe/usr/xenomai/include/posix  -I/usr/local/dtlibs/libmath -D_GNU_SOURCE -D_REENTRANT -D__XENO__  -DOPENER_SUPPORT_64BIT_DATATYPES  -g3 -c capp1.c -o capp1.o
+arm-omron49-linux-gnueabihf-gcc -o <span class="s2">&quot;../../../Bin/Debug/capp1.out&quot;</span> capp1.o -ldl -lppmac -lpthread_rt -lxenomai -lpthread -lgcc_s -lmath -lm -L/usr/local/dtlibs/libmath --sysroot<span class="o">=</span>/opt/armv71-4.1.18-ipipe -L../../../Bin/Debug/ -L/opt/armv71-4.1.18-ipipe/usr/xenomai/lib -L/usr/local/dtlibs/libppmac -L/usr/local/dtlibs/rtpmac -Wl,-rpath,/var/ftp/usrflash/Project/C<span class="se">\ </span>Language/Libraries -Wl,-rpath,/var/ftp/usrflash/Project/Bin/Debug -Wl,-rpath,/opt/ppmac/libppmac -Wl,-rpath,/opt/ppmac/libmath -Wl,-rpath-link,/opt/armv71-4.1.18-ipipe/lib/arm-linux-gnueabihf -Wl,--wrap,shm_open -Wl,--wrap,pthread_create -Wl,--wrap,pthread_create -Wl,--wrap,pthread_setschedparam -Wl,--wrap,pthread_getschedparam -Wl,--wrap,pthread_yield -Wl,--wrap,sched_yield -Wl,--wrap,pthread_kill -Wl,--wrap,sem_init -Wl,--wrap,sem_destroy -Wl,--wrap,sem_post -Wl,--wrap,sem_timedwait -Wl,--wrap,sem_wait -Wl,--wrap,sem_trywait -Wl,--wrap,sem_getvalue -Wl,--wrap,sem_open -Wl,--wrap,sem_close -Wl,--wrap,sem_unlink -Wl,--wrap,clock_getres -Wl,--wrap,clock_gettime -Wl,--wrap,clock_settime -Wl,--wrap,clock_nanosleep -Wl,--wrap,nanosleep -Wl,--wrap,pthread_mutexattr_init -Wl,--wrap,pthread_mutexattr_destroy -Wl,--wrap,pthread_mutexattr_gettype -Wl,--wrap,pthread_mutexattr_settype -Wl,--wrap,pthread_mutexattr_getprotocol -Wl,--wrap,pthread_mutexattr_setprotocol -Wl,--wrap,pthread_mutexattr_getpshared -Wl,--wrap,pthread_mutexattr_setpshared -Wl,--wrap,pthread_mutex_init -Wl,--wrap,pthread_mutex_destroy -Wl,--wrap,pthread_mutex_lock -Wl,--wrap,pthread_mutex_trylock -Wl,--wrap,pthread_mutex_timedlock -Wl,--wrap,pthread_mutex_unlock -Wl,--wrap,pthread_condattr_init -Wl,--wrap,pthread_condattr_destroy -Wl,--wrap,pthread_condattr_getclock -Wl,--wrap,pthread_condattr_setclock -Wl,--wrap,pthread_condattr_getpshared -Wl,--wrap,pthread_condattr_setpshared -Wl,--wrap,pthread_cond_init -Wl,--wrap,pthread_cond_destroy -Wl,--wrap,pthread_cond_wait -Wl,--wrap,pthread_cond_timedwait -Wl,--wrap,pthread_cond_signal -Wl,--wrap,pthread_cond_broadcast -Wl,--wrap,mq_open -Wl,--wrap,mq_close -Wl,--wrap,mq_unlink -Wl,--wrap,mq_getattr -Wl,--wrap,mq_setattr -Wl,--wrap,mq_send -Wl,--wrap,mq_timedsend -Wl,--wrap,mq_receive -Wl,--wrap,mq_timedreceive -Wl,--wrap,mq_notify -Wl,--wrap,open -Wl,--wrap,socket -Wl,--wrap,close -Wl,--wrap,ioctl -Wl,--wrap,read -Wl,--wrap,write -Wl,--wrap,recvmsg -Wl,--wrap,sendmsg -Wl,--wrap,recvfrom -Wl,--wrap,sendto -Wl,--wrap,recv -Wl,--wrap,send -Wl,--wrap,getsockopt -Wl,--wrap,setsockopt -Wl,--wrap,bind -Wl,--wrap,connect -Wl,--wrap,listen -Wl,--wrap,accept -Wl,--wrap,getsockname -Wl,--wrap,getpeername -Wl,--wrap,shutdown -Wl,--wrap,timer_create -Wl,--wrap,timer_delete -Wl,--wrap,timer_settime -Wl,--wrap,timer_getoverrun -Wl,--wrap,timer_gettime -Wl,--wrap,ftruncate -Wl,--wrap,ftruncate64 -Wl,--wrap,close -Wl,--wrap,shm_open -Wl,--wrap,shm_unlink -Wl,--wrap,mmap -Wl,--wrap,mmap64 -Wl,--wrap,munmap -Wl,--wrap,select
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+            </article>
+            
+            
+            
+            <footer class="bd-footer-article">
+                <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+  <a class='left-prev' id="prev-link" href="ppmac_deploy.html" title="previous page">
+      <i class="fas fa-angle-left"></i>
+      <div class="prev-next-info">
+          <p class="prev-next-subtitle">previous</p>
+          <p class="prev-next-title">Building and Deploying pmacFilterControl</p>
+      </div>
+  </a>
+  <a class='right-next' id="next-link" href="../docs.html" title="next page">
+  <div class="prev-next-info">
+      <p class="prev-next-subtitle">next</p>
+      <p class="prev-next-title">Docs</p>
+  </div>
+  <i class="fas fa-angle-right"></i>
+  </a>
+</div>
+            </footer>
+            
+          </div>
+          
+          
+          
+            <div class="bd-sidebar-secondary bd-toc">
+              
+<div class="toc-item">
+  
+<div class="tocsection onthispage">
+    <i class="fas fa-list"></i> On this page
+</div>
+<nav id="bd-toc-nav" class="page-toc">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#linker-flags">
+   Linker Flags
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#wrapped-symbols">
+   Wrapped symbols
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#example-build-through-power-pmac-ide">
+     Example build through Power PMAC IDE
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+</nav>
+</div>
+
+            </div>
+          
+          
+        </div>
+        <footer class="bd-footer-content">
+          <div class="bd-footer-content__inner">
+            
+          </div>
+        </footer>
+        
+      </main>
+    </div>
+  </div>
+
+  
+    
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/pydata-sphinx-theme.js?digest=9b1a4fa89bdd0e95b23b"></script>
+
+  <footer class="bd-footer"><div class="bd-footer__inner container">
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+  </footer>
+  </body>
+</html>
