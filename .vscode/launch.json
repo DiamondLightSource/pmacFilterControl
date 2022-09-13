@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/pmacFilterControl",
             "args": [
-                "10001",
-                "127.0.0.1:10000"
+                "10000",
+                "127.0.0.1:10001,127.0.0.1:10002"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -32,7 +32,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
             "args": [
-                "tcp://${input:Host}:10001",
+                "tcp://${input:Host}:10000",
                 "{\\\"command\\\": \\\"${input:Command}\\\"}"
             ],
             "stopAtEntry": false,
@@ -54,8 +54,30 @@
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
             "args": [
-                "tcp://${input:Host}:10001",
+                "tcp://${input:Host}:10000",
                 "{\\\"command\\\": \\\"configure\\\", \\\"params\\\": {\\\"${input:Config}\\\": ${input:Value}}}"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Request pmacFilterControl status",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
+            "args": [
+                "tcp://${input:Host}:10000",
+                "{\\\"command\\\": \\\"status\\\"}"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

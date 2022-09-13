@@ -1,8 +1,9 @@
 // An application to listen on a ZMQ channel for histograms and adjust a filter set
 
-#include <iostream>
+#include <iostream>  // std::cout
 #include <functional>  // std::bind
 #include <time.h>  // timespec, CLOCK_REALTIME
+#include <sstream>  // std::stringstream, std::getline
 
 #include "pmacFilterControl.h"
 
@@ -14,6 +15,7 @@
 
 const int FILTER_TRAVEL = 100;  // Filter travel in counts to move a filter into the beam
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
+const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -63,17 +65,17 @@ const int64_t NO_FRAMES_PROCESSED = -1;
     Setup ZeroMQ sockets
 
     @param[in] control_port Port number to bind control socket to
-    @param[in] data_endpoint Endpoint (`IP`:`PORT`) to subscribe on for data messages
+    @param[in] data_endpoints Vector of endpoints (`IP`:`PORT`) to subscribe on for data messages
 */
 PMACFilterController::PMACFilterController(
     const std::string& control_port,
-    const std::string& data_endpoint
+    const std::vector<std::string>& data_endpoints
 ) :
     control_channel_endpoint_("tcp://*:" + control_port),
-    data_channel_endpoint_("tcp://" + data_endpoint),
+    data_channel_endpoints_(data_endpoints),
     zmq_context_(),
     zmq_control_socket_(zmq_context_, ZMQ_REP),
-    zmq_data_socket_(zmq_context_, ZMQ_SUB),
+    zmq_data_sockets_(),
     shutdown_(false),
     pixel_count_threshold_(2),
     last_processed_frame_(NO_FRAMES_PROCESSED),
@@ -85,8 +87,17 @@ PMACFilterController::PMACFilterController(
     mode_(ControlMode::active)
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
-    this->zmq_data_socket_.connect(data_channel_endpoint_.c_str());
-    this->zmq_data_socket_.setsockopt(ZMQ_SUBSCRIBE, "", 0);  // "" -> No topic filter
+
+    // Open sockets to subscribe to data endpoints
+    for (int idx = 0; idx != this->data_channel_endpoints_.size(); idx++) {
+        this->zmq_data_sockets_.push_back(zmq::socket_t(this->zmq_context_, ZMQ_SUB));
+        // Only recv most recent message
+        const int conflate = 1;
+        this->zmq_data_sockets_[idx].setsockopt(ZMQ_CONFLATE, &conflate, sizeof(conflate));
+        // Subscribe to all topics ("" -> No topic filter)
+        this->zmq_data_sockets_[idx].setsockopt(ZMQ_SUBSCRIBE, "", 0);
+        this->zmq_data_sockets_[idx].connect(this->data_channel_endpoints_[idx].c_str());
+    }
 }
 
 /*!
@@ -95,10 +106,12 @@ PMACFilterController::PMACFilterController(
     Close ZeroMQ sockets
 
 */
-PMACFilterController::~PMACFilterController()
-{
+PMACFilterController::~PMACFilterController() {
     this->zmq_control_socket_.close();
-    this->zmq_data_socket_.close();
+    std::vector<zmq::socket_t>::iterator it;
+    for (it = this->zmq_data_sockets_.begin(); it != this->zmq_data_sockets_.end(); it++) {
+        it->close();
+    }
 }
 
 /*!
@@ -208,34 +221,58 @@ void PMACFilterController::run() {
     This function should be run in a spawned thread and will return when `shutdown_`.
 */
 void PMACFilterController::_process_data_channel() {
-    std::cout << "Listening on " << data_channel_endpoint_ << std::endl;
+    // Construct pollitems for data sockets
+    zmq::pollitem_t pollitems[this->zmq_data_sockets_.size()] = {};
+    for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
+        zmq::pollitem_t pollitem = {this->zmq_data_sockets_[idx], 0, ZMQ_POLLIN, 0};
+        pollitems[idx] = pollitem;
+    }
+
+    std::cout << "Listening for messages..." << std::endl;
 
     std::string data_str;
-    struct timespec start_ts, end_ts;
-    size_t start_ns, end_ns;
+    struct timespec start_ts;
     while (!this->shutdown_) {
-        if (this->_poll(100) && this->mode_ != ControlMode::idle) {
-            clock_gettime(CLOCK_REALTIME, &start_ts);
-            zmq::message_t data_message;
-            this->zmq_data_socket_.recv(&data_message);
-            data_str = std::string(
-                static_cast<char*>(data_message.data()), data_message.size()
-            );
-            std::cout << "Data received: " << data_str << std::endl;
+        if (this->mode_ != ControlMode::idle) {
+            // Poll data sockets
+            zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
+            for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
+                if (_message_queued(pollitems[idx])) {
+                    clock_gettime(CLOCK_REALTIME, &start_ts);
 
-            json data = this->_parse_json_string(data_str);
-            if (!data.is_null()) {
-                this->_process_data(data);
+                    zmq::message_t data_message;
+                    this->zmq_data_sockets_[idx].recv(&data_message);
+
+                    data_str = std::string(
+                        static_cast<char*>(data_message.data()), data_message.size()
+                    );
+                    std::cout << "Data received: " << data_str << std::endl;
+
+                    json data = this->_parse_json_string(data_str);
+                    if (!data.is_null()) {
+                        this->_process_data(data);
+                    }
+
+                    this->_calculate_process_time(start_ts);
+                }
             }
-            clock_gettime(CLOCK_REALTIME, &end_ts);
-
-            // TODO: Put this in a method
-            start_ns = ((size_t) start_ts.tv_sec * 1000000000) + (size_t) start_ts.tv_nsec;
-            end_ns = ((size_t) end_ts.tv_sec * 1000000000) + (size_t) end_ts.tv_nsec;
-            this->process_time_ = (end_ns - start_ns) / 1000;
-            std::cout << "Process time: " << this->process_time_ << "us" << std::endl;
         }
     }
+}
+
+/*!
+    @brief Calculate and store time since given timespec
+
+    @param[in] start_ts Timespec of process time
+*/
+void PMACFilterController::_calculate_process_time(struct timespec& start_ts) {
+    struct timespec end_ts;
+    size_t start_ns, end_ns;
+    clock_gettime(CLOCK_REALTIME, &end_ts);
+    start_ns = ((size_t) start_ts.tv_sec * 1000000000) + (size_t) start_ts.tv_nsec;
+    end_ns = ((size_t) end_ts.tv_sec * 1000000000) + (size_t) end_ts.tv_nsec;
+    this->process_time_ = (end_ns - start_ns) / 1000;
+    std::cout << "Process time: " << this->process_time_ << "us" << std::endl;
 }
 
 /*!
@@ -363,34 +400,16 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 }
 
 /*!
-    @brief Poll the ZeroMQ data socket for events
-
-    If this function returns true then a subsequent `recv()` on the socket will return a message.
-
-    @param[in] timeout_ms Poll duration in milliseconds
-
-    @return true if there is a message on the socket, else false (after the timeout has elapsed)
-*/
-bool PMACFilterController::_poll(long timeout_ms)
-{
-    zmq::pollitem_t pollitems[] = {{this->zmq_data_socket_, 0, ZMQ_POLLIN, 0}};
-    zmq::poll(pollitems, 1, timeout_ms);
-
-    return (pollitems[0].revents & ZMQ_POLLIN);
-}
-
-/*!
     @brief Application entrypoint
 
     Validate command line arguments, create PMACFilterController and run.
 
     @return 0 when shutdown cleanly, 1 when given invalid arguments
 */
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     if (argc != 3) {
         std::cout << "Usage: " << argv[0] << " control_port data_endpoint\n"
-            << "e.g. '" << argv[0] << " 10001 127.0.0.1:10000'" << std::endl;
+            << "e.g. '" << argv[0] << " 10000 127.0.0.1:10001'" << std::endl;
 
         if (argc == 2 && std::string(argv[1]) == "--help") {
             return 0;
@@ -401,8 +420,9 @@ int main(int argc, char** argv)
     std::cout << "Version: " << VERSION << std::endl;
 
     std::string control_port(argv[1]);
-    std::string data_endpoint(argv[2]);
-    PMACFilterController pfc(control_port, data_endpoint);
+    std::vector<std::string> data_endpoints = _parse_endpoints(std::string(argv[2]));
+
+    PMACFilterController pfc(control_port, data_endpoints);
 
 #ifdef __ARM_ARCH
     InitLibrary();
@@ -416,4 +436,39 @@ int main(int argc, char** argv)
 #endif
 
     return 0;
+}
+
+
+/* Helper Methods */
+
+/*!
+    @brief Parse comma-separated string of endpoints from command line
+
+    @param[in] endpoint_arg Comma-separated string of endpoints
+
+    @return Vector of endpoints
+*/
+std::vector<std::string> _parse_endpoints(std::string endpoint_arg) {
+    std::stringstream stream(endpoint_arg);
+
+    std::vector<std::string> endpoint_vector;
+    std::string endpoint;
+    while (std::getline(stream, endpoint, ',')) {
+        endpoint_vector.push_back("tcp://" + endpoint);
+    }
+
+    return endpoint_vector;
+}
+
+/*!
+    @brief Check if a message is queued on the socket corresponding to the pollitem
+
+    If this function returns true, then a `recv()` on the socket will return a message immediately.
+
+    @param[in] pollitem `zmq_pollitem` corresponding to a `zmq_socket`
+
+    @return true if there is a message queued on the socket, else false
+*/
+bool _message_queued(zmq::pollitem_t& pollitem) {
+    return pollitem.revents & ZMQ_POLLIN;
 }

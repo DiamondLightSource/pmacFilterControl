@@ -1,5 +1,6 @@
 import random
 import time
+from typing import List
 
 import typer
 import zmq
@@ -17,20 +18,25 @@ JSON_TEMPLATE = """
 }}
 """
 
-THRESHOLD_LEVEL = 3
+THRESHOLD_LEVEL = 4
 
 
-def main(port: int = 10000, rate: float = 1):
-    endpoint = f"tcp://*:{port}"
-    print(f"Publishing on {endpoint}")
+def main(ports: List[int] = [10001], rate: float = 1):
+    context = zmq.Context()
+
+    endpoints = [f"tcp://*:{port}" for port in ports]
+    print(f"Publishing on {endpoints}")
+
+    sockets = []
+    for endpoint in endpoints:
+        socket = context.socket(zmq.PUB)
+        socket.bind(endpoint)
+        sockets.append(socket)
+
     delay = 1.0 / rate
     print(f"{rate}Hz -> {delay}s per message")
 
-    context = zmq.Context()
-    socket = context.socket(zmq.PUB)
-    socket.bind(endpoint)
-
-    frame_number = 1
+    frame_number = 0
     while True:
         formatter = dict(
             frame_number=frame_number,
@@ -40,10 +46,12 @@ def main(port: int = 10000, rate: float = 1):
             low1=random.randrange(0, THRESHOLD_LEVEL + 2),
             low2=random.randrange(0, THRESHOLD_LEVEL + 2),
         )
-
         message = JSON_TEMPLATE.format(**formatter)
+
+        idx = frame_number % len(sockets)
+        print(f"{endpoints[idx]} -> ")
         print(message)
-        socket.send_string(message)
+        sockets[idx].send_string(message)
 
         time.sleep(delay)
 

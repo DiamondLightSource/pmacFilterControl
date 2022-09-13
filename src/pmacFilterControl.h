@@ -15,8 +15,8 @@ class PMACFilterController
 {
     public:
         PMACFilterController(
-            const std::string& data_endpoint,
-            const std::string& control_port
+            const std::string& control_port,
+            const std::vector<std::string>& data_endpoints
         );
         ~PMACFilterController();
         void run();
@@ -24,12 +24,13 @@ class PMACFilterController
     private:
         // Endpoint for control channel
         std::string control_channel_endpoint_;
-        // Endpoint for data channel
-        std::string data_channel_endpoint_;
+        // Endpoint for data channels
+        std::vector<std::string> data_channel_endpoints_;
         // ZMQ Context
         zmq::context_t zmq_context_;
         // ZMQ Sockets
-        zmq::socket_t zmq_control_socket_, zmq_data_socket_;
+        zmq::socket_t zmq_control_socket_;
+        std::vector<zmq::socket_t> zmq_data_sockets_;
         // Thread to subscribe to data channel and control filters
         std::thread listenThread_;
         // Flag to interupt listen loop and shutdown process
@@ -61,10 +62,14 @@ class PMACFilterController
         bool _handle_request(const json& request);
         bool _set_mode(std::string);
         void _process_data_channel();
-        bool _poll(long timeout_ms);
+        void _calculate_process_time(struct timespec& start_ts);
         void _process_data(const json& data);
         json _parse_json_string(const std::string& json_string);
         void _send_filter_adjustment(int adjustment);
 };
+
+/* Helper methods */
+std::vector<std::string> _parse_endpoints(std::string endpoint_arg);
+bool _message_queued(zmq::pollitem_t& pollitem);
 
 #endif  // PMAC_FILTER_CONTROLLER_H_
