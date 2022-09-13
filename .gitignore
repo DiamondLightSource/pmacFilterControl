@@ -1,6 +1,10 @@
 /*prefix*
 /**/*build*
 
+# Python
+**/__pycache__
+**/venv
+
 # Ignore copied in libraries
 thirdparty/ppmac
 thirdparty/xenomai
