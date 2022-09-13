@@ -12,37 +12,35 @@
 
 #define VERSION 106
 
-// Filter travel in counts to move a filter into the beam
-#define FILTER_TRAVEL 100
-#define MAX_ATTENUATION 15
+const int FILTER_TRAVEL = 100;  // Filter travel in counts to move a filter into the beam
+const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
 char CLOSE_SHUTTER[] = "#5J=1000";
 
 // Control message keys
-static const std::string COMMAND = "command";
-static const std::string COMMAND_SHUTDOWN = "shutdown";
-static const std::string COMMAND_CONFIGURE = "configure";
-static const std::string COMMAND_RESET = "reset";
-static const std::string PARAMS = "params";
-static const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
-static const std::string CONFIG_MODE = "mode";
-static const std::string CONFIG_MODE_IDLE = "idle";
-static const std::string CONFIG_MODE_ACTIVE = "active";
-static const std::string CONFIG_MODE_ONESHOT = "oneshot";
-
+const std::string COMMAND = "command";
+const std::string COMMAND_SHUTDOWN = "shutdown";
+const std::string COMMAND_CONFIGURE = "configure";
+const std::string COMMAND_RESET = "reset";
+const std::string PARAMS = "params";
+const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
+const std::string CONFIG_MODE = "mode";
+const std::string CONFIG_MODE_IDLE = "idle";
+const std::string CONFIG_MODE_ACTIVE = "active";
+const std::string CONFIG_MODE_ONESHOT = "oneshot";
 // Data message keys
-static const std::string FRAME_NUMBER = "frame_number";
-static const std::string PARAMETERS = "parameters";
-static const std::string PARAM_LOW1 = "low1";
-static const std::string PARAM_LOW2 = "low2";
-static const std::string PARAM_HIGH1 = "high1";
-static const std::string PARAM_HIGH2 = "high2";
+const std::string FRAME_NUMBER = "frame_number";
+const std::string PARAMETERS = "parameters";
+const std::string PARAM_LOW1 = "low1";
+const std::string PARAM_LOW2 = "low2";
+const std::string PARAM_HIGH1 = "high1";
+const std::string PARAM_HIGH2 = "high2";
 
 // The priority in which to process the thresholds.
 // If PARAM_HIGH2 is triggered, then apply it, else if PARAM_HIGH1 is triggered, apply that, etc.
-static const std::vector<std::string> THRESHOLD_PRECEDENCE = {
+const std::vector<std::string> THRESHOLD_PRECEDENCE = {
     PARAM_HIGH2, PARAM_HIGH1, PARAM_LOW2, PARAM_LOW1
 };
 
@@ -51,12 +49,12 @@ static const std::vector<std::string> THRESHOLD_PRECEDENCE = {
 // PARAM_HIGH1 -> Add a level of attenuation
 // PARAM_LOW1 -> Subtract 1 level of attenuation
 // PARAM_LOW2 -> Subtract 2 levels of attenuation
-static const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
+const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
     {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}
 };
 
 // An initial invalid value to compare with `last_processed_frame_` that always passes the ignore frame checks
-int64_t NO_FRAMES_PROCESSED = -1;
+const int64_t NO_FRAMES_PROCESSED = -1;
 
 
 /*!
