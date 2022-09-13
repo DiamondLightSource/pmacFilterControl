@@ -96,6 +96,7 @@
             "type": "pickString",
             "options": [
                 "pixel_count_threshold",
+                "mode",
             ],
         },
         {

@@ -27,6 +27,11 @@ static const std::string COMMAND_CONFIGURE = "configure";
 static const std::string COMMAND_RESET = "reset";
 static const std::string PARAMS = "params";
 static const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
+static const std::string CONFIG_MODE = "mode";
+static const std::string CONFIG_MODE_IDLE = "idle";
+static const std::string CONFIG_MODE_ACTIVE = "active";
+static const std::string CONFIG_MODE_ONESHOT = "oneshot";
+
 // Data message keys
 static const std::string FRAME_NUMBER = "frame_number";
 static const std::string PARAMETERS = "parameters";
@@ -78,7 +83,8 @@ PMACFilterController::PMACFilterController(
     current_attenuation_(0),
     current_demand_(4, 0),
     post_in_demand_(4, 0),
-    final_demand_(4, 0)
+    final_demand_(4, 0),
+    mode_(ControlMode::active)
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
     this->zmq_data_socket_.connect(data_channel_endpoint_.c_str());
@@ -122,7 +128,35 @@ bool PMACFilterController::_handle_request(const json& request) {
             // TODO: Falls over if value is string
             this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
             success = true;
+        } else if (config.contains(CONFIG_MODE)) {
+            success = this->_set_mode(config[CONFIG_MODE]);
         }
+    }
+
+    return success;
+}
+
+/*!
+    @brief Set the mode enum based on a string representation
+
+    @param[in] mode String of mode to set
+
+    @return true if the mode was set successfully, else false
+*/
+bool PMACFilterController::_set_mode(std::string mode) {
+    bool success = true;
+    std::cout << "Changing to " << mode << " mode" << std::endl;
+    if (mode == CONFIG_MODE_IDLE) {
+        this->mode_ = ControlMode::idle;
+    }
+    else if (mode == CONFIG_MODE_ACTIVE) {
+        this->mode_ = ControlMode::active;
+    }
+    else if (mode == CONFIG_MODE_ONESHOT) {
+        this->mode_ = ControlMode::oneshot;
+    } else {
+        std::cout << "Unknown mode: " << mode << std::endl;
+        success = false;
     }
 
     return success;
@@ -182,7 +216,7 @@ void PMACFilterController::_process_data_channel() {
     struct timespec start_ts, end_ts;
     size_t start_ns, end_ns;
     while (!this->shutdown_) {
-        if (this->_poll(100)) {
+        if (this->_poll(100) && this->mode_ != ControlMode::idle) {
             clock_gettime(CLOCK_REALTIME, &start_ts);
             zmq::message_t data_message;
             this->zmq_data_socket_.recv(&data_message);

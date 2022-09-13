@@ -9,6 +9,8 @@ using json = nlohmann::json;
 #ifndef PMAC_FILTER_CONTROLLER_H_
 #define PMAC_FILTER_CONTROLLER_H_
 
+enum ControlMode {idle, active, oneshot};
+
 class PMACFilterController
 {
     public:
@@ -53,7 +55,11 @@ class PMACFilterController
         // Duration in microseconds of previous process
         size_t process_time_;
 
+        // The current mode of operation
+        ControlMode mode_;
+
         bool _handle_request(const json& request);
+        bool _set_mode(std::string);
         void _process_data_channel();
         bool _poll(long timeout_ms);
         void _process_data(const json& data);
