@@ -93,9 +93,9 @@ PMACFilterController::PMACFilterController(
     last_processed_frame_(NO_FRAMES_PROCESSED),
     new_attenuation_(0),
     current_attenuation_(0),
-    current_demand_(4, 0),
-    post_in_demand_(4, 0),
-    final_demand_(4, 0),
+    current_demand_(FILTER_COUNT, 0),
+    post_in_demand_(FILTER_COUNT, 0),
+    final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
     mode_(ControlMode::active),
     pixel_count_threshold_(2),
@@ -207,7 +207,9 @@ bool PMACFilterController::_handle_config(const json& config) {
 */
 bool PMACFilterController::_set_mode(std::string mode) {
     bool success = true;
+
     std::cout << "Changing to " << mode << " mode" << std::endl;
+
     if (mode == CONFIG_MODE_IDLE) {
         this->mode_ = ControlMode::idle;
     }
@@ -437,12 +439,12 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     std::cout << "New attenuation: " << this->new_attenuation_ << std::endl;
 
     std::cout << "Adjustments (Current | In | Final):" << std::endl;
-    for (int i = 0; i < 4; ++i) {
-        this->final_demand_[i] = (this->new_attenuation_ >> i) & 1;
-        this->post_in_demand_[i] = this->final_demand_[i] | this->current_demand_[i];
-        std::cout << this->current_demand_[i] << " | "
-            << this->post_in_demand_[i] << " | "
-            << this->final_demand_[i] << std::endl;
+    for (int idx = 0; idx < FILTER_COUNT; ++idx) {
+        this->final_demand_[idx] = (this->new_attenuation_ >> idx) & 1;
+        this->post_in_demand_[idx] = this->final_demand_[idx] | this->current_demand_[idx];
+        std::cout << this->current_demand_[idx] << " | "
+            << this->post_in_demand_[idx] << " | "
+            << this->final_demand_[idx] << std::endl;
     }
 
 #ifdef __ARM_ARCH
@@ -464,8 +466,8 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 #endif
 
     // Update current values for next incremental change
-    for (int i = 0; i < 4; ++i) {
-        this->current_demand_[i] = this->final_demand_[i];
+    for (int idx = 0; idx < FILTER_COUNT; ++idx) {
+        this->current_demand_[idx] = this->final_demand_[idx];
     }
     this->current_attenuation_ = this->new_attenuation_;
 }
