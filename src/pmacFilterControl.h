@@ -67,7 +67,8 @@ class PMACFilterController
         // Filter in positions in counts (can be +ve or -ve)
         std::vector<int> in_positions_;
 
-        bool _handle_request(const json& request);
+        bool _handle_request(const json& request, json& response);
+        void _handle_status(json& response);
         bool _handle_config(const json& config);
         bool _set_mode(ControlMode mode);
         bool _set_in_positions(json positions);

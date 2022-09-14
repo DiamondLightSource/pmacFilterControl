@@ -25,6 +25,7 @@ char CLOSE_SHUTTER[] = "#5J=1000";
 // Control message keys
 const std::string COMMAND = "command";
 const std::string COMMAND_SHUTDOWN = "shutdown";
+const std::string COMMAND_STATUS = "status";
 const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
 const std::string PARAMS = "params";
@@ -93,6 +94,7 @@ PMACFilterController::PMACFilterController(
     current_demand_(FILTER_COUNT, 0),
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
+    process_time_(0),
     // Default config parameter values
     mode_(ControlMode::ACTIVE),
     pixel_count_threshold_(2),
@@ -130,10 +132,11 @@ PMACFilterController::~PMACFilterController() {
     @brief Handle the JSON request from the control channel
 
     @param[in] request json object of request
+    @param[out] response json object to add response to
 
     @return true if the request was applied successfully, else false
 */
-bool PMACFilterController::_handle_request(const json& request) {
+bool PMACFilterController::_handle_request(const json& request, json& response) {
     bool success = false;
 
     if (request[COMMAND] == COMMAND_SHUTDOWN) {
@@ -143,6 +146,9 @@ bool PMACFilterController::_handle_request(const json& request) {
     } else if (request[COMMAND] == COMMAND_RESET) {
         std::cout << "Resetting frame counter" << std::endl;
         this->last_processed_frame_ = NO_FRAMES_PROCESSED;
+        success = true;
+    } else if (request[COMMAND] == COMMAND_STATUS) {
+        this->_handle_status(response);
         success = true;
     } else if (request[COMMAND] == COMMAND_CONFIGURE) {
         if (request.contains(PARAMS)) {
@@ -241,6 +247,23 @@ bool PMACFilterController::_set_in_positions(json positions) {
 }
 
 /*!
+    @brief Handle a status request from the control channel
+
+    @param[out] response json object to add status to
+*/
+void PMACFilterController::_handle_status(json& response) {
+    json status;
+    status["process_time"] = this->process_time_;
+    status["last_processed_frame"] = this->last_processed_frame_;
+    status["current_attenuation"] = this->current_attenuation_;
+    status["mode_rbv"] = this->mode_;
+    status["pixel_count_threshold_rbv"] = this->pixel_count_threshold_;
+    status["in_positions_rbv"] = this->in_positions_;
+
+    response[COMMAND_STATUS] = status;
+}
+
+/*!
     @brief Spawn data monitor thread and listen for control requests until shutdown
 */
 void PMACFilterController::run() {
@@ -257,24 +280,21 @@ void PMACFilterController::run() {
         request_str = std::string(
             static_cast<char*>(request_msg.data()), request_msg.size()
         );
-
         std::cout << "Request received: " << request_str << std::endl;
+
         bool success = false;
-        json request = this->_parse_json_string(request_str);
+        json request, response;
+        request = this->_parse_json_string(request_str);
         if (!request.is_null()) {
-            success = this->_handle_request(request);
+            success = this->_handle_request(request, response);
         }
+        response["success"] = success;
 
-        std::string response;
-        if (success) {
-            response = "ACK | " + request_str;
-        } else {
-            response = "NACK | " + request_str;
-        }
-
-        zmq::message_t response_msg(response.size());
-        memcpy(response_msg.data(), response.c_str(), response.size());
+        std::string response_str = response.dump();
+        zmq::message_t response_msg(response_str.size());
+        memcpy(response_msg.data(), response_str.c_str(), response_str.size());
         this->zmq_control_socket_.send(response_msg, 0);
+        std::cout << "Response sent: " << response_str << std::endl;
     }
 
     std::cout << "Shutting down" << std::endl;
