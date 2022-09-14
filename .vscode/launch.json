@@ -119,6 +119,7 @@
             "options": [
                 "pixel_count_threshold",
                 "mode",
+                "in_positions",
             ],
         },
         {

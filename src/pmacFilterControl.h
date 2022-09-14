@@ -35,8 +35,6 @@ class PMACFilterController
         std::thread listenThread_;
         // Flag to interupt listen loop and shutdown process
         bool shutdown_;
-        // Threshold for a histogram bin above which some action should be taken
-        uint64_t pixel_count_threshold_;
         // The frame number of the last frame that was successfully processed
         // - Used to decide to ignore some frames
         int64_t last_processed_frame_;
@@ -56,11 +54,18 @@ class PMACFilterController
         // Duration in microseconds of previous process
         size_t process_time_;
 
+        /* Control Channel Parameters */
         // The current mode of operation
         ControlMode mode_;
+        // Threshold for a histogram bin above which some action should be taken
+        uint64_t pixel_count_threshold_;
+        // Filter in positions in counts (can be +ve or -ve)
+        std::vector<int> in_positions_;
 
         bool _handle_request(const json& request);
+        bool _handle_config(const json& config);
         bool _set_mode(std::string);
+        bool _set_in_positions(json positions);
         void _process_data_channel();
         void _calculate_process_time(struct timespec& start_ts);
         void _process_data(const json& data);

@@ -16,6 +16,7 @@
 const int FILTER_TRAVEL = 100;  // Filter travel in counts to move a filter into the beam
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
+const int FILTER_COUNT = 4;  // Number of filters
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -32,6 +33,18 @@ const std::string CONFIG_MODE = "mode";
 const std::string CONFIG_MODE_IDLE = "idle";
 const std::string CONFIG_MODE_ACTIVE = "active";
 const std::string CONFIG_MODE_ONESHOT = "oneshot";
+const std::string CONFIG_IN_POSITIONS = "in_positions";
+const std::string FILTER_1_KEY = "filter1";
+const std::string FILTER_2_KEY = "filter2";
+const std::string FILTER_3_KEY = "filter3";
+const std::string FILTER_4_KEY = "filter4";
+const std::map<std::string, int> FILTER_MAP = {
+    {FILTER_1_KEY, 0},
+    {FILTER_2_KEY, 1},
+    {FILTER_3_KEY, 2},
+    {FILTER_4_KEY, 3}
+};
+
 // Data message keys
 const std::string FRAME_NUMBER = "frame_number";
 const std::string PARAMETERS = "parameters";
@@ -77,14 +90,16 @@ PMACFilterController::PMACFilterController(
     zmq_control_socket_(zmq_context_, ZMQ_REP),
     zmq_data_sockets_(),
     shutdown_(false),
-    pixel_count_threshold_(2),
     last_processed_frame_(NO_FRAMES_PROCESSED),
     new_attenuation_(0),
     current_attenuation_(0),
     current_demand_(4, 0),
     post_in_demand_(4, 0),
     final_demand_(4, 0),
-    mode_(ControlMode::active)
+    // Default config parameter values
+    mode_(ControlMode::active),
+    pixel_count_threshold_(2),
+    in_positions_({100, 100, 100, 100})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
 
@@ -133,15 +148,49 @@ bool PMACFilterController::_handle_request(const json& request) {
         this->last_processed_frame_ = NO_FRAMES_PROCESSED;
         success = true;
     } else if (request[COMMAND] == COMMAND_CONFIGURE) {
-        json config = request[PARAMS];
-        std::cout << "Received new config: " << config.dump() << std::endl;
-        if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLD)) {
-            // TODO: Falls over if value is string
-            this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
-            success = true;
-        } else if (config.contains(CONFIG_MODE)) {
-            success = this->_set_mode(config[CONFIG_MODE]);
+        if (request.contains(PARAMS)) {
+            json config = request[PARAMS];
+            std::cout << "Received new config: " << config.dump() << std::endl;
+            try {
+                success = this->_handle_config(config);
+            } catch (json::type_error& e) {
+                std::cout << "Type error when handling config" << std::endl;
+                success = false;
+            }
+        } else {
+            std::cout << "Received config command with no parameters" << std::endl;
+            success = false;
         }
+    }
+
+    return success;
+}
+
+/*!
+    @brief Handle a configuration request
+
+    @param[in] config json object of config parameters
+
+    @throw json::type_error if given a config parameter with the wrong type
+
+    @return true if all given parameters applied successfully, false if one or more failed or no parameters found
+*/
+bool PMACFilterController::_handle_config(const json& config) {
+    bool success = false;
+
+    if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLD)) {
+        this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
+        success = true;
+    }
+    if (config.contains(CONFIG_MODE)) {
+        success = this->_set_mode(config[CONFIG_MODE]);
+    }
+    if (config.contains(CONFIG_IN_POSITIONS)) {
+        success = this->_set_in_positions(config[CONFIG_IN_POSITIONS]);
+    }
+
+    if (!success) {
+        std::cout << "Found no valid config parameters" << std::endl;
     }
 
     return success;
@@ -151,6 +200,8 @@ bool PMACFilterController::_handle_request(const json& request) {
     @brief Set the mode enum based on a string representation
 
     @param[in] mode String of mode to set
+
+    @throw json::type_error if given a config parameter with the wrong type
 
     @return true if the mode was set successfully, else false
 */
@@ -168,6 +219,29 @@ bool PMACFilterController::_set_mode(std::string mode) {
     } else {
         std::cout << "Unknown mode: " << mode << std::endl;
         success = false;
+    }
+
+    return success;
+}
+
+/*!
+    @brief Set the in position of the given filters
+
+    @param[in] positions json dictionary of filter in positions - e.g. {"1": 100, "2": -100, ...}
+
+    @throw json::type_error if given a config parameter with the wrong type
+
+    @return true if at least one position was set, else false
+*/
+bool PMACFilterController::_set_in_positions(json positions) {
+    bool success = false;
+
+    std::map<std::string, int>::const_iterator item;
+    for(item = FILTER_MAP.begin(); item != FILTER_MAP.end(); ++item) {
+        if (positions.contains(item->first)) {
+            this->in_positions_[item->second] = positions[item->first];
+            success = true;
+        }
     }
 
     return success;
@@ -375,15 +449,12 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     std::cout << "Changing attenuation: "
         << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
 
-    // Set demands on ppmac
-    pshm->P[4071] = this->post_in_demand_[0] * FILTER_TRAVEL;
-    pshm->P[4072] = this->post_in_demand_[1] * FILTER_TRAVEL;
-    pshm->P[4073] = this->post_in_demand_[2] * FILTER_TRAVEL;
-    pshm->P[4074] = this->post_in_demand_[3] * FILTER_TRAVEL;
-    pshm->P[4081] = this->final_demand_[0] * FILTER_TRAVEL;
-    pshm->P[4082] = this->final_demand_[1] * FILTER_TRAVEL;
-    pshm->P[4083] = this->final_demand_[2] * FILTER_TRAVEL;
-    pshm->P[4084] = this->final_demand_[3] * FILTER_TRAVEL;
+    // Set demands on ppmac (P407X and P408X)
+    // - 0/1 * `position` -> 0 for out or `position` for in
+    for (int idx = 0; idx < FILTER_COUNT; ++idx) {
+        pshm->P[4071 + idx] = this->post_in_demand_[idx] * this->in_positions_[idx];
+        pshm->P[4081 + idx] = this->final_demand_[idx] * this->in_positions_[idx];
+    }
 
     // Run the motion program
     CommandTS(RUN_PROG_1);
