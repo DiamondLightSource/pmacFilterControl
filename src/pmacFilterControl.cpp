@@ -29,10 +29,7 @@ const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
 const std::string PARAMS = "params";
 const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
-const std::string CONFIG_MODE = "mode";
-const std::string CONFIG_MODE_IDLE = "idle";
-const std::string CONFIG_MODE_ACTIVE = "active";
-const std::string CONFIG_MODE_ONESHOT = "oneshot";
+const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
 const std::string FILTER_1_KEY = "filter1";
 const std::string FILTER_2_KEY = "filter2";
@@ -97,7 +94,7 @@ PMACFilterController::PMACFilterController(
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
-    mode_(ControlMode::active),
+    mode_(ControlMode::ACTIVE),
     pixel_count_threshold_(2),
     in_positions_({100, 100, 100, 100})
 {
@@ -197,29 +194,23 @@ bool PMACFilterController::_handle_config(const json& config) {
 }
 
 /*!
-    @brief Set the mode enum based on a string representation
+    @brief Set the mode enum with value checking
 
-    @param[in] mode String of mode to set
+    @param[in] mode ControlMode (enum value) of mode to set
 
     @throw json::type_error if given a config parameter with the wrong type
 
     @return true if the mode was set successfully, else false
 */
-bool PMACFilterController::_set_mode(std::string mode) {
+bool PMACFilterController::_set_mode(ControlMode mode) {
     bool success = true;
 
     std::cout << "Changing to " << mode << " mode" << std::endl;
 
-    if (mode == CONFIG_MODE_IDLE) {
-        this->mode_ = ControlMode::idle;
-    }
-    else if (mode == CONFIG_MODE_ACTIVE) {
-        this->mode_ = ControlMode::active;
-    }
-    else if (mode == CONFIG_MODE_ONESHOT) {
-        this->mode_ = ControlMode::oneshot;
+    if (mode < ControlMode::SIZE) {
+        this->mode_ = mode;
     } else {
-        std::cout << "Unknown mode: " << mode << std::endl;
+        std::cout << "Unknown mode: " << mode << ". Allowed modes: 0 - " << ControlMode::SIZE << std::endl;
         success = false;
     }
 
@@ -309,7 +300,7 @@ void PMACFilterController::_process_data_channel() {
     std::string data_str;
     struct timespec start_ts;
     while (!this->shutdown_) {
-        if (this->mode_ != ControlMode::idle) {
+        if (this->mode_ != ControlMode::IDLE) {
             // Poll data sockets
             zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
             for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
