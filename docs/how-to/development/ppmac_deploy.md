@@ -89,7 +89,7 @@ mounted read-only and must be remounted with write permissions:
 then the files can simply be copied over:
 
 ```bash
-# cp -r /root/<directory> /.readonly/root/<directory>
+# cp -r /root/<directory>/* /.readonly/root/<directory>/
 ```
 
 Now after a reboot the changes will remain in `/root/`.
