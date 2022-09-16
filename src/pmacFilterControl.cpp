@@ -371,14 +371,17 @@ void PMACFilterController::_calculate_process_time(struct timespec& start_ts) {
     @param[in] data json structure of data message
 */
 void PMACFilterController::_process_data(const json& data) {
-    if (data[FRAME_NUMBER] <= this->last_processed_frame_) {  // TODO: Crashes if no frame number, or parameters
-        std::cout << "Ignoring frame " << data[FRAME_NUMBER]
-            << " - already processed " << this->last_processed_frame_ << std::endl;
+    // Validate the data message
+    if (!(data.contains(FRAME_NUMBER) && data.contains(PARAMETERS))) {
+        std::cout << "Ignoring message - Does not have keys " << FRAME_NUMBER << " and " << PARAMETERS << std::endl;
+        return;
+    }
+    if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
+        std::cout << "Ignoring message " << " - Already processed " << this->last_processed_frame_ << std::endl;
         return;
     }
     if (data[FRAME_NUMBER] == this->last_processed_frame_ + 1) {
-        std::cout << "Ignoring subsequent frame" << std::endl;
-        // Don't process two frames in succession as changes won't have taken effect
+        std::cout << "Ignoring message - Processed preceding frame" << std::endl;
         return;
     }
 
