@@ -321,8 +321,8 @@
 <dd><div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE">
-<span id="_CPPv3N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE"></span><span id="_CPPv2N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE"></span><span id="PMACFilterController::PMACFilterController__ssCR.ssCR"></span><span class="target" id="classPMACFilterController_1a56d9fcc595f05a7ad7b53cac55c9b4ef"></span><span class="sig-name descname"><span class="n"><span class="pre">PMACFilterController</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data_endpoint</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">control_port</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6stringE" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6vectorINSt6stringEEE">
+<span id="_CPPv3N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6vectorINSt6stringEEE"></span><span id="_CPPv2N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6vectorINSt6stringEEE"></span><span id="PMACFilterController::PMACFilterController__ssCR.std::vector:ss:CR"></span><span class="target" id="classPMACFilterController_1add197a40530597d427c1073fcb61c3d6"></span><span class="sig-name descname"><span class="n"><span class="pre">PMACFilterController</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">control_port</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data_endpoints</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6vectorINSt6stringEEE" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Constructor. </p>
 <p>Setup ZeroMQ sockets</p>
 <dl class="field-list simple">
@@ -352,15 +352,80 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-private-functions">Private Functions</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController15_handle_requestERK4json">
-<span id="_CPPv3N20PMACFilterController15_handle_requestERK4json"></span><span id="_CPPv2N20PMACFilterController15_handle_requestERK4json"></span><span id="PMACFilterController::_handle_request__jsonCR"></span><span class="target" id="classPMACFilterController_1a12edd0adbc007c53c70d540a30525a00"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_handle_request</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">request</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController15_handle_requestERK4json" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController15_handle_requestERK4jsonR4json">
+<span id="_CPPv3N20PMACFilterController15_handle_requestERK4jsonR4json"></span><span id="_CPPv2N20PMACFilterController15_handle_requestERK4jsonR4json"></span><span id="PMACFilterController::_handle_request__jsonCR.jsonR"></span><span class="target" id="classPMACFilterController_1aa106a0599a3fc8d6dd54b46defb8f465"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_handle_request</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">request</span></span>, <span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">response</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController15_handle_requestERK4jsonR4json" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Handle the JSON request from the control channel. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>request</strong> – <strong>[in]</strong> json object of request</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> – <strong>[in]</strong> json object of request </p></li>
+<li><p><strong>response</strong> – <strong>[out]</strong> json object to add response to</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>true if the request was applied successfully, else false </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14_handle_statusER4json">
+<span id="_CPPv3N20PMACFilterController14_handle_statusER4json"></span><span id="_CPPv2N20PMACFilterController14_handle_statusER4json"></span><span id="PMACFilterController::_handle_status__jsonR"></span><span class="target" id="classPMACFilterController_1a45550f925c8a6528f6fc9e1772c86661"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_handle_status</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">response</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController14_handle_statusER4json" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Handle a status request from the control channel. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>response</strong> – <strong>[out]</strong> json object to add status to </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14_handle_configERK4json">
+<span id="_CPPv3N20PMACFilterController14_handle_configERK4json"></span><span id="_CPPv2N20PMACFilterController14_handle_configERK4json"></span><span id="PMACFilterController::_handle_config__jsonCR"></span><span class="target" id="classPMACFilterController_1a4e9d1c7bacaf21141e05ec7b0d48a896"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_handle_config</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">config</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController14_handle_configERK4json" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Handle a configuration request. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> – <strong>[in]</strong> json object of config parameters</p>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">json</span><span class="p">::</span><span class="n">type_error</span></span></span> – if given a config parameter with the wrong type</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>true if all given parameters applied successfully, false if one or more failed or no parameters found </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController9_set_modeE11ControlMode">
+<span id="_CPPv3N20PMACFilterController9_set_modeE11ControlMode"></span><span id="_CPPv2N20PMACFilterController9_set_modeE11ControlMode"></span><span id="PMACFilterController::_set_mode__ControlMode"></span><span class="target" id="classPMACFilterController_1ae1f1b9b803b86a456b80e46f14e1e8c1"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_set_mode</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ControlMode</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">mode</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController9_set_modeE11ControlMode" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Set the mode enum with value checking. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mode</strong> – <strong>[in]</strong> ControlMode (enum value) of mode to set</p>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">json</span><span class="p">::</span><span class="n">type_error</span></span></span> – if given a config parameter with the wrong type</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>true if the mode was set successfully, else false </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController17_set_in_positionsE4json">
+<span id="_CPPv3N20PMACFilterController17_set_in_positionsE4json"></span><span id="_CPPv2N20PMACFilterController17_set_in_positionsE4json"></span><span id="PMACFilterController::_set_in_positions__json"></span><span class="target" id="classPMACFilterController_1a20cee515b42b10bf40a8154935e600ad"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_set_in_positions</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">positions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController17_set_in_positionsE4json" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Set the in position of the given filters. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>positions</strong> – <strong>[in]</strong> json dictionary of filter in positions - e.g. {“1”: 100, “2”: -100, …}</p>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">json</span><span class="p">::</span><span class="n">type_error</span></span></span> – if given a config parameter with the wrong type</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>true if at least one position was set, else false </p>
 </dd>
 </dl>
 </dd></dl>
@@ -373,16 +438,12 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController5_pollEl">
-<span id="_CPPv3N20PMACFilterController5_pollEl"></span><span id="_CPPv2N20PMACFilterController5_pollEl"></span><span id="PMACFilterController::_poll__l"></span><span class="target" id="classPMACFilterController_1a821aa74e0dbd3e51502f9fd880dda893"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_poll</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">long</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">timeout_ms</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController5_pollEl" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Poll the ZeroMQ data socket for events. </p>
-<p>If this function returns true then a subsequent <code class="docutils literal notranslate"><span class="pre">recv()</span></code> on the socket will return a message.</p>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController23_calculate_process_timeER8timespec">
+<span id="_CPPv3N20PMACFilterController23_calculate_process_timeER8timespec"></span><span id="_CPPv2N20PMACFilterController23_calculate_process_timeER8timespec"></span><span id="PMACFilterController::_calculate_process_time__timespecR"></span><span class="target" id="classPMACFilterController_1ad74e4c0dd8ed4903d2864192c4311b76"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_calculate_process_time</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">timespec</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">start_ts</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController23_calculate_process_timeER8timespec" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Calculate and store time since given timespec. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>timeout_ms</strong> – <strong>[in]</strong> Poll duration in milliseconds</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>true if there is a message on the socket, else false (after the timeout has elapsed) </p>
+<dd class="field-odd"><p><strong>start_ts</strong> – <strong>[in]</strong> Timespec of process time </p>
 </dd>
 </dl>
 </dd></dl>
@@ -419,7 +480,7 @@
 <span id="_CPPv3N20PMACFilterController23_send_filter_adjustmentEi"></span><span id="_CPPv2N20PMACFilterController23_send_filter_adjustmentEi"></span><span id="PMACFilterController::_send_filter_adjustment__i"></span><span class="target" id="classPMACFilterController_1aa6f864ecdb8c115d1ad832b5e6e74296"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_send_filter_adjustment</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">adjustment</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController23_send_filter_adjustmentEi" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Send updated attenuation demand to the motion controller. </p>
 <p>Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the motion controller and then execute the motion program to move the motors.</p>
-<p>The code to set variables through shared memory are inside of an ARM #ifdef fence, so when compiled for x86 it will just do the calculations and print a message.</p>
+<p>The code to set variables through shared memory is inside of an ARM #ifdef fence, so when compiled for x86 it will just do the calculations and print a message.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>adjustment</strong> – <strong>[in]</strong> Attenuation levels to change by (can be positive or negative) </p>
@@ -436,8 +497,8 @@
 <dd></dd></dl>
 
 <dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController22data_channel_endpoint_E">
-<span id="_CPPv3N20PMACFilterController22data_channel_endpoint_E"></span><span id="_CPPv2N20PMACFilterController22data_channel_endpoint_E"></span><span id="PMACFilterController::data_channel_endpoint___ss"></span><span class="target" id="classPMACFilterController_1a63de76514fe29cdfb6a678cf1b933657"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">data_channel_endpoint_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController22data_channel_endpoint_E" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController23data_channel_endpoints_E">
+<span id="_CPPv3N20PMACFilterController23data_channel_endpoints_E"></span><span id="_CPPv2N20PMACFilterController23data_channel_endpoints_E"></span><span id="PMACFilterController::data_channel_endpoints___std::vector:ss:"></span><span class="target" id="classPMACFilterController_1a668bbbb13dab7a5fabdbbc092fa13049"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">data_channel_endpoints_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController23data_channel_endpoints_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
@@ -451,8 +512,8 @@
 <dd></dd></dl>
 
 <dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController16zmq_data_socket_E">
-<span id="_CPPv3N20PMACFilterController16zmq_data_socket_E"></span><span id="_CPPv2N20PMACFilterController16zmq_data_socket_E"></span><span id="PMACFilterController::zmq_data_socket___zmq::socket_t"></span><span class="target" id="classPMACFilterController_1aa2f4b83d25af98a210f7d3a3bb3c6908"></span><span class="n"><span class="pre">zmq</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">socket_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">zmq_data_socket_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController16zmq_data_socket_E" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController17zmq_data_sockets_E">
+<span id="_CPPv3N20PMACFilterController17zmq_data_sockets_E"></span><span id="_CPPv2N20PMACFilterController17zmq_data_sockets_E"></span><span id="PMACFilterController::zmq_data_sockets___std::vector:zmq::socket_t:"></span><span class="target" id="classPMACFilterController_1ae8a537f24f4ea942466fa355ef99bcef"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">zmq</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">socket_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">zmq_data_sockets_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController17zmq_data_sockets_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
@@ -463,11 +524,6 @@
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController9shutdown_E">
 <span id="_CPPv3N20PMACFilterController9shutdown_E"></span><span id="_CPPv2N20PMACFilterController9shutdown_E"></span><span id="PMACFilterController::shutdown___b"></span><span class="target" id="classPMACFilterController_1add65a09157b16710dea2b2d45b01a47c"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">shutdown_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController9shutdown_E" title="Permalink to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController22pixel_count_threshold_E">
-<span id="_CPPv3N20PMACFilterController22pixel_count_threshold_E"></span><span id="_CPPv2N20PMACFilterController22pixel_count_threshold_E"></span><span id="PMACFilterController::pixel_count_threshold___uint64_t"></span><span class="target" id="classPMACFilterController_1ace6e46461ac52a276e87037ab7443c34"></span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pixel_count_threshold_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController22pixel_count_threshold_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
@@ -503,6 +559,21 @@
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13process_time_E">
 <span id="_CPPv3N20PMACFilterController13process_time_E"></span><span id="_CPPv2N20PMACFilterController13process_time_E"></span><span id="PMACFilterController::process_time___s"></span><span class="target" id="classPMACFilterController_1a09743cef1e0ed988cd173e62680485a1"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">process_time_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13process_time_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController5mode_E">
+<span id="_CPPv3N20PMACFilterController5mode_E"></span><span id="_CPPv2N20PMACFilterController5mode_E"></span><span id="PMACFilterController::mode___ControlMode"></span><span class="target" id="classPMACFilterController_1adc613ec57f594ee37f143f11017e3533"></span><span class="n"><span class="pre">ControlMode</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mode_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController5mode_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController22pixel_count_threshold_E">
+<span id="_CPPv3N20PMACFilterController22pixel_count_threshold_E"></span><span id="_CPPv2N20PMACFilterController22pixel_count_threshold_E"></span><span id="PMACFilterController::pixel_count_threshold___uint64_t"></span><span class="target" id="classPMACFilterController_1ace6e46461ac52a276e87037ab7443c34"></span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pixel_count_threshold_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController22pixel_count_threshold_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13in_positions_E">
+<span id="_CPPv3N20PMACFilterController13in_positions_E"></span><span id="_CPPv2N20PMACFilterController13in_positions_E"></span><span id="PMACFilterController::in_positions___std::vector:i:"></span><span class="target" id="classPMACFilterController_1a6af0c0b9397bddb87bc898ab588d0c42"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">in_positions_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13in_positions_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 </div>

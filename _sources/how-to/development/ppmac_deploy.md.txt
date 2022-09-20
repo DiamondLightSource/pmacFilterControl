@@ -1,6 +1,6 @@
 # Building and Deploying pmacFilterControl
 
-## Bulding pmacFilterControl for x86
+## Building pmacFilterControl for x86
 
 pmacFilterControl includes architecture-specific code blocks and the build detects the
 architecture at compile time. This means the same code can be built and deployed for the
@@ -15,7 +15,7 @@ $ cmake .. -DCMAKE_INSTALL_PREFIX=../prefix
 $ make install
 ```
 
-## Bulding pmacFilterControl for ppmac
+## Building pmacFilterControl for ppmac
 
 A docker container is defined in `tools/Dockerfile` to provide a cross-compiling
 toolchain for ARM. This can be used to build pmacFilterControl for the ppmac. There are
@@ -35,6 +35,7 @@ The `arm_prefix` directory can be copied to the ppmac to run pmacFilterControl.
 - Run the `Run command in ARM container` task and select `bash`
 - In the container bash prompt, run
   - `$ scp -r arm_prefix/* root@<ppmac ip>:/root/prefix/`
+  - If this fails, check the [routes](#powerpmac-network-routes) are set correctly on the brick
 
 Make sure the application isn't already running or the copy may fail with the following
 error:
@@ -88,7 +89,7 @@ mounted read-only and must be remounted with write permissions:
 then the files can simply be copied over:
 
 ```bash
-# cp -r /root/<directory> /.readonly/root/<directory>
+# cp -r /root/<directory>/* /.readonly/root/<directory>/
 ```
 
 Now after a reboot the changes will remain in `/root/`.
@@ -143,3 +144,23 @@ Error: downloading preprocessed File: "/var/ftp/usrflash/Temp/pp_proj.pma"
 
 Uploading files in this way will conflict with use of the IDE to upload things to the
 ppmac and things may be overwritten if the project is uploaded from there.
+
+## PowerPMAC Network Routes
+
+It may only be possible to ping and connect to the brick from the local subnet. In order
+to connect from outside the routes can be changed:
+
+```bash
+root@172.23.107.175:/opt/ppmac# ip route
+default via 172.23.107.175 dev eth0
+172.23.107.0/24 dev eth0  proto kernel  scope link  src 172.23.107.175
+root@172.23.107.175:/opt/ppmac# ip route replace default via 172.23.107.254 dev eth0
+root@172.23.107.175:/opt/ppmac# ip route
+default via 172.23.107.254 dev eth0
+172.23.107.0/24 dev eth0  proto kernel  scope link  src 172.23.107.175
+```
+
+It should bepossible to make this persistent by editing `/etc/network/interfaces` and
+copying to `/.readonly`, but this does not work for some reason. On boot, the
+`/.readonly` vesrion is correct, but not the live version, as if something overwrites
+it on boot.
