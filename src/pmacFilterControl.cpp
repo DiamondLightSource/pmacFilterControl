@@ -429,7 +429,7 @@ json PMACFilterController::_parse_json_string(const std::string& json_string) {
     Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the
     motion controller and then execute the motion program to move the motors.
 
-    The code to set variables through shared memory is inside of an ARM #ifdef fence, so when compiled for x86 it will
+    The code to set variables through shared memory is inside of an ARM ifdef fence, so when compiled for x86 it will
     just do the calculations and print a message.
 
     @param[in] adjustment Attenuation levels to change by (can be positive or negative)
