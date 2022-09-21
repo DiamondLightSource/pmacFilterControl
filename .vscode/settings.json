@@ -3,4 +3,5 @@
     "cmake.buildDirectory": "${workspaceFolder}/vscode_build",
     "cmake.installPrefix": "${workspaceFolder}/vscode_prefix",
     "cmake.configureArgs": [],
+    "cmake.generator": "Unix Makefiles",
 }
