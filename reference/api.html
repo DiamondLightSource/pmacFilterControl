@@ -329,7 +329,7 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>control_port</strong> – <strong>[in]</strong> Port number to bind control socket to </p></li>
-<li><p><strong>data_endpoint</strong> – <strong>[in]</strong> Endpoint (<code class="docutils literal notranslate"><span class="pre">IP</span></code>:<code class="docutils literal notranslate"><span class="pre">PORT</span></code>) to subscribe on for data messages </p></li>
+<li><p><strong>data_endpoints</strong> – <strong>[in]</strong> Vector of endpoints (<code class="docutils literal notranslate"><span class="pre">IP</span></code>:<code class="docutils literal notranslate"><span class="pre">PORT</span></code>) to subscribe on for data messages </p></li>
 </ul>
 </dd>
 </dl>
@@ -480,7 +480,7 @@
 <span id="_CPPv3N20PMACFilterController23_send_filter_adjustmentEi"></span><span id="_CPPv2N20PMACFilterController23_send_filter_adjustmentEi"></span><span id="PMACFilterController::_send_filter_adjustment__i"></span><span class="target" id="classPMACFilterController_1aa6f864ecdb8c115d1ad832b5e6e74296"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_send_filter_adjustment</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">adjustment</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController23_send_filter_adjustmentEi" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Send updated attenuation demand to the motion controller. </p>
 <p>Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the motion controller and then execute the motion program to move the motors.</p>
-<p>The code to set variables through shared memory is inside of an ARM #ifdef fence, so when compiled for x86 it will just do the calculations and print a message.</p>
+<p>The code to set variables through shared memory is inside of an ARM ifdef fence, so when compiled for x86 it will just do the calculations and print a message.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>adjustment</strong> – <strong>[in]</strong> Attenuation levels to change by (can be positive or negative) </p>
