@@ -309,7 +309,7 @@ void PMACFilterController::run() {
 */
 void PMACFilterController::_process_data_channel() {
     // Construct pollitems for data sockets
-    zmq::pollitem_t pollitems[this->zmq_data_sockets_.size()] = {};
+    zmq::pollitem_t pollitems[this->zmq_data_sockets_.size()];
     for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
         zmq::pollitem_t pollitem = {this->zmq_data_sockets_[idx], 0, ZMQ_POLLIN, 0};
         pollitems[idx] = pollitem;
