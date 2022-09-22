@@ -316,7 +316,7 @@ void PMACFilterController::run() {
         zmq::message_t response_msg(response_str.size());
         memcpy(response_msg.data(), response_str.c_str(), response_str.size());
         this->zmq_control_socket_.send(response_msg, 0);
-        std::cout << "Response sent: " << response_str << std::endl;
+        std::cout << "- Response sent: " << response_str << std::endl;
     }
 
     std::cout << "Shutting down" << std::endl;
