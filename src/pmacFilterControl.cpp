@@ -59,7 +59,7 @@ const std::vector<std::string> THRESHOLD_PRECEDENCE = {
 
 // The attenuation adjustments to apply for a given threshold
 // PARAM_HIGH2 -> Add 2 levels of attenuation
-// PARAM_HIGH1 -> Add a level of attenuation
+// PARAM_HIGH1 -> Add 1 level of attenuation
 // PARAM_LOW1 -> Subtract 1 level of attenuation
 // PARAM_LOW2 -> Subtract 2 levels of attenuation
 const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
@@ -327,7 +327,8 @@ void PMACFilterController::run() {
 /*!
     @brief Listen on ZeroMQ data channel for messages and hand off for processing
 
-    This function should be run in a spawned thread and will return when `shutdown_`.
+    This method should be run in a spawned thread and will return when `shutdown_`
+    is set to `true`
 */
 void PMACFilterController::_process_data_channel() {
     // Construct pollitems for data sockets
@@ -352,9 +353,7 @@ void PMACFilterController::_process_data_channel() {
                     zmq::message_t data_message;
                     this->zmq_data_sockets_[idx].recv(&data_message);
 
-                    data_str = std::string(
-                        static_cast<char*>(data_message.data()), data_message.size()
-                    );
+                    data_str = std::string(static_cast<char*>(data_message.data()), data_message.size());
                     std::cout << "Data received: " << data_str << std::endl;
 
                     json data = this->_parse_json_string(data_str);
