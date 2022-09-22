@@ -62,8 +62,8 @@ class PMACFilterController
         /* Control Channel Parameters */
         // The current mode of operation
         ControlMode mode_;
-        // Threshold for a histogram bin above which some action should be taken
-        uint64_t pixel_count_threshold_;
+        // Thresholds for histogram bins above which some action should be taken
+        std::map<std::string, uint64_t> pixel_count_thresholds_;
         // Filter in positions in counts (can be +ve or -ve)
         std::vector<int> in_positions_;
 
@@ -72,6 +72,7 @@ class PMACFilterController
         bool _handle_config(const json& config);
         bool _set_mode(ControlMode mode);
         bool _set_in_positions(json positions);
+        bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
         void _calculate_process_time(struct timespec& start_ts);
         void _process_data(const json& data);

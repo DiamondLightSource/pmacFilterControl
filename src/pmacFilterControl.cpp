@@ -29,9 +29,9 @@ const std::string COMMAND_STATUS = "status";
 const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
 const std::string PARAMS = "params";
-const std::string CONFIG_PIXEL_COUNT_THRESHOLD = "pixel_count_threshold";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
+const std::string CONFIG_PIXEL_COUNT_THRESHOLDS = "pixel_count_thresholds";
 const std::string FILTER_1_KEY = "filter1";
 const std::string FILTER_2_KEY = "filter2";
 const std::string FILTER_3_KEY = "filter3";
@@ -97,8 +97,8 @@ PMACFilterController::PMACFilterController(
     process_time_(0),
     // Default config parameter values
     mode_(ControlMode::ACTIVE),
-    pixel_count_threshold_(2),
-    in_positions_({100, 100, 100, 100})
+    in_positions_({100, 100, 100, 100}),
+    pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
 
@@ -181,15 +181,14 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
 bool PMACFilterController::_handle_config(const json& config) {
     bool success = false;
 
-    if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLD)) {
-        this->pixel_count_threshold_ = config[CONFIG_PIXEL_COUNT_THRESHOLD];
-        success = true;
-    }
     if (config.contains(CONFIG_MODE)) {
         success = this->_set_mode(config[CONFIG_MODE]);
     }
     if (config.contains(CONFIG_IN_POSITIONS)) {
         success = this->_set_in_positions(config[CONFIG_IN_POSITIONS]);
+    }
+    if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLDS)) {
+        success = this->_set_pixel_count_thresholds(config[CONFIG_PIXEL_COUNT_THRESHOLDS]);
     }
 
     if (!success) {
@@ -247,6 +246,29 @@ bool PMACFilterController::_set_in_positions(json positions) {
 }
 
 /*!
+    @brief Set the in pixel count thresholds of the given histogram bins
+
+    @param[in] thresholds json dictionary of pixel count thresholds - e.g. {"high1": 100, "low2": 500, ...}
+
+    @throw json::type_error if given a config parameter with the wrong type
+
+    @return true if at least one threshold was set, else false
+*/
+bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
+    bool success = false;
+
+    std::vector<std::string>::const_iterator it;
+    for(it = THRESHOLD_PRECEDENCE.begin(); it != THRESHOLD_PRECEDENCE.end(); ++it) {
+        if (thresholds.contains(*it)) {
+            this->pixel_count_thresholds_[*it] = thresholds[*it];
+            success = true;
+        }
+    }
+
+    return success;
+}
+
+/*!
     @brief Handle a status request from the control channel
 
     @param[out] response json object to add status to
@@ -257,8 +279,8 @@ void PMACFilterController::_handle_status(json& response) {
     status["last_processed_frame"] = this->last_processed_frame_;
     status["current_attenuation"] = this->current_attenuation_;
     status["mode_rbv"] = this->mode_;
-    status["pixel_count_threshold_rbv"] = this->pixel_count_threshold_;
     status["in_positions_rbv"] = this->in_positions_;
+    status["pixel_count_thresholds_rbv"] = this->pixel_count_thresholds_;
 
     response[COMMAND_STATUS] = status;
 }
@@ -389,9 +411,9 @@ void PMACFilterController::_process_data(const json& data) {
     std::vector<std::string>::const_iterator threshold;
     for (threshold = THRESHOLD_PRECEDENCE.begin(); threshold != THRESHOLD_PRECEDENCE.end(); threshold++) {
         // TODO: Should threshold be inclusive?
-        if (histogram[*threshold] > this->pixel_count_threshold_) {
+        if (histogram[*threshold] > this->pixel_count_thresholds_[*threshold]) {
             std::cout << *threshold << " threshold triggered" << std::endl;
-            std::cout << "Current threshold: " << this->pixel_count_threshold_ << std::endl;
+            std::cout << "Current threshold: " << this->pixel_count_thresholds_[*threshold] << std::endl;
             int adjustment = THRESHOLD_ADJUSTMENTS.at(*threshold);
             this->_send_filter_adjustment(adjustment);
             break;
