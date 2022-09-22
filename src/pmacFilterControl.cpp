@@ -11,7 +11,7 @@
 #include "gplib.h"
 #endif
 
-#define VERSION 106
+#define VERSION "0.7"
 
 const int FILTER_TRAVEL = 100;  // Filter travel in counts to move a filter into the beam
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
@@ -275,6 +275,7 @@ bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
 */
 void PMACFilterController::_handle_status(json& response) {
     json status;
+    status["version"] = VERSION;
     status["process_time"] = this->process_time_;
     status["last_processed_frame"] = this->last_processed_frame_;
     status["current_attenuation"] = this->current_attenuation_;
