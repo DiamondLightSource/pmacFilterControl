@@ -69,7 +69,7 @@ const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
 };
 
 // An initial invalid value to compare with `last_processed_frame_` that always passes the ignore frame checks
-const int64_t NO_FRAMES_PROCESSED = -1;
+const int64_t NO_FRAMES_PROCESSED = -2;
 
 
 /*!
