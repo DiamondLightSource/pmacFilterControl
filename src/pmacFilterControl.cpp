@@ -17,6 +17,7 @@ const int FILTER_TRAVEL = 100;  // Filter travel in counts to move a filter into
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;  // Number of filters
+const int ACTIVE_MODE_TIMEOUT = 1;  // Seconds of not receiving data before setting max attenuation in active mode
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -28,6 +29,7 @@ const std::string COMMAND_SHUTDOWN = "shutdown";
 const std::string COMMAND_STATUS = "status";
 const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
+const std::string COMMAND_CLEAR_TIMEOUT = "clear_timeout";
 const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
@@ -87,14 +89,19 @@ PMACFilterController::PMACFilterController(
     zmq_context_(),
     zmq_control_socket_(zmq_context_, ZMQ_REP),
     zmq_data_sockets_(),
-    shutdown_(false),
+    // Internal logic
+    state_(ControlState::ACTIVE_HEALTHY),
     last_processed_frame_(NO_FRAMES_PROCESSED),
+    time_since_last_process_(0),
+    process_time_(0),
+    clear_timeout_(false),
+    shutdown_(false),
+    // Filter logic
     new_attenuation_(0),
     current_attenuation_(0),
     current_demand_(FILTER_COUNT, 0),
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
-    process_time_(0),
     // Default config parameter values
     mode_(ControlMode::ACTIVE),
     in_positions_({100, 100, 100, 100}),
@@ -154,6 +161,8 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
         std::cout << "Resetting frame counter" << std::endl;
         this->last_processed_frame_ = NO_FRAMES_PROCESSED;
         success = true;
+    } else if (request[COMMAND] == COMMAND_CLEAR_TIMEOUT) {
+        this->clear_timeout_ = true;
     } else if (request[COMMAND] == COMMAND_STATUS) {
         this->_handle_status(response);
         success = true;
@@ -217,12 +226,13 @@ bool PMACFilterController::_handle_config(const json& config) {
 bool PMACFilterController::_set_mode(ControlMode mode) {
     bool success = true;
 
-    std::cout << "Changing to " << mode << " mode" << std::endl;
+    std::cout << "Changing to mode " << mode << std::endl;
 
-    if (mode < ControlMode::SIZE) {
+    if (mode < ControlMode::CONTROL_MODE_SIZE) {
         this->mode_ = mode;
     } else {
-        std::cout << "Unknown mode: " << mode << ". Allowed modes: 0 - " << ControlMode::SIZE << std::endl;
+        std::cout << "Unknown mode: " << mode <<
+            ". Allowed modes: 0 - " << ControlMode::CONTROL_MODE_SIZE - 1 << std::endl;
         success = false;
     }
 
@@ -285,7 +295,9 @@ void PMACFilterController::_handle_status(json& response) {
     status["version"] = VERSION;
     status["process_time"] = this->process_time_;
     status["last_processed_frame"] = this->last_processed_frame_;
+    status["time_since_last_process"] = this->time_since_last_process_;
     status["current_attenuation"] = this->current_attenuation_;
+    status["state"] = this->state_;
     status["mode_rbv"] = this->mode_;
     status["in_positions_rbv"] = this->in_positions_;
     status["pixel_count_thresholds_rbv"] = this->pixel_count_thresholds_;
@@ -307,9 +319,7 @@ void PMACFilterController::run() {
     while (!this->shutdown_) {
         zmq::message_t request_msg;
         this->zmq_control_socket_.recv(&request_msg);
-        request_str = std::string(
-            static_cast<char*>(request_msg.data()), request_msg.size()
-        );
+        request_str = std::string(static_cast<char*>(request_msg.data()), request_msg.size());
         std::cout << "Request received: " << request_str << std::endl;
 
         json request, response;
@@ -345,14 +355,29 @@ void PMACFilterController::_process_data_channel() {
     std::cout << "Listening for messages..." << std::endl;
 
     std::string data_str;
-    struct timespec start_ts;
+    struct timespec process_start_ts, last_process_time_ts;
+    last_process_time_ts.tv_sec = 0;  // Force timeout to trigger on first loop
     while (!this->shutdown_) {
-        if (this->mode_ != ControlMode::IDLE) {
+        // - Set max attenuation and stop if timeout reached
+        this->time_since_last_process_ = _seconds_since(last_process_time_ts);
+        if (this->state_ == ControlState::ACTIVE_HEALTHY && this->time_since_last_process_ >= ACTIVE_MODE_TIMEOUT) {
+            std::cout << "Timeout waiting for messages" << std::endl;
+            this->_set_max_attenuation();
+            this->state_ = ControlState::ACTIVE_TIMEOUT;
+        }
+        // - Clear timeout if requested from control thread
+        else if (this->state_ == ControlState::ACTIVE_TIMEOUT && this->clear_timeout_) {
+            std::cout << "Timeout cleared - waiting for messages" << std::endl;
+            this->clear_timeout_ = false;
+            this->state_ = ControlState::ACTIVE_HEALTHY;
+        }
+
+        if (this->state_ == ControlState::ACTIVE_HEALTHY) {
             // Poll data sockets
             zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
             for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
                 if (_message_queued(pollitems[idx])) {
-                    clock_gettime(CLOCK_REALTIME, &start_ts);
+                    _get_time(&process_start_ts);
 
                     zmq::message_t data_message;
                     this->zmq_data_sockets_[idx].recv(&data_message);
@@ -365,7 +390,9 @@ void PMACFilterController::_process_data_channel() {
                         this->_process_data(data);
                     }
 
-                    this->_calculate_process_time(start_ts);
+                    this->_calculate_process_time(process_start_ts);
+                    _get_time(&last_process_time_ts);
+                    this->state_ = ControlState::ACTIVE_HEALTHY;
                 }
             }
         }
@@ -373,17 +400,20 @@ void PMACFilterController::_process_data_channel() {
 }
 
 /*!
+    @brief Set maximum attenuation
+*/
+void PMACFilterController::_set_max_attenuation() {
+    // Increase attenuation level to MAX_ATTENUATION without exceeding it
+    this->_send_filter_adjustment(MAX_ATTENUATION - this->current_attenuation_);
+}
+
+/*!
     @brief Calculate and store time since given timespec
 
-    @param[in] start_ts Timespec of process time
+    @param[in] start_ts Timespec of process start time
 */
-void PMACFilterController::_calculate_process_time(struct timespec& start_ts) {
-    struct timespec end_ts;
-    size_t start_ns, end_ns;
-    clock_gettime(CLOCK_REALTIME, &end_ts);
-    start_ns = ((size_t) start_ts.tv_sec * 1000000000) + (size_t) start_ts.tv_nsec;
-    end_ns = ((size_t) end_ts.tv_sec * 1000000000) + (size_t) end_ts.tv_nsec;
-    this->process_time_ = (end_ns - start_ns) / 1000;
+void PMACFilterController::_calculate_process_time(const struct timespec& start_ts) {
+    this->process_time_ = _useconds_since(start_ts);
     std::cout << "Process time: " << this->process_time_ << "us" << std::endl;
 }
 
@@ -606,4 +636,45 @@ bool _is_valid_request(const json& request) {
     }
 
     return success;
+}
+
+/*!
+    @brief Get the current time according to the system-wide realtime clock
+
+    @param[out] ts Timespec to update with current time
+*/
+
+void _get_time(struct timespec* ts) {
+    clock_gettime(CLOCK_REALTIME, ts);
+}
+
+/*!
+    @brief Return the elapsed time since the given timespec in microseconds
+
+    @param[in] start_ts Timespec of start time
+
+    @return Microseconds since start time
+*/
+
+size_t _useconds_since(const struct timespec& start_ts) {
+    struct timespec end_ts;
+    size_t start_ns, end_ns;
+    clock_gettime(CLOCK_REALTIME, &end_ts);
+    start_ns = ((size_t) start_ts.tv_sec * 1000000000) + (size_t) start_ts.tv_nsec;
+    end_ns = ((size_t) end_ts.tv_sec * 1000000000) + (size_t) end_ts.tv_nsec;
+    return (end_ns - start_ns) / 1000;
+}
+
+/*!
+    @brief Return the elapsed time since the given timespec in seconds
+
+    The time is rounded down to the nearest second
+
+    @param[in] start_ts Timespec of start time
+
+    @return Seconds since start time
+*/
+
+size_t _seconds_since(const struct timespec& start_ts) {
+    return _useconds_since(start_ts) / 1000000;
 }

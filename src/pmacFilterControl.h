@@ -13,7 +13,15 @@ enum ControlMode {
     IDLE,
     ACTIVE,
     ONESHOT,
-    SIZE  // Convenience for checking valid value range of ControlMode
+    CONTROL_MODE_SIZE  // Convenience for checking valid value range of ControlMode
+};
+
+enum ControlState {
+    ACTIVE_HEALTHY,
+    ACTIVE_TIMEOUT,
+    ONESHOT_ACTIVE,
+    ONESHOT_COMPLETE,
+    CONTROL_STATE_SIZE  // Convenience for checking valid value range of ControlState
 };
 
 class PMACFilterController
@@ -43,6 +51,8 @@ class PMACFilterController
         // The frame number of the last frame that was successfully processed
         // - Used to decide to ignore some frames
         int64_t last_processed_frame_;
+        // Flag to reset timeout and re-enter continuous mode
+        bool clear_timeout_;
 
         // Local store of current attenuation to compare against the next attenuation change request
         int current_attenuation_;
@@ -58,6 +68,10 @@ class PMACFilterController
 
         // Duration in microseconds of previous process
         size_t process_time_;
+        // Time in microseconds previous process
+        size_t time_since_last_process_;
+        // The current logic state
+        ControlState state_;
 
         /* Control Channel Parameters */
         // The current mode of operation
@@ -70,19 +84,23 @@ class PMACFilterController
         bool _handle_request(const json& request, json& response);
         void _handle_status(json& response);
         bool _handle_config(const json& config);
-        bool _set_mode(ControlMode mode);
-        bool _set_in_positions(json positions);
+        bool _set_mode(const ControlMode mode);
+        bool _set_in_positions(const json positions);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
-        void _calculate_process_time(struct timespec& start_ts);
+        void _set_max_attenuation();
+        void _calculate_process_time(const struct timespec& start_ts);
         void _process_data(const json& data);
         json _parse_json_string(const std::string& json_string);
-        void _send_filter_adjustment(int adjustment);
+        void _send_filter_adjustment(const int adjustment);
 };
 
 /* Helper methods */
 std::vector<std::string> _parse_endpoints(std::string endpoint_arg);
 bool _message_queued(zmq::pollitem_t& pollitem);
 bool _is_valid_request(const json& request);
+void _get_time(struct timespec* ts);
+size_t _useconds_since(const struct timespec& start_ts);
+size_t _seconds_since(const struct timespec& start_ts);
 
 #endif  // PMAC_FILTER_CONTROLLER_H_
