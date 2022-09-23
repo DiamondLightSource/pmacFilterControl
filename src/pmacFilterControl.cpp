@@ -131,14 +131,21 @@ PMACFilterController::~PMACFilterController() {
 /*!
     @brief Handle the JSON request from the control channel
 
+    This method assumes request has contains a `COMMAND` field and accesses it without checking.
+
+    @throw Assertion failed if there is no `COMMAND` field
+
     @param[in] request json object of request
     @param[out] response json object to add response to
 
     @return true if the request was applied successfully, else false
 */
 bool PMACFilterController::_handle_request(const json& request, json& response) {
-    bool success = false;
+    if (!_is_valid_request(request)) {
+        return false;
+    }
 
+    bool success = true;
     if (request[COMMAND] == COMMAND_SHUTDOWN) {
         std::cout << "Received shutdown command" << std::endl;
         this->shutdown_ = true;
@@ -305,13 +312,9 @@ void PMACFilterController::run() {
         );
         std::cout << "Request received: " << request_str << std::endl;
 
-        bool success = false;
         json request, response;
         request = this->_parse_json_string(request_str);
-        if (!request.is_null()) {
-            success = this->_handle_request(request, response);
-        }
-        response["success"] = success;
+        response["success"] = this->_handle_request(request, response);
 
         std::string response_str = response.dump();
         zmq::message_t response_msg(response_str.size());
@@ -426,23 +429,24 @@ void PMACFilterController::_process_data(const json& data) {
 /*!
     @brief Validate and parse json from a string representation to create a json object
 
-    Note that the returned json object can be invalid and should be tested with `is_null()` before access.
+    Note even if `parse(...)` does not throw an exception, the returned json object can be
+    null (empty) and should be tested with `.is_null()` before access.
 
     @param[in] json_string String representation of a json structure
 
     @return json object parsed from string
 */
 json PMACFilterController::_parse_json_string(const std::string& json_string) {
-    json _json;
+    json json;
     // Call json::accept first to determine if the string is valid json, without throwing an exception, before calling
     // json::parse, which does throw an exception for invalid json
     if (json::accept(json_string)) {
-        _json = json::parse(json_string);
+        json = json::parse(json_string);
     } else {
         std::cout << "Not valid JSON:\n" << json_string << std::endl;
     }
 
-    return _json;
+    return json;
 }
 
 /*!
@@ -580,4 +584,26 @@ std::vector<std::string> _parse_endpoints(std::string endpoint_arg) {
 */
 bool _message_queued(zmq::pollitem_t& pollitem) {
     return pollitem.revents & ZMQ_POLLIN;
+}
+
+/*!
+    @brief Check if the given json is a valid request
+
+    @param[in] request json object of request
+
+    @return true if the request is valid, else false
+*/
+
+bool _is_valid_request(const json& request) {
+    bool success = true;
+
+    if (request.is_null()) {
+        std::cout << "Failed to parse request as json" << std::endl;
+        success = false;
+    } else if (!request.contains(COMMAND)) {
+        std::cout << "Request did not contain a '" << COMMAND << "' field" << std::endl;
+        success = false;
+    }
+
+    return success;
 }

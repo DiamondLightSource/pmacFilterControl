@@ -83,5 +83,6 @@ class PMACFilterController
 /* Helper methods */
 std::vector<std::string> _parse_endpoints(std::string endpoint_arg);
 bool _message_queued(zmq::pollitem_t& pollitem);
+bool _is_valid_request(const json& request);
 
 #endif  // PMAC_FILTER_CONTROLLER_H_
