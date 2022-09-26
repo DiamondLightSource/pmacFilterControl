@@ -370,6 +370,9 @@ void PMACFilterController::_process_data_channel() {
     struct timespec process_start_ts, last_process_time_ts;
     last_process_time_ts.tv_sec = 0;  // Force timeout to trigger on first loop
     while (!this->shutdown_) {
+        // Update status
+        this->time_since_last_process_ = _seconds_since(last_process_time_ts);
+
         // Process mode changes from control thread
         // - Disable
         if (this->mode_ == ControlMode::DISABLE) {
@@ -388,9 +391,7 @@ void PMACFilterController::_process_data_channel() {
         if (this->mode_ == ControlMode::SINGLESHOT) {
             this->_process_singleshot_state();
         }
-
         // - Set max attenuation and stop if timeout reached
-        this->time_since_last_process_ = _seconds_since(last_process_time_ts);
         if (this->state_ == ControlState::ACTIVE && this->time_since_last_process_ >= CONTINUOUS_MODE_TIMEOUT) {
             std::cout << "Timeout waiting for messages" << std::endl;
             this->_set_max_attenuation();
