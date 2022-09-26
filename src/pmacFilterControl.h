@@ -100,11 +100,11 @@ class PMACFilterController
         void _set_max_attenuation();
         void _calculate_process_time(const struct timespec& start_ts);
         void _process_data(const json& data);
-        json _parse_json_string(const std::string& json_string);
         void _send_filter_adjustment(const int adjustment);
 };
 
 /* Helper methods */
+json _parse_json_string(const std::string& json_string);
 std::vector<std::string> _parse_endpoints(std::string endpoint_arg);
 bool _message_queued(zmq::pollitem_t& pollitem);
 bool _is_valid_request(const json& request);

@@ -335,7 +335,7 @@ void PMACFilterController::run() {
         std::cout << "Request received: " << request_str << std::endl;
 
         json request, response;
-        request = this->_parse_json_string(request_str);
+        request = _parse_json_string(request_str);
         response["success"] = this->_handle_request(request, response);
 
         std::string response_str = response.dump();
@@ -417,7 +417,7 @@ void PMACFilterController::_process_data_channel() {
                     data_str = std::string(static_cast<char*>(data_message.data()), data_message.size());
                     std::cout << "Data received: " << data_str << std::endl;
 
-                    json data = this->_parse_json_string(data_str);
+                    json data = _parse_json_string(data_str);
                     if (!data.is_null()) {
                         this->_process_data(data);
                     }
@@ -514,29 +514,6 @@ void PMACFilterController::_process_data(const json& data) {
     }
 
     this->last_received_frame_ = data[FRAME_NUMBER];
-}
-
-/*!
-    @brief Validate and parse json from a string representation to create a json object
-
-    Note even if `parse(...)` does not throw an exception, the returned json object can be
-    null (empty) and should be tested with `.is_null()` before access.
-
-    @param[in] json_string String representation of a json structure
-
-    @return json object parsed from string
-*/
-json PMACFilterController::_parse_json_string(const std::string& json_string) {
-    json json;
-    // Call json::accept first to determine if the string is valid json, without throwing an exception, before calling
-    // json::parse, which does throw an exception for invalid json
-    if (json::accept(json_string)) {
-        json = json::parse(json_string);
-    } else {
-        std::cout << "Not valid JSON:\n" << json_string << std::endl;
-    }
-
-    return json;
 }
 
 /*!
@@ -643,6 +620,29 @@ int main(int argc, char** argv) {
 
 
 /* Helper Methods */
+
+/*!
+    @brief Validate and parse json from a string representation to create a json object
+
+    Note even if `parse(...)` does not throw an exception, the returned json object can be
+    null (empty) and should be tested with `.is_null()` before access.
+
+    @param[in] json_string String representation of a json structure
+
+    @return json object parsed from string
+*/
+json _parse_json_string(const std::string& json_string) {
+    json json;
+    // Call json::accept first to determine if the string is valid json, without throwing an exception, before calling
+    // json::parse, which does throw an exception for invalid json
+    if (json::accept(json_string)) {
+        json = json::parse(json_string);
+    } else {
+        std::cout << "Not valid JSON:\n" << json_string << std::endl;
+    }
+
+    return json;
+}
 
 /*!
     @brief Parse comma-separated string of endpoints from command line
