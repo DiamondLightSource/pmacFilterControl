@@ -11,14 +11,14 @@ using json = nlohmann::json;
 
 enum ControlMode {
     IDLE,
-    ACTIVE,
+    CONTINUOUS,
     ONESHOT,
     CONTROL_MODE_SIZE  // Convenience for checking valid value range of ControlMode
 };
 
 enum ControlState {
-    ACTIVE_HEALTHY,
-    ACTIVE_TIMEOUT,
+    ACTIVE,
+    TIMEOUT,
     ONESHOT_ACTIVE,
     ONESHOT_COMPLETE,
     CONTROL_STATE_SIZE  // Convenience for checking valid value range of ControlState

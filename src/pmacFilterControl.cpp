@@ -17,7 +17,7 @@ const int FILTER_TRAVEL = 100;  // Filter travel in counts to move a filter into
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;  // Number of filters
-const int ACTIVE_MODE_TIMEOUT = 1;  // Seconds of not receiving data before setting max attenuation in active mode
+const int CONTINUOUS_MODE_TIMEOUT = 3;  // Seconds of no messages before setting max attenuation in continuous mode
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -90,7 +90,7 @@ PMACFilterController::PMACFilterController(
     zmq_control_socket_(zmq_context_, ZMQ_REP),
     zmq_data_sockets_(),
     // Internal logic
-    state_(ControlState::ACTIVE_HEALTHY),
+    state_(ControlState::ACTIVE),
     last_processed_frame_(NO_FRAMES_PROCESSED),
     time_since_last_process_(0),
     process_time_(0),
@@ -103,7 +103,7 @@ PMACFilterController::PMACFilterController(
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
-    mode_(ControlMode::ACTIVE),
+    mode_(ControlMode::CONTINUOUS),
     in_positions_({100, 100, 100, 100}),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}})
 {
@@ -360,19 +360,19 @@ void PMACFilterController::_process_data_channel() {
     while (!this->shutdown_) {
         // - Set max attenuation and stop if timeout reached
         this->time_since_last_process_ = _seconds_since(last_process_time_ts);
-        if (this->state_ == ControlState::ACTIVE_HEALTHY && this->time_since_last_process_ >= ACTIVE_MODE_TIMEOUT) {
+        if (this->state_ == ControlState::ACTIVE && this->time_since_last_process_ >= CONTINUOUS_MODE_TIMEOUT) {
             std::cout << "Timeout waiting for messages" << std::endl;
             this->_set_max_attenuation();
-            this->state_ = ControlState::ACTIVE_TIMEOUT;
+            this->state_ = ControlState::TIMEOUT;
         }
         // - Clear timeout if requested from control thread
-        else if (this->state_ == ControlState::ACTIVE_TIMEOUT && this->clear_timeout_) {
+        else if (this->state_ == ControlState::TIMEOUT && this->clear_timeout_) {
             std::cout << "Timeout cleared - waiting for messages" << std::endl;
             this->clear_timeout_ = false;
-            this->state_ = ControlState::ACTIVE_HEALTHY;
+            this->state_ = ControlState::ACTIVE;
         }
 
-        if (this->state_ == ControlState::ACTIVE_HEALTHY) {
+        if (this->state_ == ControlState::ACTIVE) {
             // Poll data sockets
             zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
             for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
@@ -392,7 +392,7 @@ void PMACFilterController::_process_data_channel() {
 
                     this->_calculate_process_time(process_start_ts);
                     _get_time(&last_process_time_ts);
-                    this->state_ = ControlState::ACTIVE_HEALTHY;
+                    this->state_ = ControlState::ACTIVE;
                 }
             }
         }
