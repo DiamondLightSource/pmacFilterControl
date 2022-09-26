@@ -21,7 +21,7 @@ JSON_TEMPLATE = """
 THRESHOLD_LEVEL = 4
 
 
-def main(ports: List[int] = [10001], rate: float = 1):
+def main(ports: List[int] = [10001], rate: float = 1, singleshot_length: int = 0):
     context = zmq.Context()
 
     endpoints = [f"tcp://*:{port}" for port in ports]
@@ -38,14 +38,22 @@ def main(ports: List[int] = [10001], rate: float = 1):
 
     frame_number = 0
     while True:
-        formatter = dict(
-            frame_number=frame_number,
-            high2=random.randrange(0, THRESHOLD_LEVEL),
-            high1=random.randrange(0, THRESHOLD_LEVEL),
-            # Make low slightly more likely to balance out precedence
-            low1=random.randrange(0, THRESHOLD_LEVEL + 2),
-            low2=random.randrange(0, THRESHOLD_LEVEL + 2),
-        )
+        if singleshot_length > 0 and frame_number > singleshot_length:
+            # Do not trigger thresholds
+            formatter = dict(
+                frame_number=frame_number, high2=0, high1=0, low2=0, low1=0
+            )
+        else:
+            # Random values
+            formatter = dict(
+                frame_number=frame_number,
+                high2=random.randrange(0, THRESHOLD_LEVEL),
+                high1=random.randrange(0, THRESHOLD_LEVEL),
+                # Make low slightly more likely to balance out precedence
+                low1=random.randrange(0, THRESHOLD_LEVEL + 2),
+                low2=random.randrange(0, THRESHOLD_LEVEL + 2),
+            )
+
         message = JSON_TEMPLATE.format(**formatter)
 
         idx = frame_number % len(sockets)
