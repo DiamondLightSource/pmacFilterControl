@@ -370,6 +370,19 @@ void PMACFilterController::_process_data_channel() {
     struct timespec process_start_ts, last_process_time_ts;
     last_process_time_ts.tv_sec = 0;  // Force timeout to trigger on first loop
     while (!this->shutdown_) {
+        // Process mode changes from control thread
+        // - Disable
+        if (this->mode_ == ControlMode::DISABLE) {
+            this->state_ = ControlState::IDLE;
+        }
+        // - Change state if mode changed to continuous
+        if (this->mode_ == ControlMode::CONTINUOUS &&
+            (this->state_ == ControlState::IDLE || this->state_ == ControlState::SINGLESHOT_COMPLETE)
+        ) {
+            this->_set_max_attenuation();
+            this->state_ = ControlState::WAITING;
+        }
+
         // Process internal state changes
         // - Process singleshot logic if active
         if (this->mode_ == ControlMode::SINGLESHOT) {
