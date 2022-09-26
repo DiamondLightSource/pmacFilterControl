@@ -96,6 +96,7 @@ class PMACFilterController
         bool _set_in_positions(const json positions);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
+        void _transition_state(ControlState state);
         void _process_singleshot_state();
         void _set_max_attenuation();
         void _calculate_process_time(const struct timespec& start_ts);

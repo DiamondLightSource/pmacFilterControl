@@ -379,14 +379,17 @@ void PMACFilterController::_process_data_channel() {
         // Process mode changes from control thread
         // - Disable
         if (this->mode_ == ControlMode::DISABLE) {
-            this->state_ = ControlState::IDLE;
+            this->_transition_state(ControlState::IDLE);
         }
-        // - Change state if mode changed to continuous
-        if (this->mode_ == ControlMode::CONTINUOUS &&
-            (this->state_ == ControlState::IDLE || this->state_ == ControlState::SINGLESHOT_COMPLETE)
-        ) {
-            this->_set_max_attenuation();
-            this->state_ = ControlState::WAITING;
+        // - Transition state to waiting depending on mode change
+        if (this->mode_ == ControlMode::CONTINUOUS) {
+            if (this->state_ == ControlState::IDLE || this->state_ == ControlState::SINGLESHOT_COMPLETE) {
+                this->_transition_state(ControlState::WAITING);
+            }
+        } else if (this->mode_ == ControlMode::SINGLESHOT) {
+            if (this->state_ == ControlState::IDLE) {
+                this->_transition_state(ControlState::WAITING);
+            }
         }
 
         // Process internal state changes
@@ -397,14 +400,13 @@ void PMACFilterController::_process_data_channel() {
         // - Set max attenuation and stop if timeout reached
         if (this->state_ == ControlState::ACTIVE && this->time_since_last_process_ >= CONTINUOUS_MODE_TIMEOUT) {
             std::cout << "Timeout waiting for messages" << std::endl;
-            this->_set_max_attenuation();
-            this->state_ = ControlState::TIMEOUT;
+            this->_transition_state(ControlState::TIMEOUT);
         }
         // - Clear timeout if requested from control thread
         else if (this->state_ == ControlState::TIMEOUT && this->clear_timeout_) {
             std::cout << "Timeout cleared - waiting for messages" << std::endl;
             this->clear_timeout_ = false;
-            this->state_ = ControlState::WAITING;
+            this->_transition_state(ControlState::WAITING);
         }
 
         // If we are still in a healthy state at this point, try processing messages
@@ -431,7 +433,7 @@ void PMACFilterController::_process_data_channel() {
 
                     if (this->state_ == ControlState::WAITING) {
                         // Change from waiting to active to enable timeout monitoring
-                        this->state_ = ControlState::ACTIVE;
+                        this->_transition_state(ControlState::ACTIVE);
                     }
                 }
             }
@@ -450,16 +452,30 @@ void PMACFilterController::_process_singleshot_state() {
         this->last_received_frame_ - this->last_processed_frame_ > STABILITY_THRESHOLD
     ) {
         std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
-        this->state_ = ControlState::SINGLESHOT_COMPLETE;
+        this->_transition_state(ControlState::SINGLESHOT_COMPLETE);
     }
     // Start singleshot run
     else if (this->singleshot_start_) {
         // Set max attenuation and trigger the next run
         std::cout << "Starting a new singleshot run" << std::endl;
-        this->_set_max_attenuation();
-        this->state_ = ControlState::WAITING;
+        this->_transition_state(ControlState::WAITING);
         this->singleshot_start_ = false;
     }
+}
+
+/*!
+    @brief Transition to the given state applying relevant logic for specific transitions
+*/
+void PMACFilterController::_transition_state(ControlState state) {
+    if (state != this->state_) {
+        if (state == ControlState::TIMEOUT) {
+            this->_set_max_attenuation();
+        } else if (state == ControlState::WAITING && this->state_ != ControlState::TIMEOUT) {
+            this->_set_max_attenuation();
+        }
+    }
+
+    this->state_ = state;
 }
 
 /*!
