@@ -13,7 +13,6 @@
 
 #define VERSION "0.7"
 
-const int FILTER_TRAVEL = 100;  // Filter travel in counts to move a filter into the beam
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;  // Number of filters
