@@ -18,6 +18,7 @@ const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;  // Number of filters
 const int CONTINUOUS_MODE_TIMEOUT = 3;  // Seconds of no messages before setting max attenuation in continuous mode
+const int STABILITY_THRESHOLD = 10;  // Number of messages without adjustment to consider attenuation level stable
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -30,6 +31,7 @@ const std::string COMMAND_STATUS = "status";
 const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
 const std::string COMMAND_CLEAR_TIMEOUT = "clear_timeout";
+const std::string COMMAND_SINGLESHOT_START = "singleshot";
 const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
@@ -91,9 +93,11 @@ PMACFilterController::PMACFilterController(
     zmq_data_sockets_(),
     // Internal logic
     state_(ControlState::ACTIVE),
+    last_received_frame_(NO_FRAMES_PROCESSED),
     last_processed_frame_(NO_FRAMES_PROCESSED),
     time_since_last_process_(0),
     process_time_(0),
+    singleshot_start_(false),
     clear_timeout_(false),
     shutdown_(false),
     // Filter logic
@@ -159,10 +163,14 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
         success = true;
     } else if (request[COMMAND] == COMMAND_RESET) {
         std::cout << "Resetting frame counter" << std::endl;
+        this->last_received_frame_ = NO_FRAMES_PROCESSED;
         this->last_processed_frame_ = NO_FRAMES_PROCESSED;
         success = true;
     } else if (request[COMMAND] == COMMAND_CLEAR_TIMEOUT) {
         this->clear_timeout_ = true;
+    } else if (request[COMMAND] == COMMAND_SINGLESHOT_START) {
+        this->singleshot_start_ = true;
+        success = true;
     } else if (request[COMMAND] == COMMAND_STATUS) {
         this->_handle_status(response);
         success = true;
@@ -297,6 +305,7 @@ void PMACFilterController::_handle_status(json& response) {
     json status;
     status["version"] = VERSION;
     status["process_time"] = this->process_time_;
+    status["last_received_frame"] = this->last_received_frame_;
     status["last_processed_frame"] = this->last_processed_frame_;
     status["time_since_last_process"] = this->time_since_last_process_;
     status["current_attenuation"] = this->current_attenuation_;
@@ -361,6 +370,12 @@ void PMACFilterController::_process_data_channel() {
     struct timespec process_start_ts, last_process_time_ts;
     last_process_time_ts.tv_sec = 0;  // Force timeout to trigger on first loop
     while (!this->shutdown_) {
+        // Process internal state changes
+        // - Process singleshot logic if active
+        if (this->mode_ == ControlMode::SINGLESHOT) {
+            this->_process_singleshot_state();
+        }
+
         // - Set max attenuation and stop if timeout reached
         this->time_since_last_process_ = _seconds_since(last_process_time_ts);
         if (this->state_ == ControlState::ACTIVE && this->time_since_last_process_ >= CONTINUOUS_MODE_TIMEOUT) {
@@ -372,10 +387,11 @@ void PMACFilterController::_process_data_channel() {
         else if (this->state_ == ControlState::TIMEOUT && this->clear_timeout_) {
             std::cout << "Timeout cleared - waiting for messages" << std::endl;
             this->clear_timeout_ = false;
-            this->state_ = ControlState::ACTIVE;
+            this->state_ = ControlState::WAITING;
         }
 
-        if (this->state_ == ControlState::ACTIVE) {
+        // If we are still in a healthy state at this point, try processing messages
+        if (this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE) {
             // Poll data sockets
             zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
             for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
@@ -395,10 +411,37 @@ void PMACFilterController::_process_data_channel() {
 
                     this->_calculate_process_time(process_start_ts);
                     _get_time(&last_process_time_ts);
-                    this->state_ = ControlState::ACTIVE;
+
+                    if (this->state_ == ControlState::WAITING) {
+                        // Change from waiting to active to enable timeout monitoring
+                        this->state_ = ControlState::ACTIVE;
+                    }
                 }
             }
         }
+    }
+}
+
+/*!
+    @brief Handle logic for singleshot mode
+
+    This method assumes the controller is in singleshot mode
+*/
+void PMACFilterController::_process_singleshot_state() {
+    // Complete if singleshot run has stablised
+    if (this->state_ == ControlState::ACTIVE &&
+        this->last_received_frame_ - this->last_processed_frame_ > STABILITY_THRESHOLD
+    ) {
+        std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
+        this->state_ = ControlState::SINGLESHOT_COMPLETE;
+    }
+    // Start singleshot run
+    else if (this->singleshot_start_) {
+        // Set max attenuation and trigger the next run
+        std::cout << "Starting a new singleshot run" << std::endl;
+        this->_set_max_attenuation();
+        this->state_ = ControlState::WAITING;
+        this->singleshot_start_ = false;
     }
 }
 
@@ -452,11 +495,12 @@ void PMACFilterController::_process_data(const json& data) {
             std::cout << "Current threshold: " << this->pixel_count_thresholds_[*threshold] << std::endl;
             int adjustment = THRESHOLD_ADJUSTMENTS.at(*threshold);
             this->_send_filter_adjustment(adjustment);
+            this->last_processed_frame_ = data[FRAME_NUMBER];
             break;
         }
     }
 
-    this->last_processed_frame_ = data[FRAME_NUMBER];
+    this->last_received_frame_ = data[FRAME_NUMBER];
 }
 
 /*!

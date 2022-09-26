@@ -10,17 +10,20 @@ using json = nlohmann::json;
 #define PMAC_FILTER_CONTROLLER_H_
 
 enum ControlMode {
-    IDLE,
-    CONTINUOUS,
-    ONESHOT,
+    DISABLE,  // Ignore messages
+    CONTINUOUS,  // Run forever
+    SINGLESHOT,  // Run until attenuation stablises and then pause at that attenuation until restarted
+
     CONTROL_MODE_SIZE  // Convenience for checking valid value range of ControlMode
 };
 
 enum ControlState {
-    ACTIVE,
-    TIMEOUT,
-    ONESHOT_ACTIVE,
-    ONESHOT_COMPLETE,
+    IDLE,  // Ignoring all messages
+    WAITING,  // At max attenuation and waiting for messages
+    ACTIVE,  // Receiving messages and healthy
+    TIMEOUT,  // Waiting for timeout to be cleared to enter WAITING again
+    SINGLESHOT_COMPLETE,  // Attenuation stablised in singleshot run and waiting for next run
+
     CONTROL_STATE_SIZE  // Convenience for checking valid value range of ControlState
 };
 
@@ -48,11 +51,16 @@ class PMACFilterController
         std::thread listenThread_;
         // Flag to interupt listen loop and shutdown process
         bool shutdown_;
-        // The frame number of the last frame that was successfully processed
+        // The frame number of the last message that was received, but not necessarily processed
+        // - Used to determine that the attenuation level is stable in single-shot mode
+        int64_t last_received_frame_;
+        // The frame number of the last message that was successfully processed
         // - Used to decide to ignore some frames
         int64_t last_processed_frame_;
         // Flag to reset timeout and re-enter continuous mode
         bool clear_timeout_;
+        // Flag to start a new single shot run
+        bool singleshot_start_;
 
         // Local store of current attenuation to compare against the next attenuation change request
         int current_attenuation_;
@@ -88,6 +96,7 @@ class PMACFilterController
         bool _set_in_positions(const json positions);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
+        void _process_singleshot_state();
         void _set_max_attenuation();
         void _calculate_process_time(const struct timespec& start_ts);
         void _process_data(const json& data);
