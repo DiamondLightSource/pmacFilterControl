@@ -180,6 +180,9 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
             std::cout << "Received config command with no parameters" << std::endl;
             success = false;
         }
+    } else {
+        std::cout << "Invalid command" << std::endl;
+        success = false;
     }
 
     return success;
