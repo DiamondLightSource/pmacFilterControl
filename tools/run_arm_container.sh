@@ -10,13 +10,13 @@ if [ -z "$1" ]; then
   ${CONTAINER_RUN}
 elif [ $1 == "bash" ]; then
   ${CONTAINER_RUN} bash
-elif [ $1 == "build" ]; then
+elif [ $1 == "cleanrebuild" ]; then
   ${CONTAINER_RUN} bash -c "\
 mkdir -p ${ARM_BUILD} && rm -rf ${ARM_BUILD}/* && cd ${ARM_BUILD} && \
 mkdir -p ${ARM_PREFIX} && rm -rf ${ARM_PREFIX}/* && \
 cmake .. -DCMAKE_TOOLCHAIN_FILE=${ARM_PMACFILTERCONTROL}/cmake/arm-gcc-toolchain.cmake -DCMAKE_INSTALL_PREFIX=${ARM_PREFIX} -DZEROMQ_ROOTDIR=/build/libzmq/prefix/ && \
 make VERBOSE=1 && make install"
-elif [ $1 == "rebuild" ]; then
+elif [ $1 == "build" ]; then
 ${CONTAINER_RUN} bash -c "\
 cd ${ARM_BUILD} && make VERBOSE=1 && make install"
 elif [ $1 == "pmacFilterControl" ]; then

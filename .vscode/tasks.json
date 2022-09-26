@@ -42,7 +42,7 @@
             "options": [
                 "bash",
                 "build",
-                "rebuild",
+                "cleanrebuild",
                 "pmacFilterControl",
             ],
         }
