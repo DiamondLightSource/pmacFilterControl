@@ -92,7 +92,7 @@ PMACFilterController::PMACFilterController(
     zmq_control_socket_(zmq_context_, ZMQ_REP),
     zmq_data_sockets_(),
     // Internal logic
-    state_(ControlState::ACTIVE),
+    state_(ControlState::WAITING),
     last_received_frame_(NO_FRAMES_PROCESSED),
     last_processed_frame_(NO_FRAMES_PROCESSED),
     time_since_last_process_(0),
@@ -364,11 +364,14 @@ void PMACFilterController::_process_data_channel() {
         pollitems[idx] = pollitem;
     }
 
+    // Set max attenuation so that the logic starts from a known state
+    std::cout << "Setting max attenuation" << std::endl;
+    this->_set_max_attenuation();
+
     std::cout << "Listening for messages..." << std::endl;
 
     std::string data_str;
     struct timespec process_start_ts, last_process_time_ts;
-    last_process_time_ts.tv_sec = 0;  // Force timeout to trigger on first loop
     while (!this->shutdown_) {
         // Update status
         this->time_since_last_process_ = _seconds_since(last_process_time_ts);
