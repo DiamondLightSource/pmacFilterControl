@@ -11,7 +11,7 @@
 #include "gplib.h"
 #endif
 
-#define VERSION "0.7"
+#define VERSION "0.8"
 
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
