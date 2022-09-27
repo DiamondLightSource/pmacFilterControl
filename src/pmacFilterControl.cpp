@@ -94,8 +94,9 @@ PMACFilterController::PMACFilterController(
     state_(ControlState::WAITING),
     last_received_frame_(NO_FRAMES_PROCESSED),
     last_processed_frame_(NO_FRAMES_PROCESSED),
-    time_since_last_process_(0),
-    process_time_(0),
+    time_since_last_message_(0),
+    process_duration_(0),
+    process_period_(0),
     singleshot_start_(false),
     clear_timeout_(false),
     shutdown_(false),
@@ -303,10 +304,11 @@ bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
 void PMACFilterController::_handle_status(json& response) {
     json status;
     status["version"] = VERSION;
-    status["process_time"] = this->process_time_;
+    status["process_duration"] = this->process_duration_;
+    status["process_period"] = this->process_period_;
     status["last_received_frame"] = this->last_received_frame_;
     status["last_processed_frame"] = this->last_processed_frame_;
-    status["time_since_last_process"] = this->time_since_last_process_;
+    status["time_since_last_message"] = this->time_since_last_message_;
     status["current_attenuation"] = this->current_attenuation_;
     status["state"] = this->state_;
     status["mode_rbv"] = this->mode_;
@@ -370,10 +372,10 @@ void PMACFilterController::_process_data_channel() {
     std::cout << "Listening for messages..." << std::endl;
 
     std::string data_str;
-    struct timespec process_start_ts, last_process_time_ts;
+    struct timespec process_start_ts, process_end_ts, last_message_ts;
     while (!this->shutdown_) {
         // Update status
-        this->time_since_last_process_ = _seconds_since(last_process_time_ts);
+        this->time_since_last_message_ = _seconds_since(last_message_ts);
 
         // Process mode changes from control thread
         // - Disable
@@ -397,7 +399,7 @@ void PMACFilterController::_process_data_channel() {
             this->_process_singleshot_state();
         }
         // - Set max attenuation and stop if timeout reached
-        if (this->state_ == ControlState::ACTIVE && this->time_since_last_process_ >= CONTINUOUS_MODE_TIMEOUT) {
+        if (this->state_ == ControlState::ACTIVE && this->time_since_last_message_ >= CONTINUOUS_MODE_TIMEOUT) {
             std::cout << "Timeout waiting for messages" << std::endl;
             this->_transition_state(ControlState::TIMEOUT);
         }
@@ -424,11 +426,11 @@ void PMACFilterController::_process_data_channel() {
 
                     json data = _parse_json_string(data_str);
                     if (!data.is_null()) {
-                        this->_process_data(data);
+                        if(this->_process_data(data)) {
+                            this->_calculate_process_metrics(process_start_ts, process_end_ts);
+                        }
                     }
-
-                    this->_calculate_process_time(process_start_ts);
-                    _get_time(&last_process_time_ts);
+                    _get_time(&last_message_ts);
 
                     if (this->state_ == ControlState::WAITING) {
                         // Change from waiting to active to enable timeout monitoring
@@ -486,13 +488,15 @@ void PMACFilterController::_set_max_attenuation() {
 }
 
 /*!
-    @brief Calculate and store time since given timespec
+    @brief Calculate and store time of process and since last process
 
     @param[in] start_ts Timespec of process start time
+    @param[in/out] end_ts Timespec of last process end time - this will be updated
 */
-void PMACFilterController::_calculate_process_time(const struct timespec& start_ts) {
-    this->process_time_ = _useconds_since(start_ts);
-    std::cout << "Process time: " << this->process_time_ << "us" << std::endl;
+void PMACFilterController::_calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts) {
+    this->process_duration_ = (this->process_duration_ + _useconds_since(start_ts)) / 2;
+    this->process_period_ = _useconds_since(end_ts) / this->zmq_data_sockets_.size();
+    _get_time(&end_ts);
 }
 
 /*!
@@ -502,20 +506,24 @@ void PMACFilterController::_calculate_process_time(const struct timespec& start_
     attenuation level to be adjusted.
 
     @param[in] data json structure of data message
+
+    @return true if an attenuation change was made, else false
 */
-void PMACFilterController::_process_data(const json& data) {
+bool PMACFilterController::_process_data(const json& data) {
+    this->last_received_frame_ = data[FRAME_NUMBER];
+
     // Validate the data message
     if (!(data.contains(FRAME_NUMBER) && data.contains(PARAMETERS))) {
         std::cout << "Ignoring message - Does not have keys " << FRAME_NUMBER << " and " << PARAMETERS << std::endl;
-        return;
+        return false;
     }
     if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
         std::cout << "Ignoring message " << " - Already processed " << this->last_processed_frame_ << std::endl;
-        return;
+        return false;
     }
     if (data[FRAME_NUMBER] == this->last_processed_frame_ + 1) {
         std::cout << "Ignoring message - Processed preceding frame" << std::endl;
-        return;
+        return false;
     }
 
     json histogram = data[PARAMETERS];
@@ -528,11 +536,11 @@ void PMACFilterController::_process_data(const json& data) {
             int adjustment = THRESHOLD_ADJUSTMENTS.at(*threshold);
             this->_send_filter_adjustment(adjustment);
             this->last_processed_frame_ = data[FRAME_NUMBER];
-            break;
+            return true;
         }
     }
 
-    this->last_received_frame_ = data[FRAME_NUMBER];
+    return false;
 }
 
 /*!

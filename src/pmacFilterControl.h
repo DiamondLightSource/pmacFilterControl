@@ -75,9 +75,12 @@ class PMACFilterController
         std::vector<int> final_demand_;
 
         // Duration in microseconds of previous process
-        size_t process_time_;
-        // Time in microseconds previous process
-        size_t time_since_last_process_;
+        size_t process_duration_;
+         // Time elapsed in microseconds from one process to the next
+         // - This will include any time spent waiting for messages and other housekeeping
+        size_t process_period_;
+        // Time in seconds snce last message received - not necessarily causing processing
+        size_t time_since_last_message_;
         // The current logic state
         ControlState state_;
 
@@ -99,8 +102,8 @@ class PMACFilterController
         void _transition_state(ControlState state);
         void _process_singleshot_state();
         void _set_max_attenuation();
-        void _calculate_process_time(const struct timespec& start_ts);
-        void _process_data(const json& data);
+        void _calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts);
+        bool _process_data(const json& data);
         void _send_filter_adjustment(const int adjustment);
 };
 
