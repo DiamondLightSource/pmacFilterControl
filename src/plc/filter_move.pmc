@@ -8,6 +8,10 @@
 #define Filter3Demand2 P4083
 #define Filter4Demand2 P4084
 
+#define TotalMoveTime P4085
+#define TimerIdx 100
+#define TimerDuration 100
+
 &2
 #1->W
 #2->X
@@ -25,8 +29,14 @@ Open PROG 1
 Abs Rapid
 Frax(W,X,Y,Z)
 
+Sys.CdTimer[TimerIdx] = TimerDuration
+
 W(Filter1Demand1)X(Filter2Demand1)Y(Filter3Demand1)Z(Filter4Demand1)
 Dwell 0
+
 W(Filter1Demand2)X(Filter2Demand2)Y(Filter3Demand2)Z(Filter4Demand2)
+Dwell 0
+
+TotalMoveTime = TimerDuration - Sys.CdTimer[TimerIdx]
 
 Close
