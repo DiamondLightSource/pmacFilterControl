@@ -11,7 +11,7 @@
 #include "gplib.h"
 #endif
 
-#define VERSION "0.8"
+#define VERSION "0.9"
 
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
@@ -528,19 +528,35 @@ bool PMACFilterController::_process_data(const json& data) {
 
     json histogram = data[PARAMETERS];
     std::vector<std::string>::const_iterator threshold;
-    for (threshold = THRESHOLD_PRECEDENCE.begin(); threshold != THRESHOLD_PRECEDENCE.end(); threshold++) {
-        // TODO: Should threshold be inclusive?
-        if (histogram[*threshold] > this->pixel_count_thresholds_[*threshold]) {
-            std::cout << *threshold << " threshold triggered" << std::endl;
-            std::cout << "Current threshold: " << this->pixel_count_thresholds_[*threshold] << std::endl;
-            int adjustment = THRESHOLD_ADJUSTMENTS.at(*threshold);
-            this->_send_filter_adjustment(adjustment);
-            this->last_processed_frame_ = data[FRAME_NUMBER];
-            return true;
-        }
+
+    if (histogram[PARAM_HIGH2] > this->pixel_count_thresholds_[PARAM_HIGH2]) {
+        this->_process_threshold(PARAM_HIGH2, data[FRAME_NUMBER]);
+        return true;
+    } else if (histogram[PARAM_HIGH1] > this->pixel_count_thresholds_[PARAM_HIGH1]) {
+        this->_process_threshold(PARAM_HIGH1, data[FRAME_NUMBER]);
+        return true;
+    } else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2]) {
+        this->_process_threshold(PARAM_LOW2, data[FRAME_NUMBER]);
+        return true;
+    } else if (histogram[PARAM_LOW1] < this->pixel_count_thresholds_[PARAM_LOW1]) {
+        this->_process_threshold(PARAM_LOW1, data[FRAME_NUMBER]);
+        return true;
     }
 
     return false;
+}
+
+/*!
+    @brief
+
+
+*/
+void PMACFilterController::_process_threshold(std::string threshold, uint64_t frame_number) {
+    std::cout << threshold << " threshold triggered" << std::endl;
+    std::cout << "Current threshold: " << this->pixel_count_thresholds_[threshold] << std::endl;
+    int adjustment = THRESHOLD_ADJUSTMENTS.at(threshold);
+    this->_send_filter_adjustment(adjustment);
+    this->last_processed_frame_ = frame_number;
 }
 
 /*!
