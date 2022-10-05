@@ -303,6 +303,7 @@ bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
 */
 void PMACFilterController::_handle_status(json& response) {
     json status;
+    // Read-only status items
     status["version"] = VERSION;
     status["process_duration"] = this->process_duration_;
     status["process_period"] = this->process_period_;
@@ -311,9 +312,10 @@ void PMACFilterController::_handle_status(json& response) {
     status["time_since_last_message"] = this->time_since_last_message_;
     status["current_attenuation"] = this->current_attenuation_;
     status["state"] = this->state_;
-    status["mode_rbv"] = this->mode_;
-    status["in_positions_rbv"] = this->in_positions_;
-    status["pixel_count_thresholds_rbv"] = this->pixel_count_thresholds_;
+    // Readback values for config items
+    status[CONFIG_MODE] = this->mode_;
+    status[CONFIG_IN_POSITIONS] = this->in_positions_;
+    status[CONFIG_PIXEL_COUNT_THRESHOLDS] = this->pixel_count_thresholds_;
 
     response[COMMAND_STATUS] = status;
 }
