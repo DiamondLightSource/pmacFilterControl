@@ -1,6 +1,6 @@
 # Docs
 
-The documentation for uses
+The documentation uses
 [sphinx](https://www.sphinx-doc.org/en/master/index.html) and [MyST](https://myst-parser.readthedocs.io/en/latest/index.html)
 for written documentation along with
 [doxygen](https://www.doxygen.nl/index.html) and [breathe](https://breathe.readthedocs.io/en/latest/)
