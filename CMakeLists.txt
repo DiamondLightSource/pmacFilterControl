@@ -30,9 +30,9 @@ if(ARM)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(test)
 add_subdirectory(thirdparty)
 
 if(NOT ARM)
     add_subdirectory(docs)
+    add_subdirectory(test)
 endif()
