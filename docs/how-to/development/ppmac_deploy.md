@@ -17,7 +17,7 @@ $ make install
 
 ## Building pmacFilterControl for ppmac
 
-A docker container is defined in `tools/Dockerfile` to provide a cross-compiling
+A docker container is defined in `docker/Dockerfile` to provide a cross-compiling
 toolchain for ARM. This can be used to build pmacFilterControl for the ppmac. There are
 vscode tasks to build the container itself and for running commands inside the
 container.

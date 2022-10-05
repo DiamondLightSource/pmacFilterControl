@@ -12,25 +12,25 @@
         {
             "label": "Test x86 hello world",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/tools && mkdir -p build && g++ hello.cpp -o build/hello_x86 && ./build/hello_x86",
+            "command": "cd ${workspaceFolder}/docker && mkdir -p build && g++ hello.cpp -o build/hello_x86 && ./build/hello_x86",
             "problemMatcher": []
         },
         {
             "label": "Build ARM container",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/tools && podman build --tag arm-crosscompiler .",
+            "command": "cd ${workspaceFolder}/docker && podman build --tag arm-crosscompiler .",
             "problemMatcher": []
         },
         {
             "label": "Test ARM hello world",
             "type": "shell",
-            "command": "${workspaceFolder}/tools/run_arm_container.sh",
+            "command": "${workspaceFolder}/docker/run_arm_container.sh",
             "problemMatcher": []
         },
         {
             "label": "Run command in ARM container",
             "type": "shell",
-            "command": "${workspaceFolder}/tools/run_arm_container.sh ${input:command}",
+            "command": "${workspaceFolder}/docker/run_arm_container.sh ${input:command}",
             "problemMatcher": []
         },
     ],
