@@ -9,6 +9,7 @@ subtrees:
         entries:
           - file: how-to/development/ppmac_deploy
           - file: how-to/development/ppmac_cross_compiling
+          - file: how-to/development/ppmac_config
       - file: how-to/docs
         entries:
           - file: how-to/excalidraw
