@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/pmacFilterControl",
             "args": [
-                "10000",
-                "127.0.0.1:10001,127.0.0.1:10002"
+                "9000",
+                "127.0.0.1:10009,127.0.0.1:100019"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -32,7 +32,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
             "args": [
-                "tcp://${input:Host}:10000",
+                "tcp://${input:Host}:9000",
                 "{\\\"command\\\": \\\"${input:Command}\\\"}"
             ],
             "stopAtEntry": false,
@@ -54,7 +54,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
             "args": [
-                "tcp://${input:Host}:10000",
+                "tcp://${input:Host}:9000",
                 "{\\\"command\\\": \\\"configure\\\", \\\"params\\\": {\\\"${input:Config}\\\": ${input:Value}}}"
             ],
             "stopAtEntry": false,
@@ -76,7 +76,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/vscode_prefix/bin/TestZMQSender",
             "args": [
-                "tcp://${input:Host}:10000",
+                "tcp://${input:Host}:9000",
                 "{\\\"command\\\": \\\"status\\\"}"
             ],
             "stopAtEntry": false,

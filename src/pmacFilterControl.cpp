@@ -636,7 +636,7 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 int main(int argc, char** argv) {
     if (argc != 3) {
         std::cout << "Usage: " << argv[0] << " control_port data_endpoint\n"
-            << "e.g. '" << argv[0] << " 10000 127.0.0.1:10001'" << std::endl;
+            << "e.g. '" << argv[0] << " 9000 127.0.0.1:10009'" << std::endl;
 
         if (argc == 2 && std::string(argv[1]) == "--help") {
             return 0;

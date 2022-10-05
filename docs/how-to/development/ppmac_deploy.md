@@ -63,8 +63,8 @@ be copied to the ppmac `/root/lib` directory:
 Then pmacFilterControl can be run on the ppmac:
 
 ```
-# LD_LIBRARY_PATH=/root/lib/ /root/prefix/bin/pmacFilterControl 10001 172.23.245.118:10000
-Listening on tcp://172.23.245.118:10000
+# LD_LIBRARY_PATH=/root/lib/ /root/prefix/bin/pmacFilterControl 9000 172.23.245.118:10009
+Listening on tcp://172.23.245.118:9000
 Request received: {"command": "shutdown"}
 Received shutdown command
 Shutting down

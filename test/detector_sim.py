@@ -21,7 +21,7 @@ JSON_TEMPLATE = """
 THRESHOLD_LEVEL = 4
 
 
-def main(ports: List[int] = [10001], rate: float = 1, singleshot_length: int = 0):
+def main(ports: List[int] = [10009], rate: float = 1, singleshot_length: int = 0):
     context = zmq.Context()
 
     endpoints = [f"tcp://*:{port}" for port in ports]

@@ -20,7 +20,7 @@ elif [ $1 == "build" ]; then
 ${CONTAINER_RUN} bash -c "\
 cd ${ARM_BUILD} && make VERBOSE=1 && make install"
 elif [ $1 == "pmacFilterControl" ]; then
-  ${CONTAINER_RUN} qemu-arm -L /usr/arm-linux-gnueabihf/ ${ARM_PREFIX}/bin/pmacFilterControl 10001 127.0.0.1:10000
+  ${CONTAINER_RUN} qemu-arm -L /usr/arm-linux-gnueabihf/ ${ARM_PREFIX}/bin/pmacFilterControl 9000 127.0.0.1:10009
 else
   echo "Unknown command: '$1'"
   exit 1
