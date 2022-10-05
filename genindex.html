@@ -35,6 +35,7 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/design-tabs.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
     <link rel="index" title="Index" href="#" />
@@ -322,7 +323,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/api.html#_CPPv420PMACFilterController">PMACFilterController (C++ class)</a>
 </li>
-      <li><a href="reference/api.html#_CPPv4N20PMACFilterController23_calculate_process_timeER8timespec">PMACFilterController::_calculate_process_time (C++ function)</a>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController26_calculate_process_metricsERK8timespecR8timespec">PMACFilterController::_calculate_process_metrics (C++ function)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController14_handle_configERK4json">PMACFilterController::_handle_config (C++ function)</a>
 </li>
@@ -330,17 +331,27 @@
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController14_handle_statusER4json">PMACFilterController::_handle_status (C++ function)</a>
 </li>
-      <li><a href="reference/api.html#_CPPv4N20PMACFilterController18_parse_json_stringERKNSt6stringE">PMACFilterController::_parse_json_string (C++ function)</a>
-</li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController13_process_dataERK4json">PMACFilterController::_process_data (C++ function)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController21_process_data_channelEv">PMACFilterController::_process_data_channel (C++ function)</a>
 </li>
-      <li><a href="reference/api.html#_CPPv4N20PMACFilterController23_send_filter_adjustmentEi">PMACFilterController::_send_filter_adjustment (C++ function)</a>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController25_process_singleshot_stateEv">PMACFilterController::_process_singleshot_state (C++ function)</a>
 </li>
-      <li><a href="reference/api.html#_CPPv4N20PMACFilterController17_set_in_positionsE4json">PMACFilterController::_set_in_positions (C++ function)</a>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController18_process_thresholdENSt6stringE">PMACFilterController::_process_threshold (C++ function)</a>
 </li>
-      <li><a href="reference/api.html#_CPPv4N20PMACFilterController9_set_modeE11ControlMode">PMACFilterController::_set_mode (C++ function)</a>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController23_send_filter_adjustmentEKi">PMACFilterController::_send_filter_adjustment (C++ function)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController17_set_in_positionsEK4json">PMACFilterController::_set_in_positions (C++ function)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController20_set_max_attenuationEv">PMACFilterController::_set_max_attenuation (C++ function)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController9_set_modeEK11ControlMode">PMACFilterController::_set_mode (C++ function)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController27_set_pixel_count_thresholdsE4json">PMACFilterController::_set_pixel_count_thresholds (C++ function)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController17_transition_stateE12ControlState">PMACFilterController::_transition_state (C++ function)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController14clear_timeout_E">PMACFilterController::clear_timeout_ (C++ member)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController25control_channel_endpoint_E">PMACFilterController::control_channel_endpoint_ (C++ member)</a>
 </li>
@@ -358,23 +369,33 @@
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController21last_processed_frame_E">PMACFilterController::last_processed_frame_ (C++ member)</a>
 </li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController20last_received_frame_E">PMACFilterController::last_received_frame_ (C++ member)</a>
+</li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController13listenThread_E">PMACFilterController::listenThread_ (C++ member)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController5mode_E">PMACFilterController::mode_ (C++ member)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController16new_attenuation_E">PMACFilterController::new_attenuation_ (C++ member)</a>
 </li>
-      <li><a href="reference/api.html#_CPPv4N20PMACFilterController22pixel_count_threshold_E">PMACFilterController::pixel_count_threshold_ (C++ member)</a>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController23pixel_count_thresholds_E">PMACFilterController::pixel_count_thresholds_ (C++ member)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController20PMACFilterControllerERKNSt6stringERKNSt6vectorINSt6stringEEE">PMACFilterController::PMACFilterController (C++ function)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController15post_in_demand_E">PMACFilterController::post_in_demand_ (C++ member)</a>
 </li>
-      <li><a href="reference/api.html#_CPPv4N20PMACFilterController13process_time_E">PMACFilterController::process_time_ (C++ member)</a>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController17process_duration_E">PMACFilterController::process_duration_ (C++ member)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController15process_period_E">PMACFilterController::process_period_ (C++ member)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController3runEv">PMACFilterController::run (C++ function)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController9shutdown_E">PMACFilterController::shutdown_ (C++ member)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController17singleshot_start_E">PMACFilterController::singleshot_start_ (C++ member)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController6state_E">PMACFilterController::state_ (C++ member)</a>
+</li>
+      <li><a href="reference/api.html#_CPPv4N20PMACFilterController24time_since_last_message_E">PMACFilterController::time_since_last_message_ (C++ member)</a>
 </li>
       <li><a href="reference/api.html#_CPPv4N20PMACFilterController12zmq_context_E">PMACFilterController::zmq_context_ (C++ member)</a>
 </li>
