@@ -61,7 +61,7 @@ RUN git clone https://github.com/zeromq/libzmq.git && cd libzmq && \
 RUN ln -s /usr/arm-linux-gnueabihf/lib /root/lib
 
 # Make sure we can find standard lib, zeromq and pmacFilterControl libs
-ENV LD_LIBRARY_PATH=/usr/arm-linux-gnueabihf/lib:/build/libzmq/prefix/lib:/build/pmacFilterControl/arm_prefix/lib
+ENV LD_LIBRARY_PATH=/root/lib:/build/libzmq/prefix/lib:/build/pmacFilterControl/arm_prefix/lib
 
 WORKDIR /build
 
