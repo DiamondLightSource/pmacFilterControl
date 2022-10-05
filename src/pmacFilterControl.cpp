@@ -101,8 +101,8 @@ PMACFilterController::PMACFilterController(
     clear_timeout_(false),
     shutdown_(false),
     // Filter logic
-    new_attenuation_(0),
     current_attenuation_(0),
+    new_attenuation_(0),
     current_demand_(FILTER_COUNT, 0),
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
@@ -114,7 +114,7 @@ PMACFilterController::PMACFilterController(
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
 
     // Open sockets to subscribe to data endpoints
-    for (int idx = 0; idx != this->data_channel_endpoints_.size(); idx++) {
+    for (size_t idx = 0; idx != this->data_channel_endpoints_.size(); idx++) {
         this->zmq_data_sockets_.push_back(zmq::socket_t(this->zmq_context_, ZMQ_SUB));
         // Only recv most recent message
         const int conflate = 1;
@@ -360,7 +360,7 @@ void PMACFilterController::run() {
 void PMACFilterController::_process_data_channel() {
     // Construct pollitems for data sockets
     zmq::pollitem_t pollitems[this->zmq_data_sockets_.size()];
-    for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
+    for (size_t idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
         zmq::pollitem_t pollitem = {this->zmq_data_sockets_[idx], 0, ZMQ_POLLIN, 0};
         pollitems[idx] = pollitem;
     }
@@ -414,7 +414,7 @@ void PMACFilterController::_process_data_channel() {
         if (this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE) {
             // Poll data sockets
             zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
-            for (int idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
+            for (size_t idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
                 if (_message_queued(pollitems[idx])) {
                     _get_time(&process_start_ts);
 
@@ -491,7 +491,7 @@ void PMACFilterController::_set_max_attenuation() {
     @brief Calculate and store time of process and since last process
 
     @param[in] start_ts Timespec of process start time
-    @param[in/out] end_ts Timespec of last process end time - this will be updated
+    @param[in,out] end_ts Timespec of last process end time - this will be updated
 */
 void PMACFilterController::_calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts) {
     this->process_duration_ = (this->process_duration_ + _useconds_since(start_ts)) / 2;

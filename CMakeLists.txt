@@ -5,6 +5,7 @@ project(pmacFilterControl)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_MODULE_PATH ${pmacFilterControl_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+set(CMAKE_CXX_FLAGS "-Wall -Werror")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
