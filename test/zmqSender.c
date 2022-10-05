@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     assert(rc != -1);
 
     // Check response
-    int LENGTH = 100;
+    int LENGTH = 1000;
     char response[LENGTH];
     rc = zmq_recv(socket, response, LENGTH, 0);
     assert(rc != -1);
