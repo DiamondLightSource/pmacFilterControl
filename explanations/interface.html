@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Docs &#8212; pmacFilterControl 0.1 documentation</title>
+    <title>Software Interface &#8212; pmacFilterControl 0.1 documentation</title>
   <script>
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
@@ -40,11 +40,11 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/docs';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/interface';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="How to embed Excalidraw diagrams" href="excalidraw.html" />
-    <link rel="prev" title="PowerPMAC Configuration" href="development/ppmac_config.html" />
+    <link rel="next" title="Developer Guide" href="../how-to/development.html" />
+    <link rel="prev" title="Overview" href="overview.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="docsearch:language" content="en">
   </head>
@@ -117,28 +117,28 @@
     <ul id="navbar-main-elements" class="navbar-nav">
         
                 <li class="nav-item">
-                    <a class="nav-link" href="../explanations/overview.html">
+                    <a class="nav-link" href="overview.html">
                         Overview
-                    </a>
-                </li>
-                
-
-                <li class="nav-item">
-                    <a class="nav-link" href="../explanations/interface.html">
-                        Software Interface
-                    </a>
-                </li>
-                
-
-                <li class="nav-item">
-                    <a class="nav-link" href="development.html">
-                        Developer Guide
                     </a>
                 </li>
                 
 
                 <li class="nav-item current active">
                     <a class="nav-link" href="#">
+                        Software Interface
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/development.html">
+                        Developer Guide
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/docs.html">
                         Docs
                     </a>
                 </li>
@@ -227,7 +227,7 @@
   <div class="bd-container">
     <div class="bd-container__inner bd-page-width">
       
-      <div class="bd-sidebar-primary bd-sidebar">
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
         
   
   <div class="sidebar-header-items sidebar-primary__section">
@@ -243,28 +243,28 @@
     <ul id="navbar-main-elements" class="navbar-nav">
         
                 <li class="nav-item">
-                    <a class="nav-link" href="../explanations/overview.html">
+                    <a class="nav-link" href="overview.html">
                         Overview
-                    </a>
-                </li>
-                
-
-                <li class="nav-item">
-                    <a class="nav-link" href="../explanations/interface.html">
-                        Software Interface
-                    </a>
-                </li>
-                
-
-                <li class="nav-item">
-                    <a class="nav-link" href="development.html">
-                        Developer Guide
                     </a>
                 </li>
                 
 
                 <li class="nav-item current active">
                     <a class="nav-link" href="#">
+                        Software Interface
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/development.html">
+                        Developer Guide
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="../how-to/docs.html">
                         Docs
                     </a>
                 </li>
@@ -331,21 +331,6 @@
   </div>
 
   
-  <div class="sidebar-start-items sidebar-primary__section">
-    <div class="sidebar-start-items__item"><nav class="bd-links" id="bd-docs-nav" aria-label="Section navigation">
-  <p class="bd-links__title" role="heading" aria-level="1">
-    Section Navigation
-  </p>
-  <div class="bd-toc-item navbar-nav">
-    <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="excalidraw.html">How to embed Excalidraw diagrams</a></li>
-</ul>
-
-  </div>
-</nav>
-    </div>
-  </div>
-  
 
   
   <div class="sidebar-end-items sidebar-primary__section">
@@ -367,59 +352,150 @@
             
             <article class="bd-article" role="main">
               
-  <section id="docs">
-<h1>Docs<a class="headerlink" href="#docs" title="Permalink to this heading">#</a></h1>
-<p>The documentation uses
-<a class="reference external" href="https://www.sphinx-doc.org/en/master/index.html">sphinx</a> and <a class="reference external" href="https://myst-parser.readthedocs.io/en/latest/index.html">MyST</a>
-for written documentation along with
-<a class="reference external" href="https://www.doxygen.nl/index.html">doxygen</a> and <a class="reference external" href="https://breathe.readthedocs.io/en/latest/">breathe</a>
-to generate reference and integrate them into the docs.</p>
-<section id="building-docs">
-<h2>Building Docs<a class="headerlink" href="#building-docs" title="Permalink to this heading">#</a></h2>
-<p>To generate the API reference docs using doxygen (requires <code class="docutils literal notranslate"><span class="pre">dot</span></code> for UML diagrams):</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ cd docs/doxygen
-$ doxygen
+  <section id="software-interface">
+<h1>Software Interface<a class="headerlink" href="#software-interface" title="Permalink to this heading">#</a></h1>
+<p>This page describes the software interface of the pmacFilterControl application.</p>
+<section id="control-channel">
+<h2>Control Channel<a class="headerlink" href="#control-channel" title="Permalink to this heading">#</a></h2>
+<p>A ZMQ control channel is exposed on the port given in the CLI parameters. The requests
+that can be sent to this channel are detailed below.</p>
+<section id="commands">
+<h3>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">#</a></h3>
+<p>All messages must have a <code class="docutils literal notranslate"><span class="pre">command</span></code> key. Valid commands are:</p>
+<table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-right"><p>Command</p></th>
+<th class="head text-left"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-right"><p>shutdown</p></td>
+<td class="text-left"><p>Shutdown the application</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>status</p></td>
+<td class="text-left"><p>Request a status message</p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>configure</p></td>
+<td class="text-left"><p>Configure parameters</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>reset</p></td>
+<td class="text-left"><p>Reset the <code class="docutils literal notranslate"><span class="pre">last_*_frame</span></code> counters - this is required to begin processing frame numbers from 0 again</p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>clear_timeout</p></td>
+<td class="text-left"><p>Clear the <code class="docutils literal notranslate"><span class="pre">TIMEOUT</span></code> state and change into the <code class="docutils literal notranslate"><span class="pre">WAITING</span></code> state</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>singleshot</p></td>
+<td class="text-left"><p>Request a singlshot run to start - must be in <code class="docutils literal notranslate"><span class="pre">SINGLESHOT</span></code> mode and <code class="docutils literal notranslate"><span class="pre">WAITING</span></code> state</p></td>
+</tr>
+</tbody>
+</table>
+<p>For example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;shutdown&quot;</span><span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is also done by running the CMake build.</p>
-</div>
-<p>To build and view the documentation:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python -m venv venv
-$ <span class="nb">source</span> venv/bin/activate
-$ <span class="nb">cd</span> pmacFilterControl
-<span class="o">(</span>venv<span class="o">)</span> $ pip install -r docs/requirements.txt
-<span class="o">(</span>venv<span class="o">)</span> $ sphinx-build -b html docs docs/_build/html
+</section>
+<section id="config">
+<h3>Config<a class="headerlink" href="#config" title="Permalink to this heading">#</a></h3>
+<p>The configuration requests are exposed via the <code class="docutils literal notranslate"><span class="pre">config</span></code> command request. Config
+requests must contain a <code class="docutils literal notranslate"><span class="pre">params</span></code> key and its value must be a dictionary with at least
+one ofwith with at least one config options:</p>
+<table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-right"><p>Config</p></th>
+<th class="head text-left"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-right"><p>mode</p></td>
+<td class="text-left"><p>Set the operational mode - 0: Disable, 1: Continuous, 2: Singleshot</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>in_positions</p></td>
+<td class="text-left"><p>In positions (counts) for each filter - allowed keys: <code class="docutils literal notranslate"><span class="pre">&quot;filter{1,2,3,4}&quot;</span></code></p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>pixel_count_thresholds</p></td>
+<td class="text-left"><p>Thresholds for each histogram bin above which attenuation should be changed</p></td>
+</tr>
+</tbody>
+</table>
+<p>For example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;configure&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>This will build the docs into <code class="docutils literal notranslate"><span class="pre">docs/_build/html</span></code>. They can be viewed by opening
-<code class="docutils literal notranslate"><span class="pre">index.html</span></code> in a web browser. When editing the docs it is useful to get a live preview.
-In this case, use <code class="docutils literal notranslate"><span class="pre">sphinx-autobuild</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>venv<span class="o">)</span> $ sphinx-autobuild docs docs/_build/html
-...
-The HTML pages are <span class="k">in</span> docs/_build/html.
-<span class="o">[</span>sphinx-autobuild<span class="o">]</span> Serving on http://127.0.0.1:8000
+</section>
+<section id="status">
+<h3>Status<a class="headerlink" href="#status" title="Permalink to this heading">#</a></h3>
+<p>A dictionary of the current status can be requested with the <code class="docutils literal notranslate"><span class="pre">status</span></code> command. The
+following status items are included in response:</p>
+<table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-right"><p>Status</p></th>
+<th class="head text-left"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-right"><p>version</p></td>
+<td class="text-left"><p>The version number of the application</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>process_duration</p></td>
+<td class="text-left"><p>The duration of the most recent process that changed the attenuation (us)</p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>process_period</p></td>
+<td class="text-left"><p>The elapsed time between the most recent process and the preceding one (us)</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>last_received_frame</p></td>
+<td class="text-left"><p>The frame number of the most recently received data message</p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>last_processed_frame</p></td>
+<td class="text-left"><p>The frame number of the most recently received data message that caused the attenuation to change</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>time_since_last_message</p></td>
+<td class="text-left"><p>The elapsed time since a message was last received</p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>current_attenuation</p></td>
+<td class="text-left"><p>The currently demanded attenuation level</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>state</p></td>
+<td class="text-left"><p>The current state - 0: Idle, 1: Waiting, 2: Active, 3: Timeout, 4: Singleshot Complete</p></td>
+</tr>
+</tbody>
+</table>
+<p>For example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;status&quot;</span><span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>This will build the docs and host them on local web server to view them live
-in a web browser. You can edit the files and your browser will automatically
-reload with the live changes.</p>
+<p>Readbacks for <a class="reference internal" href="#config"><span class="std std-doc">config items</span></a> are included in the same response with the same
+keys as in the config command request.</p>
 </section>
-<section id="writing-docs">
-<h2>Writing Docs<a class="headerlink" href="#writing-docs" title="Permalink to this heading">#</a></h2>
-<p>The source files are organised under <code class="docutils literal notranslate"><span class="pre">docs/</span></code> in the same structure they appear in the
-toctree, which is defined in <code class="docutils literal notranslate"><span class="pre">docs/sphinx.yaml</span></code>. To add content to an existing page,
-simply navigate to the markdown file for the page and edit it. To add a new page, create
-a markdown file in the appropriate place in the hierarchy and then add it to
-<code class="docutils literal notranslate"><span class="pre">sphinx.yaml</span></code>.</p>
 </section>
-<section id="tables">
-<h2>Tables<a class="headerlink" href="#tables" title="Permalink to this heading">#</a></h2>
-<p>Tables can be automatically formatted using a <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=shuworks.vscode-table-formatter">vscode extension</a></p>
-</section>
-<div class="toctree-wrapper compound">
+<section id="data-channel">
+<h2>Data Channel<a class="headerlink" href="#data-channel" title="Permalink to this heading">#</a></h2>
+<p>The application will subscribe on the endpoints given in the CLI parameters. Messages of
+the following form are expected on these channels:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;frame_number&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nt">&quot;low2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nt">&quot;low1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nt">&quot;high1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">17</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nt">&quot;high2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
 </div>
+<p>Any messages with a <code class="docutils literal notranslate"><span class="pre">frame_number</span></code> less than <code class="docutils literal notranslate"><span class="pre">last_processed_frame</span></code> will be ignored -
+because it is too late to correct for them - as will frames equal to
+<code class="docutils literal notranslate"><span class="pre">last_processed_frame</span> <span class="pre">+</span> <span class="pre">1</span></code> - because the change from the previous message will not have
+take effect yet and adjusting for the subsequent message would be correcting a second
+time for the same event.</p>
+</section>
+<section id="motion-program">
+<h2>Motion Program<a class="headerlink" href="#motion-program" title="Permalink to this heading">#</a></h2>
+<p>The motion program simply commands two moves in quick succession, with a timer to
+estimate how long the moves took. The first move will demand the filters 1, 2, 3, 4 to
+the positions stored in <code class="docutils literal notranslate"><span class="pre">P407{1,2,3,4}</span></code> and for the second move <code class="docutils literal notranslate"><span class="pre">P408{1,2,3,4}</span></code>. These
+values are written to by the pmacFilterControl application before running the program.
+The time elapsed is stored in <code class="docutils literal notranslate"><span class="pre">P4085</span></code>.</p>
+</section>
 </section>
 
 
@@ -430,17 +506,17 @@ a markdown file in the appropriate place in the hierarchy and then add it to
             <footer class="bd-footer-article">
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-  <a class='left-prev' id="prev-link" href="development/ppmac_config.html" title="previous page">
+  <a class='left-prev' id="prev-link" href="overview.html" title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
           <p class="prev-next-subtitle">previous</p>
-          <p class="prev-next-title">PowerPMAC Configuration</p>
+          <p class="prev-next-title">Overview</p>
       </div>
   </a>
-  <a class='right-next' id="next-link" href="excalidraw.html" title="next page">
+  <a class='right-next' id="next-link" href="../how-to/development.html" title="next page">
   <div class="prev-next-info">
       <p class="prev-next-subtitle">next</p>
-      <p class="prev-next-title">How to embed Excalidraw diagrams</p>
+      <p class="prev-next-title">Developer Guide</p>
   </div>
   <i class="fa-solid fa-angle-right"></i>
   </a>
@@ -461,18 +537,35 @@ a markdown file in the appropriate place in the hierarchy and then add it to
 <nav id="bd-toc-nav" class="page-toc">
     <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#building-docs">
-   Building Docs
+  <a class="reference internal nav-link" href="#control-channel">
+   Control Channel
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#commands">
+     Commands
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#config">
+     Config
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#status">
+     Status
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#data-channel">
+   Data Channel
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#writing-docs">
-   Writing Docs
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#tables">
-   Tables
+  <a class="reference internal nav-link" href="#motion-program">
+   Motion Program
   </a>
  </li>
 </ul>

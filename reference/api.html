@@ -13,8 +13,8 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=9b1a4fa89bdd0e95b23b" rel="stylesheet">
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=9b1a4fa89bdd0e95b23b" rel="stylesheet">
+  <link href="../_static/styles/theme.css?digest=1e1de1a1873e13ef5536" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1e1de1a1873e13ef5536" rel="stylesheet">
 
   
   <link rel="stylesheet"
@@ -23,13 +23,15 @@
     href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2">
   <link rel="preload" as="font" type="font/woff2" crossorigin
     href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2">
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=9b1a4fa89bdd0e95b23b">
+  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1e1de1a1873e13ef5536">
 
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -63,7 +65,7 @@
     <div class="search-button__search-container">
       
 <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
+  <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form>
@@ -73,7 +75,7 @@
   
   <nav class="bd-header navbar navbar-expand-lg bd-navbar" id="navbar-main"><div class="bd-header__inner bd-page-width">
   <label class="sidebar-toggle primary-toggle" for="__primary">
-      <span class="fas fa-bars"></span>
+      <span class="fa-solid fa-bars"></span>
   </label>
   <div id="navbar-start">
     
@@ -121,6 +123,13 @@
                 
 
                 <li class="nav-item">
+                    <a class="nav-link" href="../explanations/interface.html">
+                        Software Interface
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
                     <a class="nav-link" href="../how-to/development.html">
                         Developer Guide
                     </a>
@@ -140,13 +149,21 @@
                     </a>
                 </li>
                 
-
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
                 <li class="nav-item current active">
                     <a class="nav-link" href="#">
                         API Reference Documentation
                     </a>
                 </li>
                 
+                </div>
+            </div>
+            
     </ul>
 </nav>
       </div>
@@ -156,16 +173,16 @@
     <div id="navbar-end">
       <div class="navbar-end-item navbar-end__search-button-container">
         
-<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search">
-  <i class="fas fa-search"></i>
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" data-toggle="tooltip">
+  <i class="fa-solid fa-magnifying-glass"></i>
 </button>
       </div>
       
       <div class="navbar-end-item">
-        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle">
-    <a class="theme-switch" data-mode="light"><i class="fas fa-sun"></i></a>
-    <a class="theme-switch" data-mode="dark"><i class="far fa-moon"></i></a>
-    <a class="theme-switch" data-mode="auto"><i class="fas fa-adjust"></i></a>
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" data-toggle="tooltip">
+    <a class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="fa-regular fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></a>
 </span>
       </div>
       
@@ -178,7 +195,8 @@
           
           
           
-          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank"><span><i class="fab fa-github-square"></i></span>
+          
+          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-toggle="tooltip"><span><i class="fa-brands fa-square-github"></i></span>
             <label class="sr-only">GitHub</label></a>
         </li>
       </ul>
@@ -190,8 +208,8 @@
 
   
   <div class="search-button-container--mobile">
-<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search">
-  <i class="fas fa-search"></i>
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" data-toggle="tooltip">
+  <i class="fa-solid fa-magnifying-glass"></i>
 </button>
   </div>
 
@@ -227,6 +245,13 @@
                 
 
                 <li class="nav-item">
+                    <a class="nav-link" href="../explanations/interface.html">
+                        Software Interface
+                    </a>
+                </li>
+                
+
+                <li class="nav-item">
                     <a class="nav-link" href="../how-to/development.html">
                         Developer Guide
                     </a>
@@ -246,13 +271,21 @@
                     </a>
                 </li>
                 
-
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
                 <li class="nav-item current active">
                     <a class="nav-link" href="#">
                         API Reference Documentation
                     </a>
                 </li>
                 
+                </div>
+            </div>
+            
     </ul>
 </nav>
       </div>
@@ -265,10 +298,10 @@
     <div class="sidebar-header-items__end">
       
       <div class="navbar-end-item">
-        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle">
-    <a class="theme-switch" data-mode="light"><i class="fas fa-sun"></i></a>
-    <a class="theme-switch" data-mode="dark"><i class="far fa-moon"></i></a>
-    <a class="theme-switch" data-mode="auto"><i class="fas fa-adjust"></i></a>
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" data-toggle="tooltip">
+    <a class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="fa-regular fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></a>
 </span>
       </div>
       
@@ -281,7 +314,8 @@
           
           
           
-          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank"><span><i class="fab fa-github-square"></i></span>
+          
+          <a href="https://github.com/dls-controls/pmacFilterControl" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-toggle="tooltip"><span><i class="fa-brands fa-square-github"></i></span>
             <label class="sr-only">GitHub</label></a>
         </li>
       </ul>
@@ -486,7 +520,7 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>start_ts</strong> – <strong>[in]</strong> Timespec of process start time </p></li>
-<li><p><strong>[in/out]</strong> – end_ts Timespec of last process end time - this will be updated </p></li>
+<li><p><strong>end_ts</strong> – <strong>[inout]</strong> Timespec of last process end time - this will be updated </p></li>
 </ul>
 </dd>
 </dl>
@@ -555,13 +589,8 @@
 <dd></dd></dl>
 
 <dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13listenThread_E">
-<span id="_CPPv3N20PMACFilterController13listenThread_E"></span><span id="_CPPv2N20PMACFilterController13listenThread_E"></span><span id="PMACFilterController::listenThread___std::thread"></span><span class="target" id="classPMACFilterController_1a54b56dc39be79984d27ff14ab853ee6a"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">thread</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">listenThread_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13listenThread_E" title="Permalink to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController9shutdown_E">
-<span id="_CPPv3N20PMACFilterController9shutdown_E"></span><span id="_CPPv2N20PMACFilterController9shutdown_E"></span><span id="PMACFilterController::shutdown___b"></span><span class="target" id="classPMACFilterController_1add65a09157b16710dea2b2d45b01a47c"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">shutdown_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController9shutdown_E" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController6state_E">
+<span id="_CPPv3N20PMACFilterController6state_E"></span><span id="_CPPv2N20PMACFilterController6state_E"></span><span id="PMACFilterController::state___ControlState"></span><span class="target" id="classPMACFilterController_1ab05a2940068237e92815f7c8f39a53ed"></span><span class="n"><span class="pre">ControlState</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">state_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController6state_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
@@ -575,13 +604,38 @@
 <dd></dd></dl>
 
 <dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14clear_timeout_E">
-<span id="_CPPv3N20PMACFilterController14clear_timeout_E"></span><span id="_CPPv2N20PMACFilterController14clear_timeout_E"></span><span id="PMACFilterController::clear_timeout___b"></span><span class="target" id="classPMACFilterController_1a1c22a20f0be2fccc1e5384b9d8b73473"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clear_timeout_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController14clear_timeout_E" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController24time_since_last_message_E">
+<span id="_CPPv3N20PMACFilterController24time_since_last_message_E"></span><span id="_CPPv2N20PMACFilterController24time_since_last_message_E"></span><span id="PMACFilterController::time_since_last_message___s"></span><span class="target" id="classPMACFilterController_1a6a2050ebdae812c7b27ebfc9e14e1d4c"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">time_since_last_message_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController24time_since_last_message_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController17process_duration_E">
+<span id="_CPPv3N20PMACFilterController17process_duration_E"></span><span id="_CPPv2N20PMACFilterController17process_duration_E"></span><span id="PMACFilterController::process_duration___s"></span><span class="target" id="classPMACFilterController_1ab7bca63d103f30adf4698b77a24748a5"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">process_duration_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController17process_duration_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController15process_period_E">
+<span id="_CPPv3N20PMACFilterController15process_period_E"></span><span id="_CPPv2N20PMACFilterController15process_period_E"></span><span id="PMACFilterController::process_period___s"></span><span class="target" id="classPMACFilterController_1ac8a0ac1dc44a279f0eb73ab44cb59b65"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">process_period_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController15process_period_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController17singleshot_start_E">
 <span id="_CPPv3N20PMACFilterController17singleshot_start_E"></span><span id="_CPPv2N20PMACFilterController17singleshot_start_E"></span><span id="PMACFilterController::singleshot_start___b"></span><span class="target" id="classPMACFilterController_1a28dc331d611c94a4fad625b9bd26043e"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">singleshot_start_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController17singleshot_start_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14clear_timeout_E">
+<span id="_CPPv3N20PMACFilterController14clear_timeout_E"></span><span id="_CPPv2N20PMACFilterController14clear_timeout_E"></span><span id="PMACFilterController::clear_timeout___b"></span><span class="target" id="classPMACFilterController_1a1c22a20f0be2fccc1e5384b9d8b73473"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clear_timeout_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController14clear_timeout_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController9shutdown_E">
+<span id="_CPPv3N20PMACFilterController9shutdown_E"></span><span id="_CPPv2N20PMACFilterController9shutdown_E"></span><span id="PMACFilterController::shutdown___b"></span><span class="target" id="classPMACFilterController_1add65a09157b16710dea2b2d45b01a47c"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">shutdown_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController9shutdown_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13listenThread_E">
+<span id="_CPPv3N20PMACFilterController13listenThread_E"></span><span id="_CPPv2N20PMACFilterController13listenThread_E"></span><span id="PMACFilterController::listenThread___std::thread"></span><span class="target" id="classPMACFilterController_1a54b56dc39be79984d27ff14ab853ee6a"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">thread</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">listenThread_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13listenThread_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
@@ -610,38 +664,18 @@
 <dd></dd></dl>
 
 <dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController17process_duration_E">
-<span id="_CPPv3N20PMACFilterController17process_duration_E"></span><span id="_CPPv2N20PMACFilterController17process_duration_E"></span><span id="PMACFilterController::process_duration___s"></span><span class="target" id="classPMACFilterController_1ab7bca63d103f30adf4698b77a24748a5"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">process_duration_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController17process_duration_E" title="Permalink to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController15process_period_E">
-<span id="_CPPv3N20PMACFilterController15process_period_E"></span><span id="_CPPv2N20PMACFilterController15process_period_E"></span><span id="PMACFilterController::process_period___s"></span><span class="target" id="classPMACFilterController_1ac8a0ac1dc44a279f0eb73ab44cb59b65"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">process_period_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController15process_period_E" title="Permalink to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController24time_since_last_message_E">
-<span id="_CPPv3N20PMACFilterController24time_since_last_message_E"></span><span id="_CPPv2N20PMACFilterController24time_since_last_message_E"></span><span id="PMACFilterController::time_since_last_message___s"></span><span class="target" id="classPMACFilterController_1a6a2050ebdae812c7b27ebfc9e14e1d4c"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">time_since_last_message_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController24time_since_last_message_E" title="Permalink to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController6state_E">
-<span id="_CPPv3N20PMACFilterController6state_E"></span><span id="_CPPv2N20PMACFilterController6state_E"></span><span id="PMACFilterController::state___ControlState"></span><span class="target" id="classPMACFilterController_1ab05a2940068237e92815f7c8f39a53ed"></span><span class="n"><span class="pre">ControlState</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">state_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController6state_E" title="Permalink to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController5mode_E">
 <span id="_CPPv3N20PMACFilterController5mode_E"></span><span id="_CPPv2N20PMACFilterController5mode_E"></span><span id="PMACFilterController::mode___ControlMode"></span><span class="target" id="classPMACFilterController_1adc613ec57f594ee37f143f11017e3533"></span><span class="n"><span class="pre">ControlMode</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mode_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController5mode_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController23pixel_count_thresholds_E">
-<span id="_CPPv3N20PMACFilterController23pixel_count_thresholds_E"></span><span id="_CPPv2N20PMACFilterController23pixel_count_thresholds_E"></span><span id="PMACFilterController::pixel_count_thresholds___std::map:ss.uint64_t:"></span><span class="target" id="classPMACFilterController_1abc4220936781d2777c86488ca9e847ee"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pixel_count_thresholds_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController23pixel_count_thresholds_E" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13in_positions_E">
+<span id="_CPPv3N20PMACFilterController13in_positions_E"></span><span id="_CPPv2N20PMACFilterController13in_positions_E"></span><span id="PMACFilterController::in_positions___std::vector:i:"></span><span class="target" id="classPMACFilterController_1a6af0c0b9397bddb87bc898ab588d0c42"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">in_positions_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13in_positions_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13in_positions_E">
-<span id="_CPPv3N20PMACFilterController13in_positions_E"></span><span id="_CPPv2N20PMACFilterController13in_positions_E"></span><span id="PMACFilterController::in_positions___std::vector:i:"></span><span class="target" id="classPMACFilterController_1a6af0c0b9397bddb87bc898ab588d0c42"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">in_positions_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13in_positions_E" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController23pixel_count_thresholds_E">
+<span id="_CPPv3N20PMACFilterController23pixel_count_thresholds_E"></span><span id="_CPPv2N20PMACFilterController23pixel_count_thresholds_E"></span><span id="PMACFilterController::pixel_count_thresholds___std::map:ss.uint64_t:"></span><span class="target" id="classPMACFilterController_1abc4220936781d2777c86488ca9e847ee"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pixel_count_thresholds_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController23pixel_count_thresholds_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 </div>
@@ -658,7 +692,7 @@
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
   <a class='left-prev' id="prev-link" href="design_spec.html" title="previous page">
-      <i class="fas fa-angle-left"></i>
+      <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
           <p class="prev-next-subtitle">previous</p>
           <p class="prev-next-title">Automatic Attenuation Design Specification</p>
@@ -686,7 +720,7 @@
   
     
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=9b1a4fa89bdd0e95b23b"></script>
+  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1e1de1a1873e13ef5536"></script>
 
   <footer class="bd-footer"><div class="bd-footer__inner container">
   
