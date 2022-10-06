@@ -1,20 +1,24 @@
 root: index
 subtrees:
-  - caption: User Guide
+  - caption: Overview
     entries:
       - file: explanations/overview
-      - file: explanations/interface
+        entries:
+          - file: explanations/interface
   - caption: Developer Guide
     entries:
-      - file: how-to/development
+      - file: how-to/index
         entries:
           - file: how-to/development/ppmac_deploy
           - file: how-to/development/ppmac_cross_compiling
           - file: how-to/development/ppmac_config
-      - file: how-to/docs
-        entries:
-          - file: how-to/excalidraw
+          - file: how-to/docs
+            entries:
+              - file: how-to/excalidraw
   - caption: Reference
+    titlesonly: true
     entries:
-      - file: reference/design_spec
-      - file: reference/api
+      - file: reference/index
+        entries:
+          - file: reference/api
+          - file: reference/design_spec

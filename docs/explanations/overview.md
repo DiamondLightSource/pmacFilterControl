@@ -1,5 +1,8 @@
 # Overview
 
+```{tableofcontents}
+```
+
 ```{raw} html
 :file: ../images/design_schematic.svg
 ```
