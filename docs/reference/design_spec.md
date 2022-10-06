@@ -42,6 +42,10 @@ exceeding some number of counts - or below some level. The number of pixels in e
 that should trigger a filter adjustment are configured with the control parameters with
 the same names as keys.
 
+```{raw} html
+:file: ../images/thresholds.svg
+```
+
 When more than one of these thresholds is exceeded, only one is actioned with the
 following precedence:
 
