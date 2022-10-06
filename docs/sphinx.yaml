@@ -3,6 +3,7 @@ subtrees:
   - caption: User Guide
     entries:
       - file: explanations/overview
+      - file: explanations/interface
   - caption: Developer Guide
     entries:
       - file: how-to/development

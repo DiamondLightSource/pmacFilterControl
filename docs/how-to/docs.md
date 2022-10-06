@@ -50,3 +50,7 @@ toctree, which is defined in `docs/sphinx.yaml`. To add content to an existing p
 simply navigate to the markdown file for the page and edit it. To add a new page, create
 a markdown file in the appropriate place in the hierarchy and then add it to
 `sphinx.yaml`.
+
+## Tables
+
+Tables can be automatically formatted using a [vscode extension](https://marketplace.visualstudio.com/items?itemName=shuworks.vscode-table-formatter)
