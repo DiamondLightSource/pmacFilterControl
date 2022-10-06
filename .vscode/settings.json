@@ -4,4 +4,12 @@
     "cmake.installPrefix": "${workspaceFolder}/vscode_prefix",
     "cmake.configureArgs": [],
     "cmake.generator": "Unix Makefiles",
+    "workbench.editorAssociations": {
+        "*.svg": "editor.excalidraw"
+    },
+    "excalidraw.image": {
+        "exportScale": 1,
+        "exportWithBackground": false,
+        "exportWithDarkMode": false,
+    }
 }
