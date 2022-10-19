@@ -120,6 +120,7 @@
                 "pixel_count_threshold",
                 "mode",
                 "in_positions",
+                "out_positions",
             ],
         },
         {

@@ -57,7 +57,7 @@ class PMACFilterController
         int64_t last_received_frame_;
         // The frame number of the last message that was successfully processed - used to decide to ignore some frames
         int64_t last_processed_frame_;
-        // Time in seconds snce last message received - not necessarily causing processing
+        // Time in seconds since last message received - not necessarily causing processing
         size_t time_since_last_message_;
         // Duration in microseconds of previous process
         size_t process_duration_;
@@ -88,8 +88,9 @@ class PMACFilterController
         /* Control Channel Parameters */
         // The current mode of operation
         ControlMode mode_;
-        // Filter in positions in counts (can be +ve or -ve)
+        // Filter in and out positions in counts (can be +ve or -ve)
         std::vector<int> in_positions_;
+        std::vector<int> out_positions_;
         // Thresholds for histogram bins above which some action should be taken
         std::map<std::string, uint64_t> pixel_count_thresholds_;
 
@@ -97,7 +98,7 @@ class PMACFilterController
         void _handle_status(json& response);
         bool _handle_config(const json& config);
         bool _set_mode(const ControlMode mode);
-        bool _set_in_positions(const json positions);
+        bool _set_positions(std::vector<int>& positions, const json new_positions);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
         void _transition_state(ControlState state);

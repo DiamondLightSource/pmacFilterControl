@@ -34,6 +34,7 @@ const std::string COMMAND_SINGLESHOT_START = "singleshot";
 const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
+const std::string CONFIG_OUT_POSITIONS = "out_positions";
 const std::string CONFIG_PIXEL_COUNT_THRESHOLDS = "pixel_count_thresholds";
 const std::string FILTER_1_KEY = "filter1";
 const std::string FILTER_2_KEY = "filter2";
@@ -108,7 +109,8 @@ PMACFilterController::PMACFilterController(
     final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
     mode_(ControlMode::CONTINUOUS),
-    in_positions_({100, 100, 100, 100}),
+    in_positions_({0, 0, 0, 0}),
+    out_positions_({0, 0, 0, 0}),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
@@ -212,7 +214,10 @@ bool PMACFilterController::_handle_config(const json& config) {
         success = this->_set_mode(config[CONFIG_MODE]);
     }
     if (config.contains(CONFIG_IN_POSITIONS)) {
-        success = this->_set_in_positions(config[CONFIG_IN_POSITIONS]);
+        success = this->_set_positions(this->in_positions_, config[CONFIG_IN_POSITIONS]);
+    }
+    if (config.contains(CONFIG_OUT_POSITIONS)) {
+        success = this->_set_positions(this->out_positions_, config[CONFIG_OUT_POSITIONS]);
     }
     if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLDS)) {
         success = this->_set_pixel_count_thresholds(config[CONFIG_PIXEL_COUNT_THRESHOLDS]);
@@ -251,21 +256,22 @@ bool PMACFilterController::_set_mode(ControlMode mode) {
 }
 
 /*!
-    @brief Set the in position of the given filters
+    @brief Update the given positions vector from given new values
 
-    @param[in] positions json dictionary of filter in positions - e.g. {"1": 100, "2": -100, ...}
+    @param[in] positions active filter positions vector - either `this->in_positions_` or `this->out_positions_`
+    @param[in] new_positions json dictionary of new filter positions - e.g. {"filter1": 100, "filter2": -100, ...}
 
     @throw json::type_error if given a config parameter with the wrong type
 
     @return true if at least one position was set, else false
 */
-bool PMACFilterController::_set_in_positions(json positions) {
+bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_positions) {
     bool success = false;
 
     std::map<std::string, int>::const_iterator item;
     for(item = FILTER_MAP.begin(); item != FILTER_MAP.end(); ++item) {
-        if (positions.contains(item->first)) {
-            this->in_positions_[item->second] = positions[item->first];
+        if (new_positions.contains(item->first)) {
+            positions[item->second] = new_positions[item->first];
             success = true;
         }
     }
@@ -315,6 +321,7 @@ void PMACFilterController::_handle_status(json& response) {
     // Readback values for config items
     status[CONFIG_MODE] = this->mode_;
     status[CONFIG_IN_POSITIONS] = this->in_positions_;
+    status[CONFIG_OUT_POSITIONS] = this->out_positions_;
     status[CONFIG_PIXEL_COUNT_THRESHOLDS] = this->pixel_count_thresholds_;
 
     response[COMMAND_STATUS] = status;
@@ -366,10 +373,6 @@ void PMACFilterController::_process_data_channel() {
         zmq::pollitem_t pollitem = {this->zmq_data_sockets_[idx], 0, ZMQ_POLLIN, 0};
         pollitems[idx] = pollitem;
     }
-
-    // Set max attenuation so that the logic starts from a known state
-    std::cout << "Setting max attenuation" << std::endl;
-    this->_set_max_attenuation();
 
     std::cout << "Listening for messages..." << std::endl;
 
@@ -596,8 +599,11 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 
     std::cout << "Adjustments (Current | In | Final):" << std::endl;
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
+        // Bit shift to get IN/OUT state of each filter
         this->final_demand_[idx] = (this->new_attenuation_ >> idx) & 1;
+        // Prevent moving filters OUT in first move - if demand is OUT but current is IN, then stay IN until final move
         this->post_in_demand_[idx] = this->final_demand_[idx] | this->current_demand_[idx];
+
         std::cout << this->current_demand_[idx] << " | "
             << this->post_in_demand_[idx] << " | "
             << this->final_demand_[idx] << std::endl;
@@ -607,11 +613,11 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     std::cout << "Changing attenuation: "
         << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
 
-    // Set demands on ppmac (P407X and P408X)
-    // - 0/1 * `position` -> 0 for out or `position` for in
+    // Set demands on ppmac (P407{1,2,3,4} and P408{1,2,3,4})
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
-        pshm->P[4071 + idx] = this->post_in_demand_[idx] * this->in_positions_[idx];
-        pshm->P[4081 + idx] = this->final_demand_[idx] * this->in_positions_[idx];
+        // ppmac position = IN position if demand == 1 else OUT position
+        pshm->P[4071 + idx] = this->post_in_demand_[idx] ? this->in_positions_[idx] : this->out_positions_[idx];
+        pshm->P[4081 + idx] = this->final_demand_[idx] ? this->in_positions_[idx] : this->out_positions_[idx];
     }
 
     // Run the motion program
