@@ -32,6 +32,7 @@ class PMACFilterController
     public:
         PMACFilterController(
             const std::string& control_port,
+            const std::string& publish_port,
             const std::vector<std::string>& subscribe_endpoints
         );
         ~PMACFilterController();
@@ -41,12 +42,15 @@ class PMACFilterController
         /* ZMQ */
         // Endpoint for control channel
         std::string control_channel_endpoint_;
+        // Endpoint for event stream publish channel
+        std::string publish_channel_endpoint_;
         // Endpoints for data message subscribe channels
         std::vector<std::string> subscribe_channel_endpoints_;
         // Context
         zmq::context_t zmq_context_;
         // Sockets
         zmq::socket_t zmq_control_socket_;
+        zmq::socket_t zmq_publish_socket_;
         std::vector<zmq::socket_t> zmq_subscribe_sockets_;
 
         /* Internal Logic */
@@ -103,8 +107,9 @@ class PMACFilterController
         void _process_singleshot_state();
         void _set_max_attenuation();
         void _calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts);
-        bool _process_data(const json& data);
+        bool _process_data(const json& data, json& result);
         void _send_filter_adjustment(const int adjustment);
+        void _publish_event(const json& event);
 };
 
 /* Helper methods */

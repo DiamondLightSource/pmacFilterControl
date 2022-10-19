@@ -55,6 +55,10 @@ const std::string PARAM_LOW2 = "low2";
 const std::string PARAM_HIGH1 = "high1";
 const std::string PARAM_HIGH2 = "high2";
 
+// Event message keys
+const std::string ADJUSTMENT = "adjustment";
+const std::string ATTENUATION = "attenuation";
+
 // The priority in which to process the thresholds.
 // If PARAM_HIGH2 is triggered, then apply it, else if PARAM_HIGH1 is triggered, apply that, etc.
 const std::vector<std::string> THRESHOLD_PRECEDENCE = {
@@ -80,16 +84,20 @@ const int64_t NO_FRAMES_PROCESSED = -2;
     Setup ZeroMQ sockets
 
     @param[in] control_port Port number to bind control socket to
+    @param[in] publish_port Port number to bind event stream publish socket to
     @param[in] subscribe_endpoints Vector of endpoints (`IP`:`PORT`) to subscribe on for data messages
 */
 PMACFilterController::PMACFilterController(
     const std::string& control_port,
+    const std::string& publish_port,
     const std::vector<std::string>& subscribe_endpoints
 ) :
     control_channel_endpoint_("tcp://*:" + control_port),
+    publish_channel_endpoint_("tcp://*:" + publish_port),
     subscribe_channel_endpoints_(subscribe_endpoints),
     zmq_context_(),
     zmq_control_socket_(zmq_context_, ZMQ_REP),
+    zmq_publish_socket_(zmq_context_, ZMQ_PUB),
     zmq_subscribe_sockets_(),
     // Internal logic
     state_(ControlState::WAITING),
@@ -113,6 +121,7 @@ PMACFilterController::PMACFilterController(
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
+    this->zmq_publish_socket_.bind(publish_channel_endpoint_.c_str());
 
     // Open sockets to subscribe to data endpoints
     for (size_t idx = 0; idx != this->subscribe_channel_endpoints_.size(); idx++) {
@@ -429,12 +438,19 @@ void PMACFilterController::_process_data_channel() {
                     std::cout << "Data received: " << data_str << std::endl;
 
                     json data = _parse_json_string(data_str);
+                    json event;
                     if (!data.is_null()) {
-                        if(this->_process_data(data)) {
+                        if(this->_process_data(data, event)) {
                             this->_calculate_process_metrics(process_start_ts, process_end_ts);
+                        } else {
+                            event[ADJUSTMENT] = 0;
+                            event[ATTENUATION] = this->current_attenuation_;
                         }
                     }
                     _get_time(&last_message_ts);
+
+                    event[FRAME_NUMBER] = data[FRAME_NUMBER];
+                    this->_publish_event(event);
 
                     if (this->state_ == ControlState::WAITING) {
                         // Change from waiting to active to enable timeout monitoring
@@ -510,10 +526,11 @@ void PMACFilterController::_calculate_process_metrics(const struct timespec& sta
     attenuation level to be adjusted.
 
     @param[in] data json structure of data message
+    @param[in] result json structure to update with results of processing
 
     @return true if an attenuation change was made, else false
 */
-bool PMACFilterController::_process_data(const json& data) {
+bool PMACFilterController::_process_data(const json& data, json& result) {
     this->last_received_frame_ = data[FRAME_NUMBER];
 
     // Validate the data message
@@ -632,6 +649,18 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 }
 
 /*!
+    @brief Publish the given json as a message on the event stream channel
+
+    @param[in] event json data for event message
+*/
+void PMACFilterController::_publish_event(const json& event) {
+    std::string event_str = event.dump();
+    zmq::message_t event_msg(event_str.size());
+    memcpy(event_msg.data(), event_str.c_str(), event_str.size());
+    this->zmq_publish_socket_.send(event_msg, 0);
+}
+
+/*!
     @brief Application entrypoint
 
     Validate command line arguments, create PMACFilterController and run.
@@ -639,9 +668,9 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     @return 0 when shutdown cleanly, 1 when given invalid arguments
 */
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        std::cout << "Usage: " << argv[0] << " control_port subscribe_endpoints\n"
-            << "e.g. '" << argv[0] << " 9000 127.0.0.1:10009'" << std::endl;
+    if (argc != 4) {
+        std::cout << "Usage: " << argv[0] << " control_port publish_endpoint subscribe_endpoints\n"
+            << "e.g. '" << argv[0] << " 9000 9001 127.0.0.1:10009,127.0.0.1:10019'" << std::endl;
 
         if (argc == 2 && std::string(argv[1]) == "--help") {
             return 0;
@@ -652,9 +681,10 @@ int main(int argc, char** argv) {
     std::cout << "Version: " << VERSION << std::endl;
 
     std::string control_port(argv[1]);
-    std::vector<std::string> subscribe_endpoints = _parse_endpoints(std::string(argv[2]));
+    std::string publish_port(argv[2]);
+    std::vector<std::string> subscribe_endpoints = _parse_endpoints(std::string(argv[3]));
 
-    PMACFilterController pfc(control_port, subscribe_endpoints);
+    PMACFilterController pfc(control_port, publish_port, subscribe_endpoints);
 
 #ifdef __ARM_ARCH
     InitLibrary();
