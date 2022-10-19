@@ -106,7 +106,6 @@ class PMACFilterController
         void _set_max_attenuation();
         void _calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts);
         bool _process_data(const json& data);
-        void _process_threshold(std::string threshold);
         void _send_filter_adjustment(const int adjustment);
 };
 

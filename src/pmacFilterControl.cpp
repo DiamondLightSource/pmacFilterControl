@@ -538,34 +538,32 @@ bool PMACFilterController::_process_data(const json& data) {
     // - Too many counts above high thresholds -> increase attenuation
     // - Too few counts above low thresholds -> decrease attenuation
     bool success = true;
+    std::string triggered_threshold = "";
     if (histogram[PARAM_HIGH2] > this->pixel_count_thresholds_[PARAM_HIGH2]) {
-        this->_process_threshold(PARAM_HIGH2);
+        triggered_threshold = PARAM_HIGH2;
     } else if (histogram[PARAM_HIGH1] > this->pixel_count_thresholds_[PARAM_HIGH1]) {
-        this->_process_threshold(PARAM_HIGH1);
-    }
-    else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2]) {
-        this->_process_threshold(PARAM_LOW2);
+        triggered_threshold = PARAM_HIGH1;
+    } else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2]) {
+        triggered_threshold = PARAM_LOW2;
     } else if (histogram[PARAM_LOW1] < this->pixel_count_thresholds_[PARAM_LOW1]) {
-        this->_process_threshold(PARAM_LOW1);
+        triggered_threshold = PARAM_LOW1;
     } else {
         success = false;
     }
 
     if (success) {
+        std::cout << triggered_threshold << " threshold triggered" << std::endl;
+        std::cout << "Current threshold: " << this->pixel_count_thresholds_[triggered_threshold] << std::endl;
+
+        int adjustment = THRESHOLD_ADJUSTMENTS.at(triggered_threshold);
+        this->_send_filter_adjustment(adjustment);
+
+        result[ADJUSTMENT] = adjustment;
+        result[ATTENUATION] = this->current_attenuation_;
         this->last_processed_frame_ = data[FRAME_NUMBER];
     }
 
     return success;
-}
-
-/*!
-    @brief Send attenuation adjustment for the given threshold
-*/
-void PMACFilterController::_process_threshold(std::string threshold) {
-    std::cout << threshold << " threshold triggered" << std::endl;
-    std::cout << "Current threshold: " << this->pixel_count_thresholds_[threshold] << std::endl;
-    int adjustment = THRESHOLD_ADJUSTMENTS.at(threshold);
-    this->_send_filter_adjustment(adjustment);
 }
 
 /*!
