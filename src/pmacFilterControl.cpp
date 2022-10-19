@@ -103,7 +103,6 @@ PMACFilterController::PMACFilterController(
     shutdown_(false),
     // Filter logic
     current_attenuation_(0),
-    new_attenuation_(0),
     current_demand_(FILTER_COUNT, 0),
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
@@ -578,27 +577,27 @@ bool PMACFilterController::_process_data(const json& data) {
     @param[in] adjustment Attenuation levels to change by (can be positive or negative)
 */
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
-    this->new_attenuation_ = this->current_attenuation_ + adjustment;
+    int new_attenuation_ = this->current_attenuation_ + adjustment;
 
-    if (this->new_attenuation_ <= 0) {
+    if (new_attenuation_ <= 0) {
         std::cout << "Min Attenuation" << std::endl;
-        this->new_attenuation_ = 0;
-    } else if (this->new_attenuation_ == MAX_ATTENUATION) {
+        new_attenuation_ = 0;
+    } else if (new_attenuation_ == MAX_ATTENUATION) {
         std::cout << "Max Attenuation" << std::endl;
-    } else if (this->new_attenuation_ > MAX_ATTENUATION) {
+    } else if (new_attenuation_ > MAX_ATTENUATION) {
         std::cout << "Max Attenuation Exceeded " << std::endl;
-        this->new_attenuation_ = MAX_ATTENUATION;
+        new_attenuation_ = MAX_ATTENUATION;
 #ifdef __ARM_ARCH
         CommandTS(CLOSE_SHUTTER);
 #endif
     }
 
-    std::cout << "New attenuation: " << this->new_attenuation_ << std::endl;
+    std::cout << "New attenuation: " << new_attenuation_ << std::endl;
 
     std::cout << "Adjustments (Current | In | Final):" << std::endl;
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
         // Bit shift to get IN/OUT state of each filter
-        this->final_demand_[idx] = (this->new_attenuation_ >> idx) & 1;
+        this->final_demand_[idx] = (new_attenuation_ >> idx) & 1;
         // Prevent moving filters OUT in first move - if demand is OUT but current is IN, then stay IN until final move
         this->post_in_demand_[idx] = this->final_demand_[idx] | this->current_demand_[idx];
 
@@ -609,7 +608,7 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 
 #ifdef __ARM_ARCH
     std::cout << "Changing attenuation: "
-        << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
+        << this->current_attenuation_ << " -> " << new_attenuation_ << std::endl;
 
     // Set demands on ppmac (P407{1,2,3,4} and P408{1,2,3,4})
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
@@ -622,14 +621,14 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     CommandTS(RUN_PROG_1);
 #else
     std::cout << "Not changing attenuation "
-        << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
+        << this->current_attenuation_ << " -> " << new_attenuation_ << std::endl;
 #endif
 
     // Update current values for next incremental change
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
         this->current_demand_[idx] = this->final_demand_[idx];
     }
-    this->current_attenuation_ = this->new_attenuation_;
+    this->current_attenuation_ = new_attenuation_;
 }
 
 /*!

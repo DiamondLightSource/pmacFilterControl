@@ -76,8 +76,6 @@ class PMACFilterController
         /* Filter Logic */
         // Local store of current attenuation to compare against the next attenuation change request
         int current_attenuation_;
-        // New attenuation value to apply after attenuation change is processed
-        int new_attenuation_;
         // Filter positions from previous process for calculation of positions after filter in move
         std::vector<int> current_demand_;
         // Filter positions after filter in move applied
