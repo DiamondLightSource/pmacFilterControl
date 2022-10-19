@@ -32,7 +32,7 @@ class PMACFilterController
     public:
         PMACFilterController(
             const std::string& control_port,
-            const std::vector<std::string>& data_endpoints
+            const std::vector<std::string>& subscribe_endpoints
         );
         ~PMACFilterController();
         void run();
@@ -41,13 +41,13 @@ class PMACFilterController
         /* ZMQ */
         // Endpoint for control channel
         std::string control_channel_endpoint_;
-        // Endpoint for data channels
-        std::vector<std::string> data_channel_endpoints_;
+        // Endpoints for data message subscribe channels
+        std::vector<std::string> subscribe_channel_endpoints_;
         // Context
         zmq::context_t zmq_context_;
         // Sockets
         zmq::socket_t zmq_control_socket_;
-        std::vector<zmq::socket_t> zmq_data_sockets_;
+        std::vector<zmq::socket_t> zmq_subscribe_sockets_;
 
         /* Internal Logic */
         // The current logic state
@@ -71,7 +71,7 @@ class PMACFilterController
         // Flag to interrupt listen loop and shutdown process
         bool shutdown_;
         // Thread to subscribe to data channel and control filters
-        std::thread listenThread_;
+        std::thread subscribe_thread_;
 
         /* Filter Logic */
         // Local store of current attenuation to compare against the next attenuation change request

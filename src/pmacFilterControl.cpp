@@ -80,17 +80,17 @@ const int64_t NO_FRAMES_PROCESSED = -2;
     Setup ZeroMQ sockets
 
     @param[in] control_port Port number to bind control socket to
-    @param[in] data_endpoints Vector of endpoints (`IP`:`PORT`) to subscribe on for data messages
+    @param[in] subscribe_endpoints Vector of endpoints (`IP`:`PORT`) to subscribe on for data messages
 */
 PMACFilterController::PMACFilterController(
     const std::string& control_port,
-    const std::vector<std::string>& data_endpoints
+    const std::vector<std::string>& subscribe_endpoints
 ) :
     control_channel_endpoint_("tcp://*:" + control_port),
-    data_channel_endpoints_(data_endpoints),
+    subscribe_channel_endpoints_(subscribe_endpoints),
     zmq_context_(),
     zmq_control_socket_(zmq_context_, ZMQ_REP),
-    zmq_data_sockets_(),
+    zmq_subscribe_sockets_(),
     // Internal logic
     state_(ControlState::WAITING),
     last_received_frame_(NO_FRAMES_PROCESSED),
@@ -116,14 +116,14 @@ PMACFilterController::PMACFilterController(
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
 
     // Open sockets to subscribe to data endpoints
-    for (size_t idx = 0; idx != this->data_channel_endpoints_.size(); idx++) {
-        this->zmq_data_sockets_.push_back(zmq::socket_t(this->zmq_context_, ZMQ_SUB));
+    for (size_t idx = 0; idx != this->subscribe_channel_endpoints_.size(); idx++) {
+        this->zmq_subscribe_sockets_.push_back(zmq::socket_t(this->zmq_context_, ZMQ_SUB));
         // Only recv most recent message
         const int conflate = 1;
-        this->zmq_data_sockets_[idx].setsockopt(ZMQ_CONFLATE, &conflate, sizeof(conflate));
+        this->zmq_subscribe_sockets_[idx].setsockopt(ZMQ_CONFLATE, &conflate, sizeof(conflate));
         // Subscribe to all topics ("" -> No topic filter)
-        this->zmq_data_sockets_[idx].setsockopt(ZMQ_SUBSCRIBE, "", 0);
-        this->zmq_data_sockets_[idx].connect(this->data_channel_endpoints_[idx].c_str());
+        this->zmq_subscribe_sockets_[idx].setsockopt(ZMQ_SUBSCRIBE, "", 0);
+        this->zmq_subscribe_sockets_[idx].connect(this->subscribe_channel_endpoints_[idx].c_str());
     }
 }
 
@@ -136,7 +136,7 @@ PMACFilterController::PMACFilterController(
 PMACFilterController::~PMACFilterController() {
     this->zmq_control_socket_.close();
     std::vector<zmq::socket_t>::iterator it;
-    for (it = this->zmq_data_sockets_.begin(); it != this->zmq_data_sockets_.end(); it++) {
+    for (it = this->zmq_subscribe_sockets_.begin(); it != this->zmq_subscribe_sockets_.end(); it++) {
         it->close();
     }
 }
@@ -331,8 +331,8 @@ void PMACFilterController::_handle_status(json& response) {
     @brief Spawn data monitor thread and listen for control requests until shutdown
 */
 void PMACFilterController::run() {
-    // Start data handler thread
-    this->listenThread_ = std::thread(
+    // Start data handler and event stream threads
+    this->subscribe_thread_ = std::thread(
         std::bind(&PMACFilterController::_process_data_channel, this)
     );
 
@@ -357,7 +357,7 @@ void PMACFilterController::run() {
 
     std::cout << "Shutting down" << std::endl;
 
-    this->listenThread_.join();
+    this->subscribe_thread_.join();
 }
 
 /*!
@@ -368,9 +368,9 @@ void PMACFilterController::run() {
 */
 void PMACFilterController::_process_data_channel() {
     // Construct pollitems for data sockets
-    zmq::pollitem_t pollitems[this->zmq_data_sockets_.size()];
-    for (size_t idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
-        zmq::pollitem_t pollitem = {this->zmq_data_sockets_[idx], 0, ZMQ_POLLIN, 0};
+    zmq::pollitem_t pollitems[this->zmq_subscribe_sockets_.size()];
+    for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++) {
+        zmq::pollitem_t pollitem = {this->zmq_subscribe_sockets_[idx], 0, ZMQ_POLLIN, 0};
         pollitems[idx] = pollitem;
     }
 
@@ -418,13 +418,13 @@ void PMACFilterController::_process_data_channel() {
         // If we are still in a healthy state at this point, try processing messages
         if (this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE) {
             // Poll data sockets
-            zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
-            for (size_t idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
+            zmq::poll(&pollitems[0], this->zmq_subscribe_sockets_.size(), POLL_TIMEOUT);
+            for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++) {
                 if (_message_queued(pollitems[idx])) {
                     _get_time(&process_start_ts);
 
                     zmq::message_t data_message;
-                    this->zmq_data_sockets_[idx].recv(&data_message);
+                    this->zmq_subscribe_sockets_[idx].recv(&data_message);
 
                     data_str = std::string(static_cast<char*>(data_message.data()), data_message.size());
                     std::cout << "Data received: " << data_str << std::endl;
@@ -500,7 +500,7 @@ void PMACFilterController::_set_max_attenuation() {
 */
 void PMACFilterController::_calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts) {
     this->process_duration_ = (this->process_duration_ + _useconds_since(start_ts)) / 2;
-    this->process_period_ = _useconds_since(end_ts) / this->zmq_data_sockets_.size();
+    this->process_period_ = _useconds_since(end_ts) / this->zmq_subscribe_sockets_.size();
     _get_time(&end_ts);
 }
 
@@ -643,7 +643,7 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 */
 int main(int argc, char** argv) {
     if (argc != 3) {
-        std::cout << "Usage: " << argv[0] << " control_port data_endpoint\n"
+        std::cout << "Usage: " << argv[0] << " control_port subscribe_endpoints\n"
             << "e.g. '" << argv[0] << " 9000 127.0.0.1:10009'" << std::endl;
 
         if (argc == 2 && std::string(argv[1]) == "--help") {
@@ -655,9 +655,9 @@ int main(int argc, char** argv) {
     std::cout << "Version: " << VERSION << std::endl;
 
     std::string control_port(argv[1]);
-    std::vector<std::string> data_endpoints = _parse_endpoints(std::string(argv[2]));
+    std::vector<std::string> subscribe_endpoints = _parse_endpoints(std::string(argv[2]));
 
-    PMACFilterController pfc(control_port, data_endpoints);
+    PMACFilterController pfc(control_port, subscribe_endpoints);
 
 #ifdef __ARM_ARCH
     InitLibrary();
