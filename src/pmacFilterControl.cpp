@@ -8,7 +8,7 @@
 #include "pmacFilterControl.h"
 
 #ifdef __ARM_ARCH
-#include "gplib.h"
+#include "gplib.h"  // pshm, CommandTS
 #endif
 
 #define VERSION "0.1"
