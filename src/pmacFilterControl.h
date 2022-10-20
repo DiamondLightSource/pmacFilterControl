@@ -61,8 +61,10 @@ class PMACFilterController
         int64_t last_received_frame_;
         // The frame number of the last message that was successfully processed - used to decide to ignore some frames
         int64_t last_processed_frame_;
-        // Time in seconds since last message received - not necessarily causing processing
-        size_t time_since_last_message_;
+        // Time of last message received - not necessarily causing processing
+        struct timespec last_message_ts_;
+        // Time of last process of a message
+        struct timespec last_process_ts_;
         // Duration in microseconds of previous process
         size_t process_duration_;
         // Time elapsed in microseconds from one process to the next. This will include any time spent waiting for
@@ -103,10 +105,11 @@ class PMACFilterController
         bool _set_positions(std::vector<int>& positions, const json new_positions);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
+        void _process_state_changes();
+        void _handle_data_message(zmq::message_t& data_message);
         void _transition_state(ControlState state);
         void _process_singleshot_state();
         void _set_max_attenuation();
-        void _calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts);
         bool _process_data(const json& data, json& result);
         void _send_filter_adjustment(const int adjustment);
         void _publish_event(const json& event);
