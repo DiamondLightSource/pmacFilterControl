@@ -18,7 +18,7 @@ All messages must have a `command` key. Valid commands are:
 |     configure | Configure parameters                                                                                |
 |         reset | Reset the `last_*_frame` counters - this is required to begin processing frame numbers from 0 again |
 | clear_timeout | Clear the `TIMEOUT` state and change into the `WAITING` state                                       |
-|    singleshot | Request a singlshot run to start - must be in `SINGLESHOT` mode and `WAITING` state                 |
+|    singleshot | Request a singleshot run to start - must be in `SINGLESHOT` mode and `WAITING` state                |
 
 For example:
 
