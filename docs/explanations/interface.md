@@ -36,6 +36,7 @@ one ofwith with at least one config options:
 | ---------------------: | :-------------------------------------------------------------------------- |
 |                   mode | Set the operational mode - 0: Disable, 1: Continuous, 2: Singleshot         |
 |           in_positions | In positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`   |
+|          out_positions | Out positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`  |
 | pixel_count_thresholds | Thresholds for each histogram bin above which attenuation should be changed |
 
 For example:
@@ -66,8 +67,8 @@ For example:
 {"command": "status"}
 ```
 
-Readbacks for [config items](#config) are included in the same response with the same
-keys as in the config command request.
+Readbacks for [config items](#config) are included in the response with the same keys as
+in the config command request.
 
 ## Data Channel
 
