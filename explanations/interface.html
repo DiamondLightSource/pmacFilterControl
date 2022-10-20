@@ -369,7 +369,10 @@ one ofwith with at least one config options:</p>
 <tr class="row-odd"><td class="text-right"><p>in_positions</p></td>
 <td class="text-left"><p>In positions (counts) for each filter - allowed keys: <code class="docutils literal notranslate"><span class="pre">&quot;filter{1,2,3,4}&quot;</span></code></p></td>
 </tr>
-<tr class="row-even"><td class="text-right"><p>pixel_count_thresholds</p></td>
+<tr class="row-even"><td class="text-right"><p>out_positions</p></td>
+<td class="text-left"><p>Out positions (counts) for each filter - allowed keys: <code class="docutils literal notranslate"><span class="pre">&quot;filter{1,2,3,4}&quot;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>pixel_count_thresholds</p></td>
 <td class="text-left"><p>Thresholds for each histogram bin above which attenuation should be changed</p></td>
 </tr>
 </tbody>
@@ -420,8 +423,8 @@ following status items are included in response:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;status&quot;</span><span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Readbacks for <a class="reference internal" href="#config"><span class="std std-doc">config items</span></a> are included in the same response with the same
-keys as in the config command request.</p>
+<p>Readbacks for <a class="reference internal" href="#config"><span class="std std-doc">config items</span></a> are included in the response with the same keys as
+in the config command request.</p>
 </section>
 </section>
 <section id="data-channel">

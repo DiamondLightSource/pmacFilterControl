@@ -412,12 +412,15 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController17_set_in_positionsEK4json">
-<span id="_CPPv3N20PMACFilterController17_set_in_positionsEK4json"></span><span id="_CPPv2N20PMACFilterController17_set_in_positionsEK4json"></span><span id="PMACFilterController::_set_in_positions__jsonC"></span><span class="target" id="classPMACFilterController_1aa3d67e930ed5e2e069a013987ff5f3f7"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_set_in_positions</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">positions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController17_set_in_positionsEK4json" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Set the in position of the given filters. </p>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14_set_positionsERNSt6vectorIiEEK4json">
+<span id="_CPPv3N20PMACFilterController14_set_positionsERNSt6vectorIiEEK4json"></span><span id="_CPPv2N20PMACFilterController14_set_positionsERNSt6vectorIiEEK4json"></span><span id="PMACFilterController::_set_positions__std::vector:i:R.jsonC"></span><span class="target" id="classPMACFilterController_1ae0e31cb9c46793b19f2b62a2c68e67c7"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_set_positions</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">positions</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_positions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController14_set_positionsERNSt6vectorIiEEK4json" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Update the given positions vector from given new values. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>positions</strong> – <strong>[in]</strong> json dictionary of filter in positions - e.g. {“1”: 100, “2”: -100, …}</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>positions</strong> – <strong>[in]</strong> active filter positions vector - either <code class="docutils literal notranslate"><span class="pre">this-&gt;in_positions_</span></code> or <code class="docutils literal notranslate"><span class="pre">this-&gt;out_positions_</span></code> </p></li>
+<li><p><strong>new_positions</strong> – <strong>[in]</strong> json dictionary of new filter positions - e.g. {“filter1”: 100, “filter2”: -100, …}</p></li>
+</ul>
 </dd>
 <dt class="field-even">Throws<span class="colon">:</span></dt>
 <dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">json</span><span class="p">::</span><span class="n">type_error</span></span></span> – if given a config parameter with the wrong type</p>
@@ -630,6 +633,11 @@
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13in_positions_E">
 <span id="_CPPv3N20PMACFilterController13in_positions_E"></span><span id="_CPPv2N20PMACFilterController13in_positions_E"></span><span id="PMACFilterController::in_positions___std::vector:i:"></span><span class="target" id="classPMACFilterController_1a6af0c0b9397bddb87bc898ab588d0c42"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">in_positions_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController13in_positions_E" title="Permalink to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14out_positions_E">
+<span id="_CPPv3N20PMACFilterController14out_positions_E"></span><span id="_CPPv2N20PMACFilterController14out_positions_E"></span><span id="PMACFilterController::out_positions___std::vector:i:"></span><span class="target" id="classPMACFilterController_1a0f1a35c6770d88c54f64a8166226ffc8"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">out_positions_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController14out_positions_E" title="Permalink to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
