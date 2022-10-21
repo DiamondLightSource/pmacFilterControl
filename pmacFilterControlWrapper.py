@@ -112,41 +112,80 @@ class Wrapper:
 
         self.current_attenuation = builder.aIn("ATTENUATION_RBV")
 
-    def _set_mode(self) -> None:
+    def _set_mode(self, mode: int) -> None:
+
+        # Set mode for PFC
+
+        self.mode_rbv.set(mode)
+
+    def _reset(self, _) -> None:
         pass
 
-    def _reset(self) -> None:
+    def _set_timeout(self, timeout: int) -> None:
+
+        # Set timeout for PFC
+
+        self.timeout_rbv.set(timeout)
+
+    def _clear_timeout(self, _) -> None:
         pass
 
-    def _set_timeout(self) -> None:
+    def _start_singleshot(self, _) -> None:
         pass
 
-    def _clear_timeout(self) -> None:
+    def _set_upper_high_threshold(self, threshold: int) -> None:
+
+        # Set upper high threshold for PFC
+
         pass
 
-    def _start_singleshot(self) -> None:
+    def _set_lower_high_threshold(self, threshold: int) -> None:
+
+        # Set lower high threshold for PFC
+
         pass
 
-    def _set_upper_high_threshold(self) -> None:
+    def _set_upper_low_threshold(self, threshold: int) -> None:
+
+        # Set upper low threshold for PFC
+
         pass
 
-    def _set_lower_high_threshold(self) -> None:
+    def _set_lower_low_threshold(self, threshold: int) -> None:
+
+        # Set lower low threshold for PFC
+
         pass
 
-    def _set_upper_low_threshold(self) -> None:
-        pass
+    def _set_filter_set(self, filter_set: int) -> None:
 
-    def _set_lower_low_threshold(self) -> None:
-        pass
+        # Set filter set for PFC
 
-    def _set_filter_set(self) -> None:
-        pass
+        self.filter_set_rbv.set(filter_set)
 
-    def _set_filter_mode(self) -> None:
-        pass
+    def _set_filter_mode(self, filter_mode: int) -> None:
 
-    def _set_file_path(self) -> None:
-        pass
+        # Set filter set for PFC
 
-    def _set_file_name(self) -> None:
-        pass
+        self.filter_mode_rbv.set(filter_mode)
+
+    def _set_file_path(self, path: str) -> None:
+
+        # Set file path for PFC
+
+        self._combine_file_path_and_name()
+
+    def _set_file_name(self, name: str) -> None:
+
+        # Set file name for PFC
+
+        self._combine_file_path_and_name()
+
+    def _combine_file_path_and_name(self) -> None:
+
+        path: str = self.file_path.get()
+        name: str = self.file_name.get()
+
+        full_path: str = "/".join([path, name])
+
+        self.file_full_name.set(full_path)
