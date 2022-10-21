@@ -8,6 +8,41 @@ from cothread.catools import caput
 from softioc import builder
 
 
+MODE = [
+    "Automatic Attenuation",
+    "Single-shot & Reset",
+    "Manual",
+]
+
+FILTER_SET = [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+]
+
+FILTER_MODE = [
+    "Cu",
+    "Mo 1",
+    "Mo 2",
+    "Mo 3",
+    "Ag 1",
+    "Ag 2",
+]
+
+
 class Wrapper:
 
     POLL_PERIOD = 0.1
@@ -26,8 +61,8 @@ class Wrapper:
         self.version = builder.stringIn("VERSION")
         self.state = builder.stringIn("STATE")
 
-        self.mode = builder.mbbOut("MODE", on_update=self._set_mode)
-        self.mode_rbv = builder.mbbIn("MODE_RBV")
+        self.mode = builder.mbbOut("MODE", *MODE, on_update=self._set_mode)
+        self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE)
 
         self.reset = builder.aOut("RESET", on_update=self._reset)
 
@@ -54,13 +89,15 @@ class Wrapper:
             "LOW:THRESHOLD:LOWER", on_update=self._set_lower_low_threshold
         )
 
-        self.filter_set = builder.mbbOut("FILTER_SET", on_update=self._set_filter_set)
-        self.filter_set_rbv = builder.mbbIn("FILTER_SET_RBV")
+        self.filter_set = builder.mbbOut(
+            "FILTER_SET", *FILTER_SET, on_update=self._set_filter_set
+        )
+        self.filter_set_rbv = builder.mbbIn("FILTER_SET_RBV", *FILTER_SET)
 
         self.filter_mode = builder.mbbOut(
-            "FILTER_MODE", on_update=self._set_filter_mode
+            "FILTER_MODE", *FILTER_MODE, on_update=self._set_filter_mode
         )
-        self.filter_mode_rbv = builder.mbbIn("FILTER_MODE_RBV")
+        self.filter_mode_rbv = builder.mbbIn("FILTER_MODE_RBV", *FILTER_MODE)
 
         self.file_path = builder.stringOut("FILE:PATH", on_update=self._set_file_path)
         self.file_name = builder.stringOut("FILE:NAME", on_update=self._set_file_name)
@@ -70,7 +107,7 @@ class Wrapper:
         self.process_period = builder.aIn("PROCESS:PERIOD")
 
         self.last_frame_received = builder.aIn("FRAME:RECEIVED")
-        self.last_frame_processed = builder.aIn("FRAME:RECEIVED")
+        self.last_frame_processed = builder.aIn("FRAME:PROCESSED")
         self.time_since_last_frame = builder.aIn("FRAME:LAST_TIME")
 
         self.current_attenuation = builder.aIn("ATTENUATION_RBV")
