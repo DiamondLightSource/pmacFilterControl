@@ -64,15 +64,15 @@ class Wrapper:
         self.mode = builder.mbbOut("MODE", *MODE, on_update=self._set_mode)
         self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE)
 
-        self.reset = builder.aOut("RESET", on_update=self._reset)
+        self.reset = builder.boolOut("RESET", on_update=self._reset)
 
         self.timeout = builder.aOut("TIMEOUT", on_update=self._set_timeout)
         self.timeout_rbv = builder.aIn("TIMEOUT_RBV")
-        self.clear_timeout = builder.aOut(
+        self.clear_timeout = builder.boolOut(
             "TIMEOUT:CLEAR", on_update=self._clear_timeout
         )
 
-        self.singleshot_start = builder.aOut(
+        self.singleshot_start = builder.boolOut(
             "SINGLESHOT:START", on_update=self._start_singleshot
         )
 
