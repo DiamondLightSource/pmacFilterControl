@@ -70,6 +70,28 @@ For example:
 Readbacks for [config items](#config) are included in the response with the same keys as
 in the config command request.
 
+### Timeout State
+
+If frames are not received for 3 seconds while in the `ACTIVE` state then the `TIMEOUT`
+state is triggered. When this happens maximum attenuation is set and any further data
+messages are ignored. The `clear_timeout` command must be sent, which will clear the
+error and change the state to `WAITING`.
+
+This logic is a failsafe to minimise the time that attenuation is kept below the maximum
+without receiving data messages to continually confirm that the attenuation is safe.
+
+### Singleshot Mode
+
+If the system is put into `SINGLESHOT` mode, maximum attenuation is set and the
+`WAITING` state is entered until data messages are received on the subscribe channel.
+Once data messages start, the system adjusts attenuation as normal until a message is
+received that does not cause an adjustment. At this point the attenuation level is
+considered stable and the `SINGLESHOT_COMPELETE` state is entered, which pauses the
+adjustment at the current attenuation level without timing out.
+
+This mode allows higher level software to use the automatic attenuation to optimise the
+attenuation level and then capture a single optimal image at that attenuation.
+
 ## Data Channel
 
 The application will subscribe on the endpoints given in the CLI parameters. Messages of
