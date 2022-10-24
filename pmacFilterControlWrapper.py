@@ -4,7 +4,7 @@ from time import sleep
 
 import cothread
 import numpy as np
-import requests as req
+import socket
 from cothread.catools import caput
 from softioc import builder
 
@@ -122,12 +122,16 @@ class Wrapper:
 
     def startup(self, ip: str, port: int) -> None:
 
-        endpoint = ":".join([ip, str(port)])
-        req_status = {"command":"status"}
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((ip, port))
 
-        resp = req.post(endpoint, json=req_status)
+        req_status = b"{'command':'status'}"
 
-        print(f"Status Code: {resp.status_code}, Response: {resp.json()}")
+        sock.send(req_status)
+
+        resp = sock.recv(100)
+
+        print(f"Response: {resp}")
 
     def _set_mode(self, mode: int) -> None:
 
