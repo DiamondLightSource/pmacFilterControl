@@ -35,5 +35,5 @@ add_subdirectory(thirdparty)
 
 if(NOT ARM)
     add_subdirectory(docs)
-    add_subdirectory(test)
+    add_subdirectory(tests)
 endif()
