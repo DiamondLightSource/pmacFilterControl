@@ -18,14 +18,14 @@ jobs:
           sudo apt install libzmq3-dev
 
       - name: Build pmacFilterControl
-        env:
-          INSTALL_PREFIX: ${{ env.INSTALL_PREFIX }}
         run: |
-          mkdir prefix
+          mkdir ${GITHUB_WORKSPACE}/prefix
           mkdir build && cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=../prefix
+          cmake .. -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/prefix
           make install
 
-      - name: Test
+      - name: Test pmacFilterControl
         run: |
-          prefix/bin/pmacFilterControl --help
+          python3 -m venv venv && source venv/bin/activate && pip install --upgrade pip
+          pip install -r test/requirements.txt
+          PMAC_FILTER_CONTROL=${GITHUB_WORKSPACE}/prefix/bin/pmacFilterControl pytest -v tests/test_pmac_filter_control.py
