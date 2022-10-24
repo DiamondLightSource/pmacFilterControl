@@ -8,3 +8,9 @@ Automatically generated API reference documentation.
    :private-members:
    :undoc-members:
 ```
+
+```{doxygenenum} ControlMode
+```
+
+```{doxygenenum} ControlState
+```

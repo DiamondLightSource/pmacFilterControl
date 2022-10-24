@@ -9,22 +9,38 @@ using json = nlohmann::json;
 #ifndef PMAC_FILTER_CONTROLLER_H_
 #define PMAC_FILTER_CONTROLLER_H_
 
+/*!
+    @brief User demanded mode of control
+*/
 enum ControlMode {
-    DISABLE,  // Ignore messages
-    CONTINUOUS,  // Run forever
-    SINGLESHOT,  // Run until attenuation stablises and then pause at that attenuation until restarted
+    /** Ignore messages */
+    DISABLE,
+    /** Run forever */
+    CONTINUOUS,
+    /** Run until attenuation stablises and then pause at that attenuation until restarted */
+    SINGLESHOT,
 
-    CONTROL_MODE_SIZE  // Convenience for checking valid value range of ControlMode
+    /** Convenience for checking valid value range of ControlMode */
+    CONTROL_MODE_SIZE
 };
 
+/*!
+    @brief State of internal controller logic
+*/
 enum ControlState {
-    IDLE,  // Ignoring all messages
-    WAITING,  // At max attenuation and waiting for messages
-    ACTIVE,  // Receiving messages and healthy
-    TIMEOUT,  // Waiting for timeout to be cleared to enter WAITING again
-    SINGLESHOT_COMPLETE,  // Attenuation stablised in singleshot run and waiting for next run
+    /** Ignoring all messages */
+    IDLE,
+    /** At max attenuation and waiting for messages */
+    WAITING,
+    /** Receiving messages and healthy */
+    ACTIVE,
+    /** Waiting for timeout to be cleared to enter WAITING again */
+    TIMEOUT,
+    /** Attenuation stablised in singleshot run and waiting for next run */
+    SINGLESHOT_COMPLETE,
 
-    CONTROL_STATE_SIZE  // Convenience for checking valid value range of ControlState
+    /** Convenience for checking valid value range of ControlState */
+    CONTROL_STATE_SIZE
 };
 
 class PMACFilterController
