@@ -43,6 +43,9 @@ enum ControlState {
     CONTROL_STATE_SIZE
 };
 
+/*!
+    @brief Class to subscribe for data messages and adjust attenuation of filter set
+*/
 class PMACFilterController
 {
     public:
