@@ -4,9 +4,17 @@ from time import sleep
 
 import cothread
 import numpy as np
+import requests as req
 from cothread.catools import caput
 from softioc import builder
 
+STATES =[
+    "Idle",
+    "Waiting",
+    "Active",
+    "Timeout",
+    "Singleshot Complete"
+]
 
 MODE = [
     "Automatic Attenuation",
@@ -54,7 +62,7 @@ class Wrapper:
 
         self.ip = ip
         self.port = port
-        # self.startup(self.ip, self.port)
+        self.startup(self.ip, self.port)
 
         self.device_name = device_name
 
@@ -111,6 +119,15 @@ class Wrapper:
         self.time_since_last_frame = builder.aIn("FRAME:LAST_TIME")
 
         self.current_attenuation = builder.aIn("ATTENUATION_RBV")
+
+    def startup(self, ip: str, port: int) -> None:
+
+        endpoint = ":".join([ip, str(port)])
+        req_status = {"command":"status"}
+
+        resp = req.post(endpoint, json=req_status)
+
+        print(f"Status Code: {resp.status_code}, Response: {resp.json()}")
 
     def _set_mode(self, mode: int) -> None:
 
