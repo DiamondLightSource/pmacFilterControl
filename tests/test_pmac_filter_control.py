@@ -80,6 +80,78 @@ def test_initial_status(pfc: PMACFilterControlWrapper):
     response = pfc.request({"command": "status"})
 
     assert "status" in response
+    assert response["status"]["state"] == 1  # IDLE
+    assert response["status"]["current_attenuation"] == 0
+
+
+def test_configure_positions(pfc: PMACFilterControlWrapper):
+    response = pfc.request(
+        {
+            "command": "configure",
+            "params": {
+                "in_positions": {
+                    "filter1": 100,
+                    "filter2": 300,
+                    "filter3": 500,
+                    "filter4": 700,
+                },
+                "out_positions": {
+                    "filter1": 0,
+                    "filter2": 200,
+                    "filter3": 400,
+                    "filter4": 600,
+                },
+            },
+        }
+    )
+    assert response["success"]
+
+    response = pfc.request({"command": "status"})
+    assert "status" in response
+    assert response["status"]["in_positions"] == [100, 300, 500, 700]
+    assert response["status"]["out_positions"] == [0, 200, 400, 600]
+
+
+def test_configure_change_position(pfc: PMACFilterControlWrapper):
+    response = pfc.request(
+        {"command": "configure", "params": {"in_positions": {"filter1": 100}}}
+    )
+    assert response["success"]
+
+    response = pfc.request(
+        {"command": "configure", "params": {"in_positions": {"filter1": 200}}}
+    )
+    assert response["success"]
+
+    response = pfc.request({"command": "status"})
+    assert "status" in response
+    assert response["status"]["in_positions"] == [200, 0, 0, 0]
+
+
+def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
+    response = pfc.request(
+        {
+            "command": "configure",
+            "params": {
+                "pixel_count_thresholds": {
+                    "low2": 10,
+                    "low1": 50,
+                    "high1": 1000,
+                    "high2": 5000,
+                }
+            },
+        }
+    )
+    assert response["success"]
+
+    response = pfc.request({"command": "status"})
+    assert "status" in response
+    assert response["status"]["pixel_count_thresholds"] == {
+        "low2": 10,
+        "low1": 50,
+        "high1": 1000,
+        "high2": 5000,
+    }
 
 
 def test_shutdown(pfc: PMACFilterControlWrapper):
