@@ -32,12 +32,12 @@ The configuration requests are exposed via the `config` command request. Config
 requests must contain a `params` key and its value must be a dictionary with at least
 one ofwith with at least one config options:
 
-|                 Config | Description                                                                 |
-| ---------------------: | :-------------------------------------------------------------------------- |
-|                   mode | Set the operational mode - 0: Disable, 1: Continuous, 2: Singleshot         |
-|           in_positions | In positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`   |
-|          out_positions | Out positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`  |
-| pixel_count_thresholds | Thresholds for each histogram bin above which attenuation should be changed |
+|                 Config | Description                                                                                                                            |
+| ---------------------: | :------------------------------------------------------------------------------------------------------------------------------------- |
+|                   mode | Set the operational mode - 0: Disable, 1: Continuous, 2: Singleshot                                                                    |
+|           in_positions | In positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`                                                              |
+|          out_positions | Out positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`                                                             |
+| pixel_count_thresholds | Thresholds for each histogram bin above which attenuation should be changed - allowed keys: threshold names, e.g.: `"low1"`, `"high2"` |
 
 For example:
 
