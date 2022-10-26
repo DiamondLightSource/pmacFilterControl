@@ -1,12 +1,15 @@
+import asyncio
+import codecs
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-from time import sleep
 
 import cothread
 import numpy as np
-import socket
+import json
 from cothread.catools import caput
-from softioc import builder
+from softioc import builder, asyncio_dispatcher
+
+from .zmqadapter import ZeroMQAdapter
 
 STATES =[
     "Idle",
@@ -17,9 +20,9 @@ STATES =[
 ]
 
 MODE = [
-    "Automatic Attenuation",
-    "Single-shot & Reset",
-    "Manual",
+    "Disable",
+    "Continuous",
+    "Single-shot",
 ]
 
 FILTER_SET = [
@@ -62,7 +65,7 @@ class Wrapper:
 
         self.ip = ip
         self.port = port
-        self.startup(self.ip, self.port)
+        self.zmq_stream = ZeroMQAdapter(ip, port)
 
         self.device_name = device_name
 
@@ -120,22 +123,44 @@ class Wrapper:
 
         self.current_attenuation = builder.aIn("ATTENUATION_RBV")
 
-    def startup(self, ip: str, port: int) -> None:
+    async def run_forever(self) -> None:
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((ip, port))
+        print("Connecting to ZMQ stream...")
 
-        req_status = b"{'command':'status'}"
+        # asyncio.ensure_future(self.zmq_stream.run_forever())
 
-        sock.send(req_status)
+        req_status = b"{\"command\":\"status\"}"
 
-        resp = sock.recv(100)
+        self._send_message(req_status)
+        # resp = await self.zmq_stream.get_response()
 
-        print(f"Response: {resp}")
+        # if resp:
+        #     print("Connected.")
+
+        # await self.monitor_responses()
+        await self.zmq_stream.run_forever()
+        print("Done")
+
+    async def monitor_responses(self) -> None:
+        print("Monitoring responses...")
+        print("F")
+        while self.zmq_stream.running:
+            print("D")
+            resp = await self.zmq_stream.get_response()
+            print("E")
+            print(resp)
+
+    def _send_message(self, message: bytes) -> bytes:
+        print(f"Sending message: {message}")
+        self.zmq_stream.send_message([message])
+
+        #return await self.zmq_stream.get_response()
 
     def _set_mode(self, mode: int) -> None:
 
         # Set mode for PFC
+        mode_config = json.dumps({"command":"configure","params":{"mode":mode}})
+        self._send_message(codecs.encode(mode_config, "utf-8"))
 
         self.mode_rbv.set(mode)
 
@@ -149,34 +174,41 @@ class Wrapper:
         self.timeout_rbv.set(timeout)
 
     def _clear_timeout(self, _) -> None:
-        pass
+        
+        clear_timeout = json.dumps({"command":"clear_timeout"})
+        self._send_message(codecs.encode(clear_timeout, "utf-8"))
 
     def _start_singleshot(self, _) -> None:
-        pass
+        
+        if self.state == "WAITING" and self.mode_rbv.get() == 2:
+            start_singleshot = json.dumps({"command":"singleshot"})
+            self._send_message(codecs.encode(start_singleshot, "utf-8"))
+        else:
+            print("WARNING: Must be in SINGLESHOT mode and WAITING state.")
 
     def _set_upper_high_threshold(self, threshold: int) -> None:
 
         # Set upper high threshold for PFC
-
-        pass
+        set_upper_high = json.dumps({"command": "configure", "params": {"high2": threshold}})
+        self._send_message(codecs.encode(set_upper_high, "utf-8"))
 
     def _set_lower_high_threshold(self, threshold: int) -> None:
 
         # Set lower high threshold for PFC
-
-        pass
+        set_lower_high = json.dumps({"command": "configure", "params": {"high1": threshold}})
+        self._send_message(codecs.encode(set_lower_high, "utf-8"))
 
     def _set_upper_low_threshold(self, threshold: int) -> None:
 
         # Set upper low threshold for PFC
-
-        pass
+        set_upper_low = json.dumps({"command": "configure", "params": {"low2": threshold}})
+        self._send_message(codecs.encode(set_upper_low, "utf-8"))
 
     def _set_lower_low_threshold(self, threshold: int) -> None:
 
         # Set lower low threshold for PFC
-
-        pass
+        set_lower_low = json.dumps({"command": "configure", "params": {"low1": threshold}})
+        self._send_message(codecs.encode(set_lower_low, "utf-8"))
 
     def _set_filter_set(self, filter_set: int) -> None:
 
