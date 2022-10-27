@@ -6,18 +6,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import cothread
 import numpy as np
 import json
-from cothread.catools import caput
-from softioc import builder, asyncio_dispatcher
+from softioc import builder
 
 from .zmqadapter import ZeroMQAdapter
 
-STATES =[
-    "Idle",
-    "Waiting",
-    "Active",
-    "Timeout",
-    "Singleshot Complete"
-]
+STATES = ["Idle", "Waiting", "Active", "Timeout", "Singleshot Complete"]
 
 MODE = [
     "Disable",
@@ -67,6 +60,8 @@ class Wrapper:
         self.port = port
         self.zmq_stream = ZeroMQAdapter(ip, port)
 
+        self.pixel_count_thresholds = {"high1": 2, "high2": 2, "low1": 2, "low2": 2}
+
         self.device_name = device_name
 
         self.version = builder.stringIn("VERSION")
@@ -88,16 +83,16 @@ class Wrapper:
         )
 
         self.upper_high_threshold = builder.aOut(
-            "HIGH:THRESHOLD:UPPER", on_update=self._set_upper_high_threshold
+            "HIGH:THRESHOLD:UPPER", initial_value=0, on_update=self._set_upper_high_threshold
         )
         self.lower_high_threshold = builder.aOut(
-            "HIGH:THRESHOLD:LOWER", on_update=self._set_lower_high_threshold
+            "HIGH:THRESHOLD:LOWER", initial_value=0, on_update=self._set_lower_high_threshold
         )
         self.upper_low_threshold = builder.aOut(
-            "LOW:THRESHOLD:UPPER", on_update=self._set_upper_low_threshold
+            "LOW:THRESHOLD:UPPER", initial_value=0, on_update=self._set_upper_low_threshold
         )
         self.lower_low_threshold = builder.aOut(
-            "LOW:THRESHOLD:LOWER", on_update=self._set_lower_low_threshold
+            "LOW:THRESHOLD:LOWER", initial_value=0, on_update=self._set_lower_low_threshold
         )
 
         self.filter_set = builder.mbbOut(
@@ -143,23 +138,20 @@ class Wrapper:
 
     async def monitor_responses(self) -> None:
         print("Monitoring responses...")
-        print("F")
         while self.zmq_stream.running:
-            print("D")
             resp = await self.zmq_stream.get_response()
-            print("E")
             print(resp)
 
     def _send_message(self, message: bytes) -> bytes:
         print(f"Sending message: {message}")
         self.zmq_stream.send_message([message])
 
-        #return await self.zmq_stream.get_response()
+        # return await self.zmq_stream.get_response()
 
     def _set_mode(self, mode: int) -> None:
 
         # Set mode for PFC
-        mode_config = json.dumps({"command":"configure","params":{"mode":mode}})
+        mode_config = json.dumps({"command": "configure", "params": {"mode": mode}})
         self._send_message(codecs.encode(mode_config, "utf-8"))
 
         self.mode_rbv.set(mode)
@@ -174,41 +166,71 @@ class Wrapper:
         self.timeout_rbv.set(timeout)
 
     def _clear_timeout(self, _) -> None:
-        
-        clear_timeout = json.dumps({"command":"clear_timeout"})
+
+        clear_timeout = json.dumps({"command": "clear_timeout"})
         self._send_message(codecs.encode(clear_timeout, "utf-8"))
 
     def _start_singleshot(self, _) -> None:
-        
+
         if self.state == "WAITING" and self.mode_rbv.get() == 2:
-            start_singleshot = json.dumps({"command":"singleshot"})
+            start_singleshot = json.dumps({"command": "singleshot"})
             self._send_message(codecs.encode(start_singleshot, "utf-8"))
         else:
             print("WARNING: Must be in SINGLESHOT mode and WAITING state.")
 
+    def _set_thresholds(self) -> None:
+
+        set_thresholds = json.dumps(
+            {
+                "command": "configure",
+                "params": {"pixel_count_thresholds": self.pixel_count_thresholds},
+            }
+        )
+        self._send_message(codecs.encode(set_thresholds, "utf-8"))
+
     def _set_upper_high_threshold(self, threshold: int) -> None:
 
-        # Set upper high threshold for PFC
-        set_upper_high = json.dumps({"command": "configure", "params": {"high2": threshold}})
-        self._send_message(codecs.encode(set_upper_high, "utf-8"))
+        if threshold != self.pixel_count_thresholds["high2"]:
+            self.pixel_count_thresholds["high2"] = threshold
+
+            # Set upper high threshold for PFC
+            self._set_thresholds()
+
+        else:
+            print(f"High 2 is already at value {threshold}.")
 
     def _set_lower_high_threshold(self, threshold: int) -> None:
 
-        # Set lower high threshold for PFC
-        set_lower_high = json.dumps({"command": "configure", "params": {"high1": threshold}})
-        self._send_message(codecs.encode(set_lower_high, "utf-8"))
+        if threshold != self.pixel_count_thresholds["high1"]:
+            self.pixel_count_thresholds["high1"] = threshold
+
+            # Set lower high threshold for PFC
+            self._set_thresholds()
+
+        else:
+            print(f"High 1 is already at value {threshold}.")
 
     def _set_upper_low_threshold(self, threshold: int) -> None:
 
-        # Set upper low threshold for PFC
-        set_upper_low = json.dumps({"command": "configure", "params": {"low2": threshold}})
-        self._send_message(codecs.encode(set_upper_low, "utf-8"))
+        if threshold != self.pixel_count_thresholds["low2"]:
+            self.pixel_count_thresholds["low2"] = threshold
+
+            # Set upper high threshold for PFC
+            self._set_thresholds()
+
+        else:
+            print(f"Low 2 is already at value {threshold}.")
 
     def _set_lower_low_threshold(self, threshold: int) -> None:
 
-        # Set lower low threshold for PFC
-        set_lower_low = json.dumps({"command": "configure", "params": {"low1": threshold}})
-        self._send_message(codecs.encode(set_lower_low, "utf-8"))
+        if threshold != self.pixel_count_thresholds["low1"]:
+            self.pixel_count_thresholds["low1"] = threshold
+
+            # Set upper high threshold for PFC
+            self._set_thresholds()
+
+        else:
+            print(f"Low 1 is already at value {threshold}.")
 
     def _set_filter_set(self, filter_set: int) -> None:
 
