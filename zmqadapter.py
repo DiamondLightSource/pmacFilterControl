@@ -80,7 +80,6 @@ class ZeroMQAdapter:
 
     async def _process_message(self, message: Iterable[bytes]) -> None:
         if message is not None:
-            print(f"writing message: {message}")
             self._socket.write(message)
         else:
             # LOGGER.debug("No message")
@@ -91,6 +90,5 @@ class ZeroMQAdapter:
         running = True
         while running:
             resp = await self._read_response()
-            print(f"got {resp}")
             self._recv_message_queue.put_nowait(resp)
             running = self.check_if_running()
