@@ -10,12 +10,12 @@ from softioc import builder
 
 from .zmqadapter import ZeroMQAdapter
 
-STATES = ["Idle", "Waiting", "Active", "Timeout", "Singleshot Complete"]
+STATES = ["IDLE", "WAITING", "ACTIVE", "TIMEOUT", "SINGLESHOT COMPLETE"]
 
 MODE = [
-    "Disable",
-    "Continuous",
-    "Single-shot",
+    "DISABLE",
+    "CONTINUOUS",
+    "SINGLE-SHOT",
 ]
 
 FILTER_SET = [
@@ -65,14 +65,16 @@ class Wrapper:
         self.device_name = device_name
 
         self.version = builder.stringIn("VERSION")
-        self.state = builder.stringIn("STATE")
+        self.state = builder.mbbIn("STATE", *STATES)
 
         self.mode = builder.mbbOut("MODE", *MODE, on_update=self._set_mode)
         self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE)
 
         self.reset = builder.boolOut("RESET", on_update=self._reset)
 
-        self.timeout = builder.aOut("TIMEOUT", on_update=self._set_timeout)
+        self.timeout = builder.aOut(
+            "TIMEOUT", initial_value=0, on_update=self._set_timeout
+        )
         self.timeout_rbv = builder.aIn("TIMEOUT_RBV")
         self.clear_timeout = builder.boolOut(
             "TIMEOUT:CLEAR", on_update=self._clear_timeout
@@ -83,16 +85,24 @@ class Wrapper:
         )
 
         self.upper_high_threshold = builder.aOut(
-            "HIGH:THRESHOLD:UPPER", initial_value=0, on_update=self._set_upper_high_threshold
+            "HIGH:THRESHOLD:UPPER",
+            initial_value=0,
+            on_update=self._set_upper_high_threshold,
         )
         self.lower_high_threshold = builder.aOut(
-            "HIGH:THRESHOLD:LOWER", initial_value=0, on_update=self._set_lower_high_threshold
+            "HIGH:THRESHOLD:LOWER",
+            initial_value=0,
+            on_update=self._set_lower_high_threshold,
         )
         self.upper_low_threshold = builder.aOut(
-            "LOW:THRESHOLD:UPPER", initial_value=0, on_update=self._set_upper_low_threshold
+            "LOW:THRESHOLD:UPPER",
+            initial_value=0,
+            on_update=self._set_upper_low_threshold,
         )
         self.lower_low_threshold = builder.aOut(
-            "LOW:THRESHOLD:LOWER", initial_value=0, on_update=self._set_lower_low_threshold
+            "LOW:THRESHOLD:LOWER",
+            initial_value=0,
+            on_update=self._set_lower_low_threshold,
         )
 
         self.filter_set = builder.mbbOut(
@@ -124,7 +134,7 @@ class Wrapper:
 
         # asyncio.ensure_future(self.zmq_stream.run_forever())
 
-        req_status = b"{\"command\":\"status\"}"
+        req_status = b'{"command":"status"}'
 
         self._send_message(req_status)
         # resp = await self.zmq_stream.get_response()
@@ -132,18 +142,66 @@ class Wrapper:
         # if resp:
         #     print("Connected.")
 
-        # await self.monitor_responses()
-        await self.zmq_stream.run_forever()
+        await asyncio.gather(
+            *[
+                self.monitor_responses(),
+                self.zmq_stream.run_forever(),
+                self._query_status(),
+            ]
+        )
+        # await self.zmq_stream.run_forever()
         print("Done")
 
     async def monitor_responses(self) -> None:
         print("Monitoring responses...")
-        while self.zmq_stream.running:
+        running = True
+        while running:
             resp = await self.zmq_stream.get_response()
-            print(resp)
+            resp_json = json.loads(resp[0])
+
+            if "status" in resp_json:
+                status = resp_json["status"]
+
+                self._handle_status(status)
+
+            running = self.zmq_stream.check_if_running()
+
+    async def _query_status(self) -> None:
+        running = True
+        while running:
+            if self.zmq_stream.running:
+                req_status = b'{"command":"status"}'
+                self._send_message(req_status)
+                running = self.zmq_stream.check_if_running()
+            await asyncio.sleep(1)
+
+    def _handle_status(self, status: json) -> None:
+
+        state = status["state"]
+        self.state.set(state)
+
+        version = status["version"]
+        self.version.set(str(version))
+
+        process_duration = status["process_duration"]
+        self.process_duration.set(process_duration)
+
+        process_period = status["process_period"]
+        self.process_period.set(process_period)
+
+        last_received_frame = status["last_received_frame"]
+        self.last_frame_received.set(last_received_frame)
+
+        last_processed_frame = status["last_processed_frame"]
+        self.last_frame_processed.set(last_processed_frame)
+
+        time_since_last_frame = status["time_since_last_message"]
+        self.time_since_last_frame.set(time_since_last_frame)
+
+        current_attenuation = status["current_attenuation"]
+        self.current_attenuation.set(current_attenuation)
 
     def _send_message(self, message: bytes) -> bytes:
-        print(f"Sending message: {message}")
         self.zmq_stream.send_message([message])
 
         # return await self.zmq_stream.get_response()
@@ -157,7 +215,9 @@ class Wrapper:
         self.mode_rbv.set(mode)
 
     def _reset(self, _) -> None:
-        pass
+        if _ == 1:
+            reset = b'{"command":"reset"}'
+            self._send_message(reset)
 
     def _set_timeout(self, timeout: int) -> None:
 
@@ -167,12 +227,15 @@ class Wrapper:
 
     def _clear_timeout(self, _) -> None:
 
+        if _ == 1:
         clear_timeout = json.dumps({"command": "clear_timeout"})
         self._send_message(codecs.encode(clear_timeout, "utf-8"))
 
     def _start_singleshot(self, _) -> None:
 
-        if self.state == "WAITING" and self.mode_rbv.get() == 2:
+        if _ == 1:
+
+            if self.state.get() == 1 and self.mode_rbv.get() == 2:
             start_singleshot = json.dumps({"command": "singleshot"})
             self._send_message(codecs.encode(start_singleshot, "utf-8"))
         else:
