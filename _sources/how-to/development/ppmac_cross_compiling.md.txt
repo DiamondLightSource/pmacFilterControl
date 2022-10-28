@@ -10,8 +10,8 @@ embed the dynamic linker and the library paths within the binary. These are:
 - `-Wl,-dynamic-linker` | Set dynamic linker
 
 The `--disable-new-dtags` flag is used to set `RPATH` rather than `RUNPATH`, which seems
-to be necesary to acheive the desired behaviour when running on the ppmac. The binary
-can be expected with readelf to confirm the RPATH is set:`
+to be necessary to acheive the desired behaviour when running on the ppmac. The binary
+can be expected with readelf to confirm the `RPATH` is set:
 
 ```bash
 root@172.23.107.175:/opt/ppmac# readelf -d /root/prefix/bin/pmacFilterControl
@@ -33,7 +33,7 @@ Dynamic section at offset 0x8fbc8 contains 36 entries:
 
 `ldd` is also useful to see what the flags change:
 
-- With the correct flags (and the application runs without setting `LD_LIBRARY_PATH):
+- With the correct flags (and the application runs without setting `LD_LIBRARY_PATH`):
 ```bash
 root@172.23.107.175:/opt/ppmac# ldd /root/prefix/bin/pmacFilterControl
     libzmq.so.5 => /root/libzmq/prefix/lib/libzmq.so.5 (0x76e4a000)

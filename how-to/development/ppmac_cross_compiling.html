@@ -327,8 +327,8 @@ embed the dynamic linker and the library paths within the binary. These are:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">-Wl,-dynamic-linker</span></code> | Set dynamic linker</p></li>
 </ul>
 <p>The <code class="docutils literal notranslate"><span class="pre">--disable-new-dtags</span></code> flag is used to set <code class="docutils literal notranslate"><span class="pre">RPATH</span></code> rather than <code class="docutils literal notranslate"><span class="pre">RUNPATH</span></code>, which seems
-to be necesary to acheive the desired behaviour when running on the ppmac. The binary
-can be expected with readelf to confirm the RPATH is set:`</p>
+to be necessary to acheive the desired behaviour when running on the ppmac. The binary
+can be expected with readelf to confirm the <code class="docutils literal notranslate"><span class="pre">RPATH</span></code> is set:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# readelf -d /root/prefix/bin/pmacFilterControl
 
 Dynamic section at offset 0x8fbc8 contains <span class="m">36</span> entries:
@@ -348,7 +348,7 @@ Dynamic section at offset 0x8fbc8 contains <span class="m">36</span> entries:
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">ldd</span></code> is also useful to see what the flags change:</p>
 <ul class="simple">
-<li><p>With the correct flags (and the application runs without setting `LD_LIBRARY_PATH):</p></li>
+<li><p>With the correct flags (and the application runs without setting <code class="docutils literal notranslate"><span class="pre">LD_LIBRARY_PATH</span></code>):</p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# ldd /root/prefix/bin/pmacFilterControl
     libzmq.so.5 <span class="o">=</span>&gt; /root/libzmq/prefix/lib/libzmq.so.5 <span class="o">(</span>0x76e4a000<span class="o">)</span>

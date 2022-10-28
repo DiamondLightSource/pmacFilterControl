@@ -342,7 +342,7 @@ that can be sent to this channel are detailed below.</p>
 <td class="text-left"><p>Clear the <code class="docutils literal notranslate"><span class="pre">TIMEOUT</span></code> state and change into the <code class="docutils literal notranslate"><span class="pre">WAITING</span></code> state</p></td>
 </tr>
 <tr class="row-odd"><td class="text-right"><p>singleshot</p></td>
-<td class="text-left"><p>Request a singlshot run to start - must be in <code class="docutils literal notranslate"><span class="pre">SINGLESHOT</span></code> mode and <code class="docutils literal notranslate"><span class="pre">WAITING</span></code> state</p></td>
+<td class="text-left"><p>Request a singleshot run to start - must be in <code class="docutils literal notranslate"><span class="pre">SINGLESHOT</span></code> mode and <code class="docutils literal notranslate"><span class="pre">WAITING</span></code> state</p></td>
 </tr>
 </tbody>
 </table>
@@ -373,7 +373,7 @@ one ofwith with at least one config options:</p>
 <td class="text-left"><p>Out positions (counts) for each filter - allowed keys: <code class="docutils literal notranslate"><span class="pre">&quot;filter{1,2,3,4}&quot;</span></code></p></td>
 </tr>
 <tr class="row-odd"><td class="text-right"><p>pixel_count_thresholds</p></td>
-<td class="text-left"><p>Thresholds for each histogram bin above which attenuation should be changed</p></td>
+<td class="text-left"><p>Thresholds for each histogram bin above which attenuation should be changed - allowed keys: threshold names, e.g.: <code class="docutils literal notranslate"><span class="pre">&quot;low1&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;high2&quot;</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -425,6 +425,26 @@ following status items are included in response:</p>
 </div>
 <p>Readbacks for <a class="reference internal" href="#config"><span class="std std-doc">config items</span></a> are included in the response with the same keys as
 in the config command request.</p>
+</section>
+<section id="timeout-state">
+<h3>Timeout State<a class="headerlink" href="#timeout-state" title="Permalink to this heading">#</a></h3>
+<p>If frames are not received for 3 seconds while in the <code class="docutils literal notranslate"><span class="pre">ACTIVE</span></code> state then the <code class="docutils literal notranslate"><span class="pre">TIMEOUT</span></code>
+state is triggered. When this happens maximum attenuation is set and any further data
+messages are ignored. The <code class="docutils literal notranslate"><span class="pre">clear_timeout</span></code> command must be sent, which will clear the
+error and change the state to <code class="docutils literal notranslate"><span class="pre">WAITING</span></code>.</p>
+<p>This logic is a failsafe to minimise the time that attenuation is kept below the maximum
+without receiving data messages to continually confirm that the attenuation is safe.</p>
+</section>
+<section id="singleshot-mode">
+<h3>Singleshot Mode<a class="headerlink" href="#singleshot-mode" title="Permalink to this heading">#</a></h3>
+<p>If the system is put into <code class="docutils literal notranslate"><span class="pre">SINGLESHOT</span></code> mode, maximum attenuation is set and the
+<code class="docutils literal notranslate"><span class="pre">WAITING</span></code> state is entered until data messages are received on the subscribe channel.
+Once data messages start, the system adjusts attenuation as normal until a message is
+received that does not cause an adjustment. At this point the attenuation level is
+considered stable and the <code class="docutils literal notranslate"><span class="pre">SINGLESHOT_COMPELETE</span></code> state is entered, which pauses the
+adjustment at the current attenuation level without timing out.</p>
+<p>This mode allows higher level software to use the automatic attenuation to optimise the
+attenuation level and then capture a single optimal image at that attenuation.</p>
 </section>
 </section>
 <section id="data-channel">
@@ -534,6 +554,16 @@ The time elapsed is stored in <code class="docutils literal notranslate"><span c
    <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#status">
      Status
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#timeout-state">
+     Timeout State
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#singleshot-mode">
+     Singleshot Mode
     </a>
    </li>
   </ul>
