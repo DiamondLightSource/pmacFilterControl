@@ -4,7 +4,7 @@
 ## How the documentation is structured
 
 Documentation is split into three categories, also accessible from links in the
-side-bar.
+navigation bar.
 
 ### About the documentation
 

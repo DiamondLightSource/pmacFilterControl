@@ -18,7 +18,7 @@ All messages must have a `command` key. Valid commands are:
 |     configure | Configure parameters                                                                                |
 |         reset | Reset the `last_*_frame` counters - this is required to begin processing frame numbers from 0 again |
 | clear_timeout | Clear the `TIMEOUT` state and change into the `WAITING` state                                       |
-|    singleshot | Request a singlshot run to start - must be in `SINGLESHOT` mode and `WAITING` state                 |
+|    singleshot | Request a singleshot run to start - must be in `SINGLESHOT` mode and `WAITING` state                |
 
 For example:
 
@@ -32,12 +32,12 @@ The configuration requests are exposed via the `config` command request. Config
 requests must contain a `params` key and its value must be a dictionary with at least
 one ofwith with at least one config options:
 
-|                 Config | Description                                                                 |
-| ---------------------: | :-------------------------------------------------------------------------- |
-|                   mode | Set the operational mode - 0: Disable, 1: Continuous, 2: Singleshot         |
-|           in_positions | In positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`   |
-|          out_positions | Out positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`  |
-| pixel_count_thresholds | Thresholds for each histogram bin above which attenuation should be changed |
+|                 Config | Description                                                                                                                            |
+| ---------------------: | :------------------------------------------------------------------------------------------------------------------------------------- |
+|                   mode | Set the operational mode - 0: Disable, 1: Continuous, 2: Singleshot                                                                    |
+|           in_positions | In positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`                                                              |
+|          out_positions | Out positions (counts) for each filter - allowed keys: `"filter{1,2,3,4}"`                                                             |
+| pixel_count_thresholds | Thresholds for each histogram bin above which attenuation should be changed - allowed keys: threshold names, e.g.: `"low1"`, `"high2"` |
 
 For example:
 
@@ -69,6 +69,28 @@ For example:
 
 Readbacks for [config items](#config) are included in the response with the same keys as
 in the config command request.
+
+### Timeout State
+
+If frames are not received for 3 seconds while in the `ACTIVE` state then the `TIMEOUT`
+state is triggered. When this happens maximum attenuation is set and any further data
+messages are ignored. The `clear_timeout` command must be sent, which will clear the
+error and change the state to `WAITING`.
+
+This logic is a failsafe to minimise the time that attenuation is kept below the maximum
+without receiving data messages to continually confirm that the attenuation is safe.
+
+### Singleshot Mode
+
+If the system is put into `SINGLESHOT` mode, maximum attenuation is set and the
+`WAITING` state is entered until data messages are received on the subscribe channel.
+Once data messages start, the system adjusts attenuation as normal until a message is
+received that does not cause an adjustment. At this point the attenuation level is
+considered stable and the `SINGLESHOT_COMPELETE` state is entered, which pauses the
+adjustment at the current attenuation level without timing out.
+
+This mode allows higher level software to use the automatic attenuation to optimise the
+attenuation level and then capture a single optimal image at that attenuation.
 
 ## Data Channel
 
