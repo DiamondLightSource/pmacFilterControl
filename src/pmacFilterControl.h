@@ -32,7 +32,8 @@ class PMACFilterController
     public:
         PMACFilterController(
             const std::string& control_port,
-            const std::vector<std::string>& data_endpoints
+            const std::string& publish_port,
+            const std::vector<std::string>& subscribe_endpoints
         );
         ~PMACFilterController();
         void run();
@@ -41,13 +42,16 @@ class PMACFilterController
         /* ZMQ */
         // Endpoint for control channel
         std::string control_channel_endpoint_;
-        // Endpoint for data channels
-        std::vector<std::string> data_channel_endpoints_;
+        // Endpoint for event stream publish channel
+        std::string publish_channel_endpoint_;
+        // Endpoints for data message subscribe channels
+        std::vector<std::string> subscribe_channel_endpoints_;
         // Context
         zmq::context_t zmq_context_;
         // Sockets
         zmq::socket_t zmq_control_socket_;
-        std::vector<zmq::socket_t> zmq_data_sockets_;
+        zmq::socket_t zmq_publish_socket_;
+        std::vector<zmq::socket_t> zmq_subscribe_sockets_;
 
         /* Internal Logic */
         // The current logic state
@@ -57,8 +61,10 @@ class PMACFilterController
         int64_t last_received_frame_;
         // The frame number of the last message that was successfully processed - used to decide to ignore some frames
         int64_t last_processed_frame_;
-        // Time in seconds since last message received - not necessarily causing processing
-        size_t time_since_last_message_;
+        // Time of last message received - not necessarily causing processing
+        struct timespec last_message_ts_;
+        // Time of last process of a message
+        struct timespec last_process_ts_;
         // Duration in microseconds of previous process
         size_t process_duration_;
         // Time elapsed in microseconds from one process to the next. This will include any time spent waiting for
@@ -71,13 +77,11 @@ class PMACFilterController
         // Flag to interrupt listen loop and shutdown process
         bool shutdown_;
         // Thread to subscribe to data channel and control filters
-        std::thread listenThread_;
+        std::thread subscribe_thread_;
 
         /* Filter Logic */
         // Local store of current attenuation to compare against the next attenuation change request
         int current_attenuation_;
-        // New attenuation value to apply after attenuation change is processed
-        int new_attenuation_;
         // Filter positions from previous process for calculation of positions after filter in move
         std::vector<int> current_demand_;
         // Filter positions after filter in move applied
@@ -101,13 +105,14 @@ class PMACFilterController
         bool _set_positions(std::vector<int>& positions, const json new_positions);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
+        void _process_state_changes();
+        void _handle_data_message(zmq::message_t& data_message);
         void _transition_state(ControlState state);
         void _process_singleshot_state();
         void _set_max_attenuation();
-        void _calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts);
-        bool _process_data(const json& data);
-        void _process_threshold(std::string threshold);
+        bool _process_data(const json& data, json& result);
         void _send_filter_adjustment(const int adjustment);
+        void _publish_event(const json& event);
 };
 
 /* Helper methods */

@@ -93,6 +93,28 @@ because it is too late to correct for them - as will frames equal to
 taken effect yet and adjusting for the subsequent message would be correcting a second
 time for the same event.
 
+## Event Stream Channel
+
+For each successfully processed data message, an event message will be published on the
+event stream channel. The channel will be bound to the publish port given in the CLI
+parameters. The messages will be of the form:
+
+```json
+{
+    "frame_number": 0,
+    "attenuation": 4,
+    "adjustment": -1
+}
+```
+
+It is intended for a higher-level application to subscribe to these events in order to
+record the the active attenuation level for each frame and whether the adjustment
+triggered - so, the attenuation of frame `N+1` will be `attenuation + adjustment` from
+frame `N`. A non-zero adjustment for a frame means the attenuation was not optimal for
+the corresponding detector data, which may mean data analysis needs to account for the
+discrepancy or ignore the data entirely. It also means the preceding frame will not be
+optimal, as the attenuation change be changed during the exposure.
+
 ## Motion Program
 
 The motion program simply commands two moves in quick succession, with a timer to

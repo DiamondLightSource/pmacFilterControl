@@ -11,7 +11,8 @@
             "program": "${workspaceFolder}/vscode_prefix/bin/pmacFilterControl",
             "args": [
                 "9000",
-                "127.0.0.1:10009,127.0.0.1:100019"
+                "9001",
+                "127.0.0.1:10009,127.0.0.1:10019"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

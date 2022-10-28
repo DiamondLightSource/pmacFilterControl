@@ -55,6 +55,10 @@ const std::string PARAM_LOW2 = "low2";
 const std::string PARAM_HIGH1 = "high1";
 const std::string PARAM_HIGH2 = "high2";
 
+// Event message keys
+const std::string ADJUSTMENT = "adjustment";
+const std::string ATTENUATION = "attenuation";
+
 // The priority in which to process the thresholds.
 // If PARAM_HIGH2 is triggered, then apply it, else if PARAM_HIGH1 is triggered, apply that, etc.
 const std::vector<std::string> THRESHOLD_PRECEDENCE = {
@@ -80,22 +84,27 @@ const int64_t NO_FRAMES_PROCESSED = -2;
     Setup ZeroMQ sockets
 
     @param[in] control_port Port number to bind control socket to
-    @param[in] data_endpoints Vector of endpoints (`IP`:`PORT`) to subscribe on for data messages
+    @param[in] publish_port Port number to bind event stream publish socket to
+    @param[in] subscribe_endpoints Vector of endpoints (`IP`:`PORT`) to subscribe on for data messages
 */
 PMACFilterController::PMACFilterController(
     const std::string& control_port,
-    const std::vector<std::string>& data_endpoints
+    const std::string& publish_port,
+    const std::vector<std::string>& subscribe_endpoints
 ) :
     control_channel_endpoint_("tcp://*:" + control_port),
-    data_channel_endpoints_(data_endpoints),
+    publish_channel_endpoint_("tcp://*:" + publish_port),
+    subscribe_channel_endpoints_(subscribe_endpoints),
     zmq_context_(),
     zmq_control_socket_(zmq_context_, ZMQ_REP),
-    zmq_data_sockets_(),
+    zmq_publish_socket_(zmq_context_, ZMQ_PUB),
+    zmq_subscribe_sockets_(),
     // Internal logic
     state_(ControlState::WAITING),
     last_received_frame_(NO_FRAMES_PROCESSED),
     last_processed_frame_(NO_FRAMES_PROCESSED),
-    time_since_last_message_(0),
+    last_message_ts_(),
+    last_process_ts_(),
     process_duration_(0),
     process_period_(0),
     singleshot_start_(false),
@@ -103,7 +112,6 @@ PMACFilterController::PMACFilterController(
     shutdown_(false),
     // Filter logic
     current_attenuation_(0),
-    new_attenuation_(0),
     current_demand_(FILTER_COUNT, 0),
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
@@ -114,16 +122,17 @@ PMACFilterController::PMACFilterController(
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
+    this->zmq_publish_socket_.bind(publish_channel_endpoint_.c_str());
 
     // Open sockets to subscribe to data endpoints
-    for (size_t idx = 0; idx != this->data_channel_endpoints_.size(); idx++) {
-        this->zmq_data_sockets_.push_back(zmq::socket_t(this->zmq_context_, ZMQ_SUB));
+    for (size_t idx = 0; idx != this->subscribe_channel_endpoints_.size(); idx++) {
+        this->zmq_subscribe_sockets_.push_back(zmq::socket_t(this->zmq_context_, ZMQ_SUB));
         // Only recv most recent message
         const int conflate = 1;
-        this->zmq_data_sockets_[idx].setsockopt(ZMQ_CONFLATE, &conflate, sizeof(conflate));
+        this->zmq_subscribe_sockets_[idx].setsockopt(ZMQ_CONFLATE, &conflate, sizeof(conflate));
         // Subscribe to all topics ("" -> No topic filter)
-        this->zmq_data_sockets_[idx].setsockopt(ZMQ_SUBSCRIBE, "", 0);
-        this->zmq_data_sockets_[idx].connect(this->data_channel_endpoints_[idx].c_str());
+        this->zmq_subscribe_sockets_[idx].setsockopt(ZMQ_SUBSCRIBE, "", 0);
+        this->zmq_subscribe_sockets_[idx].connect(this->subscribe_channel_endpoints_[idx].c_str());
     }
 }
 
@@ -136,7 +145,7 @@ PMACFilterController::PMACFilterController(
 PMACFilterController::~PMACFilterController() {
     this->zmq_control_socket_.close();
     std::vector<zmq::socket_t>::iterator it;
-    for (it = this->zmq_data_sockets_.begin(); it != this->zmq_data_sockets_.end(); it++) {
+    for (it = this->zmq_subscribe_sockets_.begin(); it != this->zmq_subscribe_sockets_.end(); it++) {
         it->close();
     }
 }
@@ -315,7 +324,7 @@ void PMACFilterController::_handle_status(json& response) {
     status["process_period"] = this->process_period_;
     status["last_received_frame"] = this->last_received_frame_;
     status["last_processed_frame"] = this->last_processed_frame_;
-    status["time_since_last_message"] = this->time_since_last_message_;
+    status["time_since_last_message"] = _seconds_since(this->last_message_ts_);
     status["current_attenuation"] = this->current_attenuation_;
     status["state"] = this->state_;
     // Readback values for config items
@@ -331,8 +340,8 @@ void PMACFilterController::_handle_status(json& response) {
     @brief Spawn data monitor thread and listen for control requests until shutdown
 */
 void PMACFilterController::run() {
-    // Start data handler thread
-    this->listenThread_ = std::thread(
+    // Start data handler and event stream threads
+    this->subscribe_thread_ = std::thread(
         std::bind(&PMACFilterController::_process_data_channel, this)
     );
 
@@ -357,7 +366,7 @@ void PMACFilterController::run() {
 
     std::cout << "Shutting down" << std::endl;
 
-    this->listenThread_.join();
+    this->subscribe_thread_.join();
 }
 
 /*!
@@ -368,82 +377,75 @@ void PMACFilterController::run() {
 */
 void PMACFilterController::_process_data_channel() {
     // Construct pollitems for data sockets
-    zmq::pollitem_t pollitems[this->zmq_data_sockets_.size()];
-    for (size_t idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
-        zmq::pollitem_t pollitem = {this->zmq_data_sockets_[idx], 0, ZMQ_POLLIN, 0};
+    zmq::pollitem_t pollitems[this->zmq_subscribe_sockets_.size()];
+    for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++) {
+        zmq::pollitem_t pollitem = {this->zmq_subscribe_sockets_[idx], 0, ZMQ_POLLIN, 0};
         pollitems[idx] = pollitem;
     }
 
     std::cout << "Listening for messages..." << std::endl;
 
     std::string data_str;
-    struct timespec process_start_ts, process_end_ts, last_message_ts;
+    struct timespec process_start_ts;
     while (!this->shutdown_) {
-        // Update status
-        this->time_since_last_message_ = _seconds_since(last_message_ts);
+        this->_process_state_changes();
 
-        // Process mode changes from control thread
-        // - Disable
-        if (this->mode_ == ControlMode::DISABLE) {
-            this->_transition_state(ControlState::IDLE);
-        }
-        // - Transition state to waiting depending on mode change
-        if (this->mode_ == ControlMode::CONTINUOUS) {
-            if (this->state_ == ControlState::IDLE || this->state_ == ControlState::SINGLESHOT_COMPLETE) {
-                this->_transition_state(ControlState::WAITING);
-            }
-        } else if (this->mode_ == ControlMode::SINGLESHOT) {
-            if (this->state_ == ControlState::IDLE) {
-                this->_transition_state(ControlState::WAITING);
-            }
+        if (!(this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE)) {
+            continue;
         }
 
-        // Process internal state changes
-        // - Process singleshot logic if active
-        if (this->mode_ == ControlMode::SINGLESHOT) {
-            this->_process_singleshot_state();
-        }
-        // - Set max attenuation and stop if timeout reached
-        if (this->state_ == ControlState::ACTIVE && this->time_since_last_message_ >= CONTINUOUS_MODE_TIMEOUT) {
-            std::cout << "Timeout waiting for messages" << std::endl;
-            this->_transition_state(ControlState::TIMEOUT);
-        }
-        // - Clear timeout if requested from control thread
-        else if (this->state_ == ControlState::TIMEOUT && this->clear_timeout_) {
-            std::cout << "Timeout cleared - waiting for messages" << std::endl;
-            this->clear_timeout_ = false;
-            this->_transition_state(ControlState::WAITING);
-        }
+        // Poll data sockets
+        zmq::poll(&pollitems[0], this->zmq_subscribe_sockets_.size(), POLL_TIMEOUT);
+        for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++) {
+            if (_message_queued(pollitems[idx])) {
+                _get_time(&process_start_ts);
 
-        // If we are still in a healthy state at this point, try processing messages
-        if (this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE) {
-            // Poll data sockets
-            zmq::poll(&pollitems[0], this->zmq_data_sockets_.size(), POLL_TIMEOUT);
-            for (size_t idx = 0; idx != this->zmq_data_sockets_.size(); idx++) {
-                if (_message_queued(pollitems[idx])) {
-                    _get_time(&process_start_ts);
+                zmq::message_t data_message;
+                this->zmq_subscribe_sockets_[idx].recv(&data_message);
+                this->_handle_data_message(data_message);
 
-                    zmq::message_t data_message;
-                    this->zmq_data_sockets_[idx].recv(&data_message);
+                this->process_duration_ = (this->process_duration_ + _useconds_since(process_start_ts)) / 2;
 
-                    data_str = std::string(static_cast<char*>(data_message.data()), data_message.size());
-                    std::cout << "Data received: " << data_str << std::endl;
-
-                    json data = _parse_json_string(data_str);
-                    if (!data.is_null()) {
-                        if(this->_process_data(data)) {
-                            this->_calculate_process_metrics(process_start_ts, process_end_ts);
-                        }
-                    }
-                    _get_time(&last_message_ts);
-
-                    if (this->state_ == ControlState::WAITING) {
-                        // Change from waiting to active to enable timeout monitoring
-                        this->_transition_state(ControlState::ACTIVE);
-                    }
+                if (this->state_ == ControlState::WAITING) {
+                    // Change from waiting to active to enable timeout monitoring
+                    this->_transition_state(ControlState::ACTIVE);
                 }
             }
         }
+    }
+}
+
+/*!
+    @brief Update state based on mode changes from control thread and internal logic
+*/
+void PMACFilterController::_process_state_changes() {
+    // Disable
+    if (this->mode_ == ControlMode::DISABLE) {
+        this->_transition_state(ControlState::IDLE);
+    }
+
+    // Transition state to waiting depending on mode change
+    if (this->mode_ == ControlMode::CONTINUOUS) {
+        if (this->state_ == ControlState::IDLE || this->state_ == ControlState::SINGLESHOT_COMPLETE) {
+            this->_transition_state(ControlState::WAITING);
+        }
+    } else if (this->mode_ == ControlMode::SINGLESHOT) {
+        if (this->state_ == ControlState::IDLE) {
+            this->_transition_state(ControlState::WAITING);
+        }
+        this->_process_singleshot_state();
+    }
+
+    // Set max attenuation and stop if timeout reached
+    if (this->state_ == ControlState::ACTIVE && _seconds_since(this->last_message_ts_) >= CONTINUOUS_MODE_TIMEOUT) {
+        std::cout << "Timeout waiting for messages" << std::endl;
+        this->_transition_state(ControlState::TIMEOUT);
+    }
+    // Clear timeout if requested from control thread
+    else if (this->state_ == ControlState::TIMEOUT && this->clear_timeout_) {
+        std::cout << "Timeout cleared - waiting for messages" << std::endl;
+        this->clear_timeout_ = false;
+        this->_transition_state(ControlState::WAITING);
     }
 }
 
@@ -493,40 +495,59 @@ void PMACFilterController::_set_max_attenuation() {
 }
 
 /*!
-    @brief Calculate and store time of process and since last process
+    @brief Process message and publish the resulting attenuation change
 
-    @param[in] start_ts Timespec of process start time
-    @param[in,out] end_ts Timespec of last process end time - this will be updated
+    @param[in] data_message Message containing histogram data
 */
-void PMACFilterController::_calculate_process_metrics(const struct timespec& start_ts, struct timespec& end_ts) {
-    this->process_duration_ = (this->process_duration_ + _useconds_since(start_ts)) / 2;
-    this->process_period_ = _useconds_since(end_ts) / this->zmq_data_sockets_.size();
-    _get_time(&end_ts);
+void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
+    std::string data_str = std::string(static_cast<char*>(data_message.data()), data_message.size());
+    std::cout << "Data received: " << data_str << std::endl;
+    json data = _parse_json_string(data_str);
+    if (data.is_null()) {
+        std::cout << "Not processing null data message" << std::endl;
+        return;
+    }
+
+    _get_time(&this->last_message_ts_);
+
+    json event;
+    event[FRAME_NUMBER] = data[FRAME_NUMBER];
+    if (this->_process_data(data, event)) {
+        this->process_period_ = _useconds_since(this->last_process_ts_);
+        _get_time(&this->last_process_ts_);
+    } else {
+        // This message caused no adjustment - create nop event
+        event[ADJUSTMENT] = 0;
+        event[ATTENUATION] = this->current_attenuation_;
+    }
+
+    this->_publish_event(event);
 }
 
 /*!
-    @brief Handle the JSON request from the control channel
+    @brief Process message data
 
-    Determine if the `data` should be processed based on the frame number and then if the histogram values require the
-    attenuation level to be adjusted.
+    Determine if the `data` json should be processed based on the frame number, check which threshold is triggered if
+    any and adjust the attenuation level as necessary.
+
+    If successful, the `result` json will be updated with the attenuation adjustment and new attenuation level.
 
     @param[in] data json structure of data message
+    @param[in] result json structure to update with results of processing
 
     @return true if an attenuation change was made, else false
 */
-bool PMACFilterController::_process_data(const json& data) {
+bool PMACFilterController::_process_data(const json& data, json& result) {
     this->last_received_frame_ = data[FRAME_NUMBER];
 
     // Validate the data message
     if (!(data.contains(FRAME_NUMBER) && data.contains(PARAMETERS))) {
         std::cout << "Ignoring message - Does not have keys " << FRAME_NUMBER << " and " << PARAMETERS << std::endl;
         return false;
-    }
-    if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
+    } else if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
         std::cout << "Ignoring message " << " - Already processed " << this->last_processed_frame_ << std::endl;
         return false;
-    }
-    if (data[FRAME_NUMBER] == this->last_processed_frame_ + 1) {
+    } else if (data[FRAME_NUMBER] == this->last_processed_frame_ + 1) {
         std::cout << "Ignoring message - Processed preceding frame" << std::endl;
         return false;
     }
@@ -535,37 +556,36 @@ bool PMACFilterController::_process_data(const json& data) {
     std::vector<std::string>::const_iterator threshold;
 
     // Process logic for the most appropriate threshold
-    // - Too many counts above high thresholds -> increase attenuation
-    // - Too few counts above low thresholds -> decrease attenuation
     bool success = true;
+    std::string triggered_threshold = "";
+    // - Too many counts above high thresholds -> increase attenuation
     if (histogram[PARAM_HIGH2] > this->pixel_count_thresholds_[PARAM_HIGH2]) {
-        this->_process_threshold(PARAM_HIGH2);
+        triggered_threshold = PARAM_HIGH2;
     } else if (histogram[PARAM_HIGH1] > this->pixel_count_thresholds_[PARAM_HIGH1]) {
-        this->_process_threshold(PARAM_HIGH1);
+        triggered_threshold = PARAM_HIGH1;
     }
+    // - Too few counts above low thresholds -> decrease attenuation
     else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2]) {
-        this->_process_threshold(PARAM_LOW2);
+        triggered_threshold = PARAM_LOW2;
     } else if (histogram[PARAM_LOW1] < this->pixel_count_thresholds_[PARAM_LOW1]) {
-        this->_process_threshold(PARAM_LOW1);
+        triggered_threshold = PARAM_LOW1;
     } else {
         success = false;
     }
 
     if (success) {
+        std::cout << triggered_threshold << " threshold triggered" << std::endl;
+        std::cout << "Current threshold: " << this->pixel_count_thresholds_[triggered_threshold] << std::endl;
+
+        int adjustment = THRESHOLD_ADJUSTMENTS.at(triggered_threshold);
+        this->_send_filter_adjustment(adjustment);
+
+        result[ADJUSTMENT] = adjustment;
+        result[ATTENUATION] = this->current_attenuation_;
         this->last_processed_frame_ = data[FRAME_NUMBER];
     }
 
     return success;
-}
-
-/*!
-    @brief Send attenuation adjustment for the given threshold
-*/
-void PMACFilterController::_process_threshold(std::string threshold) {
-    std::cout << threshold << " threshold triggered" << std::endl;
-    std::cout << "Current threshold: " << this->pixel_count_thresholds_[threshold] << std::endl;
-    int adjustment = THRESHOLD_ADJUSTMENTS.at(threshold);
-    this->_send_filter_adjustment(adjustment);
 }
 
 /*!
@@ -580,27 +600,27 @@ void PMACFilterController::_process_threshold(std::string threshold) {
     @param[in] adjustment Attenuation levels to change by (can be positive or negative)
 */
 void PMACFilterController::_send_filter_adjustment(int adjustment) {
-    this->new_attenuation_ = this->current_attenuation_ + adjustment;
+    int new_attenuation_ = this->current_attenuation_ + adjustment;
 
-    if (this->new_attenuation_ <= 0) {
+    if (new_attenuation_ <= 0) {
         std::cout << "Min Attenuation" << std::endl;
-        this->new_attenuation_ = 0;
-    } else if (this->new_attenuation_ == MAX_ATTENUATION) {
+        new_attenuation_ = 0;
+    } else if (new_attenuation_ == MAX_ATTENUATION) {
         std::cout << "Max Attenuation" << std::endl;
-    } else if (this->new_attenuation_ > MAX_ATTENUATION) {
+    } else if (new_attenuation_ > MAX_ATTENUATION) {
         std::cout << "Max Attenuation Exceeded " << std::endl;
-        this->new_attenuation_ = MAX_ATTENUATION;
+        new_attenuation_ = MAX_ATTENUATION;
 #ifdef __ARM_ARCH
         CommandTS(CLOSE_SHUTTER);
 #endif
     }
 
-    std::cout << "New attenuation: " << this->new_attenuation_ << std::endl;
+    std::cout << "New attenuation: " << new_attenuation_ << std::endl;
 
     std::cout << "Adjustments (Current | In | Final):" << std::endl;
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
         // Bit shift to get IN/OUT state of each filter
-        this->final_demand_[idx] = (this->new_attenuation_ >> idx) & 1;
+        this->final_demand_[idx] = (new_attenuation_ >> idx) & 1;
         // Prevent moving filters OUT in first move - if demand is OUT but current is IN, then stay IN until final move
         this->post_in_demand_[idx] = this->final_demand_[idx] | this->current_demand_[idx];
 
@@ -611,7 +631,7 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 
 #ifdef __ARM_ARCH
     std::cout << "Changing attenuation: "
-        << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
+        << this->current_attenuation_ << " -> " << new_attenuation_ << std::endl;
 
     // Set demands on ppmac (P407{1,2,3,4} and P408{1,2,3,4})
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
@@ -624,14 +644,26 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     CommandTS(RUN_PROG_1);
 #else
     std::cout << "Not changing attenuation "
-        << this->current_attenuation_ << " -> " << this->new_attenuation_ << std::endl;
+        << this->current_attenuation_ << " -> " << new_attenuation_ << std::endl;
 #endif
 
     // Update current values for next incremental change
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
         this->current_demand_[idx] = this->final_demand_[idx];
     }
-    this->current_attenuation_ = this->new_attenuation_;
+    this->current_attenuation_ = new_attenuation_;
+}
+
+/*!
+    @brief Publish the given json as a message on the event stream channel
+
+    @param[in] event json data for event message
+*/
+void PMACFilterController::_publish_event(const json& event) {
+    std::string event_str = event.dump();
+    zmq::message_t event_msg(event_str.size());
+    memcpy(event_msg.data(), event_str.c_str(), event_str.size());
+    this->zmq_publish_socket_.send(event_msg, 0);
 }
 
 /*!
@@ -642,9 +674,9 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     @return 0 when shutdown cleanly, 1 when given invalid arguments
 */
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        std::cout << "Usage: " << argv[0] << " control_port data_endpoint\n"
-            << "e.g. '" << argv[0] << " 9000 127.0.0.1:10009'" << std::endl;
+    if (argc != 4) {
+        std::cout << "Usage: " << argv[0] << " control_port publish_endpoint subscribe_endpoints\n"
+            << "e.g. '" << argv[0] << " 9000 9001 127.0.0.1:10009,127.0.0.1:10019'" << std::endl;
 
         if (argc == 2 && std::string(argv[1]) == "--help") {
             return 0;
@@ -655,9 +687,10 @@ int main(int argc, char** argv) {
     std::cout << "Version: " << VERSION << std::endl;
 
     std::string control_port(argv[1]);
-    std::vector<std::string> data_endpoints = _parse_endpoints(std::string(argv[2]));
+    std::string publish_port(argv[2]);
+    std::vector<std::string> subscribe_endpoints = _parse_endpoints(std::string(argv[3]));
 
-    PMACFilterController pfc(control_port, data_endpoints);
+    PMACFilterController pfc(control_port, publish_port, subscribe_endpoints);
 
 #ifdef __ARM_ARCH
     InitLibrary();
