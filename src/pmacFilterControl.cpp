@@ -144,6 +144,7 @@ PMACFilterController::PMACFilterController(
 */
 PMACFilterController::~PMACFilterController() {
     this->zmq_control_socket_.close();
+    this->zmq_publish_socket_.close();
     std::vector<zmq::socket_t>::iterator it;
     for (it = this->zmq_subscribe_sockets_.begin(); it != this->zmq_subscribe_sockets_.end(); it++) {
         it->close();
