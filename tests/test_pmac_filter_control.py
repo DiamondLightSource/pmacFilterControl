@@ -84,6 +84,11 @@ def test_initial_status(pfc: PMACFilterControlWrapper):
     assert response["status"]["current_attenuation"] == 0
 
 
+def test_shutdown(pfc: PMACFilterControlWrapper):
+    response = pfc.request({"command": "shutdown"})
+    assert response["success"]
+
+
 def test_configure_positions(pfc: PMACFilterControlWrapper):
     response = pfc.request(
         {
@@ -152,8 +157,3 @@ def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
         "high1": 1000,
         "high2": 5000,
     }
-
-
-def test_shutdown(pfc: PMACFilterControlWrapper):
-    response = pfc.request({"command": "shutdown"})
-    assert response["success"]
