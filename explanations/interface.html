@@ -448,6 +448,26 @@ because it is too late to correct for them - as will frames equal to
 taken effect yet and adjusting for the subsequent message would be correcting a second
 time for the same event.</p>
 </section>
+<section id="event-stream-channel">
+<h2>Event Stream Channel<a class="headerlink" href="#event-stream-channel" title="Permalink to this heading">#</a></h2>
+<p>For each successfully processed data message, an event message will be published on the
+event stream channel. The channel will be bound to the publish port given in the CLI
+parameters. The messages will be of the form:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;frame_number&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;attenuation&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;adjustment&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>It is intended for a higher-level application to subscribe to these events in order to
+record the the active attenuation level for each frame and whether the adjustment
+triggered - so, the attenuation of frame <code class="docutils literal notranslate"><span class="pre">N+1</span></code> will be <code class="docutils literal notranslate"><span class="pre">attenuation</span> <span class="pre">+</span> <span class="pre">adjustment</span></code> from
+frame <code class="docutils literal notranslate"><span class="pre">N</span></code>. A non-zero adjustment for a frame means the attenuation was not optimal for
+the corresponding detector data, which may mean data analysis needs to account for the
+discrepancy or ignore the data entirely. It also means the preceding frame will not be
+optimal, as the attenuation change be changed during the exposure.</p>
+</section>
 <section id="motion-program">
 <h2>Motion Program<a class="headerlink" href="#motion-program" title="Permalink to this heading">#</a></h2>
 <p>The motion program simply commands two moves in quick succession, with a timer to
@@ -521,6 +541,11 @@ The time elapsed is stored in <code class="docutils literal notranslate"><span c
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#data-channel">
    Data Channel
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#event-stream-channel">
+   Event Stream Channel
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
