@@ -3,6 +3,7 @@ import os
 from shutil import which
 import subprocess
 from pathlib import Path
+from time import sleep
 from typing import Any, Dict, Iterator, List
 
 import pytest
@@ -65,6 +66,8 @@ class PMACFilterControlWrapper:
     def configure(self, config: Dict[str, Any]):
         response = self.request({"command": "configure", "params": config})
         assert "success" in response and response["success"]
+
+        sleep(0.1)
 
     def stdout(self) -> List[bytes]:
         output = self.process.stdout.readlines()
