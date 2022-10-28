@@ -1,0 +1,20 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "generator": "Unix Makefiles",
+            "cmakeExecutable": "/dls_sw/prod/tools/RHEL7-x86_64/cmake/3-24-2/prefix/bin/cmake",
+            "binaryDir": "${sourceDir}/vscode_build",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/vscode_prefix",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ]
+}
