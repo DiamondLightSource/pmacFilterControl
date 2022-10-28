@@ -157,3 +157,14 @@ def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
         "high1": 1000,
         "high2": 5000,
     }
+
+
+def test_configure_mode(pfc: PMACFilterControlWrapper):
+    response = pfc.request(
+        {"command": "configure", "params": {"mode": 1}}
+    )
+    assert response["success"]
+
+    response = pfc.request({"command": "status"})
+    assert "status" in response
+    assert response["status"]["mode"] == 1
