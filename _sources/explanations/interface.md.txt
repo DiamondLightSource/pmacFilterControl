@@ -135,7 +135,7 @@ triggered - so, the attenuation of frame `N+1` will be `attenuation + adjustment
 frame `N`. A non-zero adjustment for a frame means the attenuation was not optimal for
 the corresponding detector data, which may mean data analysis needs to account for the
 discrepancy or ignore the data entirely. It also means the preceding frame will not be
-optimal, as the attenuation change be changed during the exposure.
+optimal, as the attenuation will be changed during the exposure.
 
 ## Motion Program
 
