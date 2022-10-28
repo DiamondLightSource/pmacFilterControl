@@ -162,6 +162,20 @@ def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
 
 
 def test_configure_mode(pfc: PMACFilterControlWrapper):
+    # Changing to CONTINUOUS changes state to WAITING
     pfc.configure({"mode": 1})
     status = pfc.request_status()
     assert status["mode"] == 1
+    assert status["state"] == 1
+
+    # Changing to DISABLE changes state to IDLE
+    pfc.configure({"mode": 0})
+    status = pfc.request_status()
+    assert status["mode"] == 0
+    assert status["state"] == 0
+
+    # Changing to SINGLESHOT changes state to WAITING
+    pfc.configure({"mode": 2})
+    status = pfc.request_status()
+    assert status["mode"] == 2
+    assert status["state"] == 1
