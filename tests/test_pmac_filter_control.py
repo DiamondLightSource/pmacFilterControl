@@ -95,8 +95,8 @@ def test_cli_help():
 def test_initial_status(pfc: PMACFilterControlWrapper):
     status = pfc.request_status()
 
-    assert status["mode"] == 1  # CONTINUOUS
-    assert status["state"] == 1  # WAITING
+    assert status["mode"] == 0  # DISABLE
+    assert status["state"] == 0  # IDLE
     assert status["current_attenuation"] == 0
 
 
