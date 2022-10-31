@@ -1,7 +1,6 @@
 import asyncio
 import codecs
 import logging
-from typing import Any, Dict, List, Optional, Tuple
 
 import cothread
 import numpy as np
@@ -40,6 +39,7 @@ class Wrapper:
         builder: builder,
         device_name: str,
         filter_set_total: int,
+        filters_per_set: int,
     ):
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -63,7 +63,7 @@ class Wrapper:
         self.timeout = builder.aOut(
             "TIMEOUT", initial_value=3, on_update=self._set_timeout
         )
-        self.timeout_rbv = builder.aIn("TIMEOUT_RBV")
+        self.timeout_rbv = builder.aIn("TIMEOUT_RBV", initial_value=3)
         self.clear_timeout = builder.boolOut(
             "TIMEOUT:CLEAR", on_update=self._clear_timeout
         )
@@ -74,29 +74,29 @@ class Wrapper:
 
         self.upper_high_threshold = builder.aOut(
             "HIGH:THRESHOLD:UPPER",
-            initial_value=0,
+            initial_value=2,
             on_update=self._set_upper_high_threshold,
         )
         self.lower_high_threshold = builder.aOut(
             "HIGH:THRESHOLD:LOWER",
-            initial_value=0,
+            initial_value=2,
             on_update=self._set_lower_high_threshold,
         )
         self.upper_low_threshold = builder.aOut(
             "LOW:THRESHOLD:UPPER",
-            initial_value=0,
+            initial_value=2,
             on_update=self._set_upper_low_threshold,
         )
         self.lower_low_threshold = builder.aOut(
             "LOW:THRESHOLD:LOWER",
-            initial_value=0,
+            initial_value=2,
             on_update=self._set_lower_low_threshold,
         )
 
         self.filter_set = builder.mbbOut(
-            "FILTER_SET", *FILTER_SET, on_update=self._set_filter_set
+            "FILTER_SET", *FILTER_SET, initial_value=0, on_update=self._set_filter_set
         )
-        self.filter_set_rbv = builder.mbbIn("FILTER_SET_RBV", *FILTER_SET)
+        self.filter_set_rbv = builder.mbbIn("FILTER_SET_RBV", *FILTER_SET, initial_value=0)
 
         self.file_path = builder.stringOut("FILE:PATH", on_update=self._set_file_path)
         self.file_name = builder.stringOut("FILE:NAME", on_update=self._set_file_name)
@@ -118,12 +118,13 @@ class Wrapper:
             self.filter_sets_in[filter_set_key] = {}
             self.filter_sets_out[filter_set_key] = {}
 
-            for j in range(1, 5):
+            for j in range(1, filters_per_set + 1):
+
                 in_key = f"filter_set_{i}_in_pos_{j}"
                 in_value = builder.aOut(
                     f"FILTER_SET:{i}:IN:{j}",
                     initial_value=100,
-                    on_update=lambda x: self._set_in_pos((i, j), x),
+                    on_update=lambda _, i=i: self._set_in_pos(i),
                 )
                 self.filter_sets_in[filter_set_key][in_key] = in_value
 
@@ -131,7 +132,7 @@ class Wrapper:
                 out_value = builder.aOut(
                     f"FILTER_SET:{i}:OUT:{j}",
                     initial_value=0,
-                    on_update=lambda x: self._set_out_pos((i, j), x),
+                    on_update=lambda _, i=i: self._set_out_pos(i),
                 )
                 self.filter_sets_out[filter_set_key][out_key] = out_value
 
@@ -156,8 +157,6 @@ class Wrapper:
                 self._query_status(),
             ]
         )
-        # await self.zmq_stream.run_forever()
-        print("Done")
 
     async def monitor_responses(self) -> None:
         print("Monitoring responses...")
@@ -210,8 +209,6 @@ class Wrapper:
 
     def _send_message(self, message: bytes) -> bytes:
         self.zmq_stream.send_message([message])
-
-        # return await self.zmq_stream.get_response()
 
     def _set_mode(self, mode: int) -> None:
 
@@ -304,23 +301,44 @@ class Wrapper:
 
     def _set_filter_set(self, filter_set_num: int) -> None:
 
-        filter_set = FILTER_SET[filter_set_num]
+        in_positions = [
+            x.get()
+            for x in self.filter_sets_in[f"filter_set_{filter_set_num+1}"].values()
+        ]
+        out_positions = [
+            x.get()
+            for x in self.filter_sets_out[f"filter_set_{filter_set_num+1}"].values()
+        ]
 
-        in_positions = [x.get() for x in self.filter_sets_in[f"filter_set_{filter_set_num}"].values()]
-        out_positions = [x.get() for x in self.filter_sets_out[f"filter_set_{filter_set_num}"].values()]
+        in_pos = {}
+        for id, pos in enumerate(in_positions):
+            in_pos[f"filter{id+1}"] = pos
 
-        # Set filter set for PFC
-        # set_filter_set = json.dumps(
-        #     {
-        #         "command": "configure",
-        #         "params": {"in_positions": in_positions},
-        #     }
-        # )
-        # self._send_message(codecs.encode(set_filter_set, "utf-8"))
+        out_pos = {}
+        for id, pos in enumerate(out_positions):
+            out_pos[f"filter{id+1}"] = pos
+
+        # Set filter set positions for PFC
+        set_filter_set = json.dumps(
+            {
+                "command": "configure",
+                "params": {"in_positions": in_pos, "out_positions": out_pos},
+            }
+        )
+
+        self._send_message(codecs.encode(set_filter_set, "utf-8"))
 
         self.filter_set_rbv.set(filter_set_num)
 
-        self.filter_mode_rbv.set(filter_mode)
+    def _set_in_pos(self, filter_set: int) -> None:
+
+        if self.filter_set_rbv.get() == filter_set-1:
+            self._set_filter_set(filter_set-1)
+
+    def _set_out_pos(self, filter_set: int) -> None:
+
+        if self.filter_set.get() == filter_set-1:
+            self._set_filter_set(filter_set-1)
 
     def _set_file_path(self, path: str) -> None:
 
