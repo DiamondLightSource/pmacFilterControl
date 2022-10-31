@@ -19,25 +19,6 @@ MODE = [
 ]
 
 FILTER_SET = [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-]
-
-FILTER_MODE = [
     "Cu",
     "Mo 1",
     "Mo 2",
@@ -52,7 +33,14 @@ class Wrapper:
     POLL_PERIOD = 0.1
     RETRY_PERIOD = 5
 
-    def __init__(self, ip: str, port: int, builder: builder, device_name: str):
+    def __init__(
+        self,
+        ip: str,
+        port: int,
+        builder: builder,
+        device_name: str,
+        filter_set_total: int,
+    ):
 
         self._log = logging.getLogger(self.__class__.__name__)
 
@@ -73,7 +61,7 @@ class Wrapper:
         self.reset = builder.boolOut("RESET", on_update=self._reset)
 
         self.timeout = builder.aOut(
-            "TIMEOUT", initial_value=0, on_update=self._set_timeout
+            "TIMEOUT", initial_value=3, on_update=self._set_timeout
         )
         self.timeout_rbv = builder.aIn("TIMEOUT_RBV")
         self.clear_timeout = builder.boolOut(
@@ -110,11 +98,6 @@ class Wrapper:
         )
         self.filter_set_rbv = builder.mbbIn("FILTER_SET_RBV", *FILTER_SET)
 
-        self.filter_mode = builder.mbbOut(
-            "FILTER_MODE", *FILTER_MODE, on_update=self._set_filter_mode
-        )
-        self.filter_mode_rbv = builder.mbbIn("FILTER_MODE_RBV", *FILTER_MODE)
-
         self.file_path = builder.stringOut("FILE:PATH", on_update=self._set_file_path)
         self.file_name = builder.stringOut("FILE:NAME", on_update=self._set_file_name)
         self.file_full_name = builder.stringIn("FILE:FULL_NAME")
@@ -127,6 +110,30 @@ class Wrapper:
         self.time_since_last_frame = builder.aIn("FRAME:LAST_TIME")
 
         self.current_attenuation = builder.aIn("ATTENUATION_RBV")
+
+        self.filter_sets_in = {}
+        self.filter_sets_out = {}
+        for i in range(1, filter_set_total + 1):
+            filter_set_key = f"filter_set_{i}"
+            self.filter_sets_in[filter_set_key] = {}
+            self.filter_sets_out[filter_set_key] = {}
+
+            for j in range(1, 5):
+                in_key = f"filter_set_{i}_in_pos_{j}"
+                in_value = builder.aOut(
+                    f"FILTER_SET:{i}:IN:{j}",
+                    initial_value=100,
+                    on_update=lambda x: self._set_in_pos((i, j), x),
+                )
+                self.filter_sets_in[filter_set_key][in_key] = in_value
+
+                out_key = f"filter_set_{i}_out_pos_{j}"
+                out_value = builder.aOut(
+                    f"FILTER_SET:{i}:OUT:{j}",
+                    initial_value=0,
+                    on_update=lambda x: self._set_out_pos((i, j), x),
+                )
+                self.filter_sets_out[filter_set_key][out_key] = out_value
 
     async def run_forever(self) -> None:
 
@@ -228,18 +235,18 @@ class Wrapper:
     def _clear_timeout(self, _) -> None:
 
         if _ == 1:
-        clear_timeout = json.dumps({"command": "clear_timeout"})
-        self._send_message(codecs.encode(clear_timeout, "utf-8"))
+            clear_timeout = json.dumps({"command": "clear_timeout"})
+            self._send_message(codecs.encode(clear_timeout, "utf-8"))
 
     def _start_singleshot(self, _) -> None:
 
         if _ == 1:
 
             if self.state.get() == 1 and self.mode_rbv.get() == 2:
-            start_singleshot = json.dumps({"command": "singleshot"})
-            self._send_message(codecs.encode(start_singleshot, "utf-8"))
-        else:
-            print("WARNING: Must be in SINGLESHOT mode and WAITING state.")
+                start_singleshot = json.dumps({"command": "singleshot"})
+                self._send_message(codecs.encode(start_singleshot, "utf-8"))
+            else:
+                print("WARNING: Must be in SINGLESHOT mode and WAITING state.")
 
     def _set_thresholds(self) -> None:
 
@@ -295,15 +302,23 @@ class Wrapper:
         else:
             print(f"Low 1 is already at value {threshold}.")
 
-    def _set_filter_set(self, filter_set: int) -> None:
+    def _set_filter_set(self, filter_set_num: int) -> None:
+
+        filter_set = FILTER_SET[filter_set_num]
+
+        in_positions = [x.get() for x in self.filter_sets_in[f"filter_set_{filter_set_num}"].values()]
+        out_positions = [x.get() for x in self.filter_sets_out[f"filter_set_{filter_set_num}"].values()]
 
         # Set filter set for PFC
+        # set_filter_set = json.dumps(
+        #     {
+        #         "command": "configure",
+        #         "params": {"in_positions": in_positions},
+        #     }
+        # )
+        # self._send_message(codecs.encode(set_filter_set, "utf-8"))
 
-        self.filter_set_rbv.set(filter_set)
-
-    def _set_filter_mode(self, filter_mode: int) -> None:
-
-        # Set filter set for PFC
+        self.filter_set_rbv.set(filter_set_num)
 
         self.filter_mode_rbv.set(filter_mode)
 
