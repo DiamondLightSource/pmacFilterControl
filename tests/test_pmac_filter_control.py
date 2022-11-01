@@ -4,10 +4,15 @@ from shutil import which
 import subprocess
 from pathlib import Path
 from time import sleep
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator
 
 import pytest
 import zmq
+
+from detector_sim import DetectorSim
+
+
+DEFAULT_TIMEOUT_MS = 1000
 
 
 HERE = Path(__file__).parent
@@ -18,6 +23,8 @@ assert which(PMAC_FILTER_CONTROL) is not None, "Bad pmacFilterControl executable
 
 
 class PMACFilterControlWrapper:
+    """A class to run a pmacFilterControl application and interact with it"""
+
     def __init__(self):
         self.process = None
         self.control_socket = 9000
@@ -28,6 +35,7 @@ class PMACFilterControlWrapper:
         self.poller.register(self.socket, zmq.POLLIN)
 
     def start(self):
+        """Start the application, give it some time to start and test a status request"""
         cmd = [
             PMAC_FILTER_CONTROL,
             str(self.control_socket),
@@ -35,19 +43,26 @@ class PMACFilterControlWrapper:
             "127.0.0.1:10009,127.0.0.1:10019",
         ]
         print(f"Running pmacFilterControl\n{cmd}")
-        self.process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-
+        self.process = subprocess.Popen(cmd)
         self.socket.connect(f"tcp://127.0.0.1:{self.control_socket}")
 
-    def request(self, request: dict) -> dict:
+        sleep(0.1)  # Give things a chance to connect
+        self.assert_status_equal({"state": 0}, timeout=3)
+
+    def request(self, request: dict, timeout_ms: int = DEFAULT_TIMEOUT_MS) -> dict:
+        """Encode the given dict and send it as a request to the application
+
+        Args:
+            request: The request dictionary to send
+            timeout_ms: Timeout in milliseconds to wait for response
+
+        """
         request_str = json.dumps(request)
         print(f"Sending request: {request_str}")
 
         self.socket.send(request_str.encode())
 
-        if not self.poller.poll(timeout=1000):
+        if not self.poller.poll(timeout=timeout_ms):
             assert False, "Did not get a response from the application"
 
         response = json.loads(self.socket.recv(zmq.NOBLOCK))
@@ -56,35 +71,91 @@ class PMACFilterControlWrapper:
         print(f"Received response: {response}")
         return response
 
-    def request_status(self) -> Dict[str, Any]:
-        response = self.request({"command": "status"})
+    def request_status(self, timeout_ms: int = DEFAULT_TIMEOUT_MS) -> Dict[str, Any]:
+        """Request status from the application
+
+        Args:
+            timeout_ms: Timeout in milliseconds to wait for response
+
+        """
+        response = self.request({"command": "status"}, timeout_ms)
         assert "success" in response and response["success"]
         assert "status" in response
 
         return response["status"]
 
-    def configure(self, config: Dict[str, Any]):
-        response = self.request({"command": "configure", "params": config})
+    def assert_status_equal(self, expected_status: Dict[str, Any], timeout: int = 1):
+        """Poll for status until the timeout elapses or the status matches
+
+        Args:
+            expected_status: Status items expected in status - can be a subset
+            timeout: Timeout in seconds to wait for status to match
+
+        """
+        delay = 0.2
+        elapsed = 0
+        while elapsed < timeout:
+            sleep(delay)
+            elapsed += delay
+
+            status = self.request_status(timeout * 1000)
+            if self._status_equal(status, expected_status):
+                return
+
+        assert self._status_equal(
+            status, expected_status
+        ), f"Status not as expected after timeout elapsed:\n{status}"
+
+    @staticmethod
+    def _status_equal(status: Dict[str, Any], expected_status: Dict[str, Any]) -> bool:
+        """Check if the given status dictionary matches the expected status dictionary
+
+        Any entries in expected must match, but entries in status but not in expected
+        do not matter.
+
+        Args:
+            status: Full status dictionary
+            expected_status: Status items to check in `status`
+
+        """
+        for k in expected_status:
+            if expected_status[k] != status.get(k, None):
+                return False
+
+        return True
+
+    def configure(self, config: Dict[str, Any], timeout_ms: int = DEFAULT_TIMEOUT_MS):
+        """Encode the given dict and send it as a request to the application
+
+        Args:
+            config: The config dictionary to send
+            timeout_ms: Timeout in milliseconds to wait for response
+
+        """
+        response = self.request({"command": "configure", "params": config}, timeout_ms)
         assert "success" in response and response["success"]
 
-        sleep(0.1)
-
-    def stdout(self) -> List[bytes]:
-        output = self.process.stdout.readlines()
-        print(output)
-        return output
+        sleep(0.1)  # Allow the application state to update
 
     def stop(self):
         print("Stopping pmacFilterControl")
         self.process.kill()
 
 
-@pytest.fixture()
-def pfc() -> Iterator[PMACFilterControlWrapper]:
-    pfc = PMACFilterControlWrapper()
-    pfc.start()
-    yield pfc
-    pfc.stop()
+@pytest.fixture
+def detector_sim() -> Iterator[DetectorSim]:
+    sim = DetectorSim([10009, 10019])
+    yield sim
+    sim.stop()
+
+
+# pfc takes detector_sim to ensure detector_sim is instantiated first
+@pytest.fixture
+def pfc(detector_sim) -> Iterator[PMACFilterControlWrapper]:
+    wrapper = PMACFilterControlWrapper()
+    wrapper.start()
+    yield wrapper
+    wrapper.stop()
 
 
 def test_cli_help():
