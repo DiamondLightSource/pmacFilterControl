@@ -10,6 +10,7 @@ import pytest
 import zmq
 
 from detector_sim import DetectorSim
+from event_subscriber import EventSubscriber
 
 
 DEFAULT_TIMEOUT_MS = 1000
@@ -158,6 +159,13 @@ def pfc(detector_sim) -> Iterator[PMACFilterControlWrapper]:
     wrapper.stop()
 
 
+@pytest.fixture
+def event_subscriber(pfc) -> Iterator[EventSubscriber]:
+    sub = EventSubscriber("127.0.0.1:9001")
+    yield sub
+    sub.stop()
+
+
 def test_cli_help():
     cmd = [PMAC_FILTER_CONTROL, "--help"]
     assert (
@@ -298,3 +306,19 @@ def test_continuous_timeout(detector_sim: DetectorSim, pfc: PMACFilterControlWra
     )
     # Then the application should timeout after 3 seconds and set max attenuation
     pfc.assert_status_equal({"state": 3, "current_attenuation": 15}, timeout=4)
+
+
+def test_event(
+    detector_sim: DetectorSim,
+    pfc: PMACFilterControlWrapper,
+    event_subscriber: EventSubscriber,
+):
+    pfc.configure({"mode": 1})
+    pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
+
+    # Force trigger low2 threshold
+    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+
+    # Check an event was published
+    event = event_subscriber.recv()
+    assert event["frame_number"] == 0
