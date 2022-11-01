@@ -1,6 +1,6 @@
 import random
-import time
-from typing import List
+from time import sleep
+from typing import Dict, List
 
 import typer
 import zmq
@@ -21,49 +21,108 @@ JSON_TEMPLATE = """
 THRESHOLD_LEVEL = 4
 
 
-def main(ports: List[int] = [10009], rate: float = 1, singleshot_length: int = 0):
-    context = zmq.Context()
+class DetectorSim:
+    def __init__(self, ports: List[int]) -> None:
+        context = zmq.Context()
 
-    endpoints = [f"tcp://*:{port}" for port in ports]
-    print(f"Publishing on {endpoints}")
+        self.endpoints = [f"tcp://*:{port}" for port in ports]
+        print(f"Publishing on {self.endpoints}")
 
-    sockets = []
-    for endpoint in endpoints:
-        socket = context.socket(zmq.PUB)
-        socket.bind(endpoint)
-        sockets.append(socket)
+        self.sockets = []
+        for endpoint in self.endpoints:
+            socket = context.socket(zmq.PUB)
+            socket.bind(endpoint)
+            self.sockets.append(socket)
 
-    delay = 1.0 / rate
-    print(f"{rate}Hz -> {delay}s per message")
+        self.frame_number = 0
 
-    frame_number = 0
-    while True:
-        if singleshot_length > 0 and frame_number > singleshot_length:
-            # Do not trigger thresholds
-            formatter = dict(
-                frame_number=frame_number, high2=0, high1=0, low2=0, low1=0
-            )
-        else:
-            # Random values
-            formatter = dict(
-                frame_number=frame_number,
-                high2=random.randrange(0, THRESHOLD_LEVEL),
-                high1=random.randrange(0, THRESHOLD_LEVEL),
-                # Make low slightly more likely to balance out precedence
-                low1=random.randrange(0, THRESHOLD_LEVEL + 2),
-                low2=random.randrange(0, THRESHOLD_LEVEL + 2),
-            )
+    def run(self, rate: float, frame_count: int, singleshot_length: int):
+        """Send frames according to the given parameters
 
-        message = JSON_TEMPLATE.format(**formatter)
+        Send random frames until `frame_count` is reached. If `singleshot_length` is
+        reached, send blank frames until `frame_count` reached.
 
-        idx = frame_number % len(sockets)
-        print(f"{endpoints[idx]} -> ")
+        Args:
+            rate: Rate in Hz to send frames at
+            frame_count: Total number of frames to send before stopping. 0 -> unlimited.
+            singleshot_length: Number of random frames to send before sending blank
+                frames. 0 -> only send random frames.
+
+        """
+        delay = 1.0 / min(rate, 100)
+        print(f"{rate}Hz -> {delay}s per message")
+
+        send_fn = self.send_frame
+        while True:
+            if frame_count > 0 and self.frame_number + 1 > frame_count:
+                break
+
+            if singleshot_length > 0 and self.frame_number + 1 > singleshot_length:
+                print("Singleshot length reached")
+                send_fn = self.send_blank
+
+            send_fn()
+            sleep(delay)
+
+        print("Frame count reached")
+        self.stop()
+
+    def send_frame(self, user_data: Dict[str, int] = {}):
+        """Send a random frame, polpulated with the given data if given
+
+        Args:
+            user_data: Values to explicitly set in frame. Used to force certain
+                processing in the application.
+
+        """
+        # Random values
+        data = dict(
+            frame_number=self.frame_number,
+            high2=random.randrange(0, THRESHOLD_LEVEL),
+            high1=random.randrange(0, THRESHOLD_LEVEL),
+            low1=random.randrange(0, THRESHOLD_LEVEL),
+            low2=random.randrange(0, THRESHOLD_LEVEL),
+        )
+        data.update(user_data)
+        self._send_frame(data)
+
+    def send_blank(self):
+        """Send a "blank" frame - i.e. a frame that causes no processing to take place"""
+        # Do not trigger thresholds
+        data = dict(
+            frame_number=self.frame_number, high2=0, high1=0, low2=10000, low1=10000
+        )
+        self._send_frame(data)
+
+    def _send_frame(self, data):
+        """Encode data as a message and publish on a socket based on frame number
+
+        Args:
+            data: Dictionary of data to publish
+
+        """
+        message = JSON_TEMPLATE.format(**data)
+
+        idx = self.frame_number % len(self.sockets)
+        print(f"{self.endpoints[idx]} -> ")
         print(message)
-        sockets[idx].send_string(message)
+        self.sockets[idx].send_string(message)
 
-        time.sleep(delay)
+        self.frame_number += 1
 
-        frame_number += 1
+    def stop(self):
+        """Close sockets"""
+        for socket in self.sockets:
+            socket.close()
+
+
+def main(
+    ports: List[int] = [10009],
+    rate: float = 1,
+    frame_count: int = 0,
+    singleshot_length: int = 0,
+):
+    DetectorSim(ports).run(rate, frame_count, singleshot_length)
 
 
 if __name__ == "__main__":
