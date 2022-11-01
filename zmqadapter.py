@@ -15,6 +15,7 @@ class ZeroMQAdapter:
 
     zmq_host: str = "127.0.0.1"
     zmq_port: int = 5555
+    zmq_type: int = zmq.REQ
     running: bool = False
     _send_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
     _recv_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
@@ -25,7 +26,7 @@ class ZeroMQAdapter:
         print("starting stream...")
 
         self._socket = await aiozmq.create_zmq_stream(
-            zmq.REQ, connect=f"tcp://{self.zmq_host}:{self.zmq_port}"
+            self.zmq_type, connect=f"tcp://{self.zmq_host}:{self.zmq_port}"
         )
         # LOGGER.debug(f"Stream started. {self._socket}")
         print(f"Stream started. {self._socket}")
@@ -59,12 +60,19 @@ class ZeroMQAdapter:
         await self.start_stream()
         self.running = True
 
-        await asyncio.gather(
-            *[
-                self._process_message_queue(),
-                self._process_response_queue(),
-            ]
-        )
+        if self.zmq_type == zmq.REQ:
+            await asyncio.gather(
+                *[
+                    self._process_message_queue(),
+                    self._process_response_queue(),
+                ]
+            )
+        elif self.zmq_type == zmq.SUB:
+            await asyncio.gather(
+                *[
+                    self._process_response_queue(),
+                ]
+            )
 
     def check_if_running(self):
         """Returns the running state of the adapter."""

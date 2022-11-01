@@ -5,6 +5,7 @@ import logging
 import cothread
 import numpy as np
 import json
+import zmq
 from softioc import builder
 
 from .zmqadapter import ZeroMQAdapter
@@ -36,6 +37,7 @@ class Wrapper:
         self,
         ip: str,
         port: int,
+        event_stream_port: int,
         builder: builder,
         device_name: str,
         filter_set_total: int,
@@ -47,6 +49,7 @@ class Wrapper:
         self.ip = ip
         self.port = port
         self.zmq_stream = ZeroMQAdapter(ip, port)
+        self.event_stream = ZeroMQAdapter(ip, event_stream_port, zmq_type=zmq.SUB)
 
         self.pixel_count_thresholds = {"high1": 2, "high2": 2, "low1": 2, "low2": 2}
 
@@ -140,8 +143,6 @@ class Wrapper:
 
         print("Connecting to ZMQ stream...")
 
-        # asyncio.ensure_future(self.zmq_stream.run_forever())
-
         req_status = b'{"command":"status"}'
 
         self._send_message(req_status)
@@ -152,17 +153,18 @@ class Wrapper:
 
         await asyncio.gather(
             *[
-                self.monitor_responses(),
+                self.monitor_responses(self.zmq_stream),
+                self.monitor_responses(self.event_stream),
                 self.zmq_stream.run_forever(),
+                self.event_stream.run_forever(),
                 self._query_status(),
             ]
         )
 
-    async def monitor_responses(self) -> None:
-        print("Monitoring responses...")
+    async def monitor_responses(self, zmq_stream: ZeroMQAdapter) -> None:
         running = True
         while running:
-            resp = await self.zmq_stream.get_response()
+            resp = await zmq_stream.get_response()
             resp_json = json.loads(resp[0])
 
             if "status" in resp_json:
@@ -170,7 +172,7 @@ class Wrapper:
 
                 self._handle_status(status)
 
-            running = self.zmq_stream.check_if_running()
+            running = zmq_stream.check_if_running()
 
     async def _query_status(self) -> None:
         running = True
