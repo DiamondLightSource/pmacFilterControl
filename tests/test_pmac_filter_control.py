@@ -250,3 +250,23 @@ def test_configure_mode(pfc: PMACFilterControlWrapper):
     status = pfc.request_status()
     assert status["mode"] == 2
     assert status["state"] == 1
+
+
+def test_continuous_timeout(detector_sim: DetectorSim, pfc: PMACFilterControlWrapper):
+    pfc.configure({"mode": 1})
+    pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
+
+    # Force trigger low2 threshold
+    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+
+    # Process frame 0, reduce attenuation by 2 and change to ACTIVE
+    pfc.assert_status_equal(
+        {
+            "state": 2,
+            "last_processed_frame": 0,
+            "last_received_frame": 0,
+            "current_attenuation": 13,
+        }
+    )
+    # Then the application should timeout after 3 seconds and set max attenuation
+    pfc.assert_status_equal({"state": 3, "current_attenuation": 15}, timeout=4)
