@@ -202,6 +202,34 @@ def test_configure_positions(pfc: PMACFilterControlWrapper):
     assert status["out_positions"] == [0, 200, 400, 600]
 
 
+@pytest.mark.xfail
+def test_configure_positions_bad(pfc: PMACFilterControlWrapper):
+    in_message = {
+        "command": "configure",
+        "params": {
+            "in_positions": {
+                "filter1": 100,
+                "filter2": 300,
+                "filter3": 500,
+                "filter4": 700,
+            },
+        },
+    }
+    out_message = {
+        "command": "configure",
+        "params": {
+            "out_positions": {
+                "filter1": 0,
+                "filter2": 200,
+                "filter3": 400,
+                "filter4": 600,
+            },
+        },
+    }
+    pfc.socket.send(json.dumps(in_message).encode())
+    pfc.socket.send(json.dumps(out_message).encode())
+
+
 def test_configure_change_position(pfc: PMACFilterControlWrapper):
     pfc.configure({"in_positions": {"filter1": 100}})
     pfc.configure({"in_positions": {"filter1": 200}})
