@@ -100,7 +100,7 @@ PMACFilterController::PMACFilterController(
     zmq_publish_socket_(zmq_context_, ZMQ_PUB),
     zmq_subscribe_sockets_(),
     // Internal logic
-    state_(ControlState::WAITING),
+    state_(ControlState::IDLE),
     last_received_frame_(NO_FRAMES_PROCESSED),
     last_processed_frame_(NO_FRAMES_PROCESSED),
     last_message_ts_(),
@@ -116,7 +116,7 @@ PMACFilterController::PMACFilterController(
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
-    mode_(ControlMode::CONTINUOUS),
+    mode_(ControlMode::DISABLE),
     in_positions_({0, 0, 0, 0}),
     out_positions_({0, 0, 0, 0}),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}})
