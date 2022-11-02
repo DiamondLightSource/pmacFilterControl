@@ -316,8 +316,7 @@ def test_event(
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
 
-    # Force trigger low2 threshold
-    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    detector_sim.send_frame()
 
     # Check an event was published
     event = event_subscriber.recv()
