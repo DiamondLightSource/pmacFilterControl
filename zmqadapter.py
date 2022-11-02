@@ -28,6 +28,8 @@ class ZeroMQAdapter:
         self._socket = await aiozmq.create_zmq_stream(
             self.zmq_type, connect=f"tcp://{self.zmq_host}:{self.zmq_port}"
         )
+        if self.zmq_type == zmq.SUB:
+                self._socket.transport.setsockopt(zmq.SUBSCRIBE, b"")
         # LOGGER.debug(f"Stream started. {self._socket}")
         print(f"Stream started. {self._socket}")
 

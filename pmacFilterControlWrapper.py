@@ -99,7 +99,9 @@ class Wrapper:
         self.filter_set = builder.mbbOut(
             "FILTER_SET", *FILTER_SET, initial_value=0, on_update=self._set_filter_set
         )
-        self.filter_set_rbv = builder.mbbIn("FILTER_SET_RBV", *FILTER_SET, initial_value=0)
+        self.filter_set_rbv = builder.mbbIn(
+            "FILTER_SET_RBV", *FILTER_SET, initial_value=0
+        )
 
         self.file_path = builder.stringOut("FILE:PATH", on_update=self._set_file_path)
         self.file_name = builder.stringOut("FILE:NAME", on_update=self._set_file_name)
@@ -181,7 +183,7 @@ class Wrapper:
                 req_status = b'{"command":"status"}'
                 self._send_message(req_status)
                 running = self.zmq_stream.check_if_running()
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)
 
     def _handle_status(self, status: json) -> None:
 
@@ -334,13 +336,13 @@ class Wrapper:
 
     def _set_in_pos(self, filter_set: int) -> None:
 
-        if self.filter_set_rbv.get() == filter_set-1:
-            self._set_filter_set(filter_set-1)
+        if self.filter_set_rbv.get() == filter_set - 1:
+            self._set_filter_set(filter_set - 1)
 
     def _set_out_pos(self, filter_set: int) -> None:
 
-        if self.filter_set.get() == filter_set-1:
-            self._set_filter_set(filter_set-1)
+        if self.filter_set.get() == filter_set - 1:
+            self._set_filter_set(filter_set - 1)
 
     def _set_file_path(self, path: str) -> None:
 
