@@ -11,7 +11,7 @@ embed the dynamic linker and the library paths within the binary. These are:
 
 The `--disable-new-dtags` flag is used to set `RPATH` rather than `RUNPATH`, which seems
 to be necessary to acheive the desired behaviour when running on the ppmac. The binary
-can be expected with readelf to confirm the `RPATH` is set:
+can be inspected with readelf to confirm the `RPATH` is set:
 
 ```bash
 root@172.23.107.175:/opt/ppmac# readelf -d /root/prefix/bin/pmacFilterControl

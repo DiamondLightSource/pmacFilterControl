@@ -328,7 +328,7 @@ embed the dynamic linker and the library paths within the binary. These are:</p>
 </ul>
 <p>The <code class="docutils literal notranslate"><span class="pre">--disable-new-dtags</span></code> flag is used to set <code class="docutils literal notranslate"><span class="pre">RPATH</span></code> rather than <code class="docutils literal notranslate"><span class="pre">RUNPATH</span></code>, which seems
 to be necessary to acheive the desired behaviour when running on the ppmac. The binary
-can be expected with readelf to confirm the <code class="docutils literal notranslate"><span class="pre">RPATH</span></code> is set:</p>
+can be inspected with readelf to confirm the <code class="docutils literal notranslate"><span class="pre">RPATH</span></code> is set:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# readelf -d /root/prefix/bin/pmacFilterControl
 
 Dynamic section at offset 0x8fbc8 contains <span class="m">36</span> entries:
