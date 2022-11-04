@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from dataclasses import dataclass, field
-from typing import Callable, Iterable
+from dataclasses import dataclass#, field
+from typing import Iterable
 
 import aiozmq
 import zmq
@@ -17,8 +17,8 @@ class ZeroMQAdapter:
     zmq_port: int = 5555
     zmq_type: int = zmq.REQ
     running: bool = False
-    _send_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
-    _recv_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
+    # _send_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
+    # _recv_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
 
     async def start_stream(self) -> None:
         """Start the ZeroMQ stream."""
@@ -30,6 +30,7 @@ class ZeroMQAdapter:
         )
         if self.zmq_type == zmq.SUB:
                 self._socket.transport.setsockopt(zmq.SUBSCRIBE, b"")
+        self._socket.transport.setsockopt(zmq.LINGER, 0)
         # LOGGER.debug(f"Stream started. {self._socket}")
         print(f"Stream started. {self._socket}")
 
@@ -59,7 +60,16 @@ class ZeroMQAdapter:
 
     async def run_forever(self) -> None:
         """Runs the ZeroMQ adapter continuously."""
-        await self.start_stream()
+
+        self._send_message_queue: asyncio.Queue = asyncio.Queue()
+        self._recv_message_queue: asyncio.Queue = asyncio.Queue()
+
+        try:
+            if getattr(self, "_socket", None) is None:
+                await self.start_stream()
+        except Exception as e:
+            print("Exception when starting stream:", e)
+
         self.running = True
 
         if self.zmq_type == zmq.REQ:
@@ -90,7 +100,19 @@ class ZeroMQAdapter:
 
     async def _process_message(self, message: Iterable[bytes]) -> None:
         if message is not None:
-            self._socket.write(message)
+            if not self._socket._closing:
+                try:
+                    self._socket.write(message)
+                except zmq.error.ZMQError as e:
+                    print("ZMQ Error", e)
+                    await asyncio.sleep(1)
+                except Exception as e:
+                    print(f"Error, {e}")
+                    print("Unable to write to ZMQ stream, trying again...")
+                    await asyncio.sleep(1)
+            else:
+                print("Socket closed...")
+                await asyncio.sleep(5)
         else:
             # LOGGER.debug("No message")
             print("No message")

@@ -2,8 +2,6 @@ import asyncio
 import codecs
 import logging
 
-import cothread
-import numpy as np
 import json
 import zmq
 from softioc import builder
@@ -51,6 +49,8 @@ class Wrapper:
         self.zmq_stream = ZeroMQAdapter(ip, port)
         self.event_stream = ZeroMQAdapter(ip, event_stream_port, zmq_type=zmq.SUB)
 
+        self.status_recv: bool = True
+
         self.pixel_count_thresholds = {"high1": 2, "high2": 2, "low1": 2, "low2": 2}
 
         self.device_name = device_name
@@ -66,7 +66,7 @@ class Wrapper:
         self.timeout = builder.aOut(
             "TIMEOUT", initial_value=3, on_update=self._set_timeout
         )
-        self.timeout_rbv = builder.aIn("TIMEOUT_RBV", initial_value=3)
+        self.timeout_rbv = builder.aIn("TIMEOUT_RBV", initial_value=3, EGU="s")
         self.clear_timeout = builder.boolOut(
             "TIMEOUT:CLEAR", on_update=self._clear_timeout
         )
@@ -107,12 +107,12 @@ class Wrapper:
         self.file_name = builder.stringOut("FILE:NAME", on_update=self._set_file_name)
         self.file_full_name = builder.stringIn("FILE:FULL_NAME")
 
-        self.process_duration = builder.aIn("PROCESS:DURATION")
-        self.process_period = builder.aIn("PROCESS:PERIOD")
+        self.process_duration = builder.aIn("PROCESS:DURATION", EGU="us")
+        self.process_period = builder.aIn("PROCESS:PERIOD", EGU="us")
 
         self.last_frame_received = builder.aIn("FRAME:RECEIVED")
         self.last_frame_processed = builder.aIn("FRAME:PROCESSED")
-        self.time_since_last_frame = builder.aIn("FRAME:LAST_TIME")
+        self.time_since_last_frame = builder.aIn("FRAME:LAST_TIME", EGU="s")
 
         self.current_attenuation = builder.aIn("ATTENUATION_RBV")
 
@@ -145,14 +145,6 @@ class Wrapper:
 
         print("Connecting to ZMQ stream...")
 
-        req_status = b'{"command":"status"}'
-
-        self._send_message(req_status)
-        # resp = await self.zmq_stream.get_response()
-
-        # if resp:
-        #     print("Connected.")
-
         await asyncio.gather(
             *[
                 self.monitor_responses(self.zmq_stream),
@@ -164,26 +156,38 @@ class Wrapper:
         )
 
     async def monitor_responses(self, zmq_stream: ZeroMQAdapter) -> None:
-        running = True
-        while running:
-            resp = await zmq_stream.get_response()
-            resp_json = json.loads(resp[0])
+        while True:
+            if not self.zmq_stream.running:
+                await asyncio.sleep(1)
+            else:
+                resp = await zmq_stream.get_response()
+                resp_json = json.loads(resp[0])
 
-            if "status" in resp_json:
-                status = resp_json["status"]
+                if "status" in resp_json:
+                    status = resp_json["status"]
+                    self._handle_status(status)
+                    self.status_recv = True
 
-                self._handle_status(status)
 
             running = zmq_stream.check_if_running()
 
     async def _query_status(self) -> None:
-        running = True
-        while running:
-            if self.zmq_stream.running:
-                req_status = b'{"command":"status"}'
-                self._send_message(req_status)
-                running = self.zmq_stream.check_if_running()
-            await asyncio.sleep(0.1)
+        while True:
+            if not self.zmq_stream.running:
+                print("Zmq stream not running. waiting...")
+                await asyncio.sleep(1)
+            else:
+                if self.status_recv:
+                    self.status_recv = False
+                    req_status = b'{"command":"status"}'
+                    self._send_message(req_status)
+                    running = self.zmq_stream.check_if_running()
+                else:
+                    print("No status response. Waiting for reconnect...")
+                    while not self.status_recv:
+                        await asyncio.sleep(1)
+                    print("Reconnected and status recieved.")
+                await asyncio.sleep(0.1)
 
     def _handle_status(self, status: json) -> None:
 
