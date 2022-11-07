@@ -1,0 +1,1 @@
+/root/prefix/bin/pmacFilterControl 9000 9001 172.23.245.118:10009,172.23.245.118:10019

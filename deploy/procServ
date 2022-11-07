@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# chkconfig: 2345 99 01
+# description: procServ runs up an instance of pmacFilterControl, restarting
+#              it if it seg faults, and runs up a TCP socket server
+#              on port 7001 to allow its console output to be read
+### BEGIN INIT INFO
+# Provides:             procServ
+# Required-Start:       $all
+# Required-Stop:        $all
+# Default-Start:        3 5
+# Default-Stop:         0 1 2 4 6
+# Short-Description:    provides procServ wrapper to pmacFilterControl
+# Description:          procServ runs up an instance of pmacFilterControl, restarting
+#                       it if it seg faults, and runs up a TCP socket server
+#                       on port 7001 to allow its console output to be read
+#### END INIT INFO
+
+device=procServ
+pidFile=/var/run/procServ.pid
+procServ="/usr/local/bin/procServ --allow -p $pidFile -q -i ^D^C 7001 /root/prefix/bin/pmacFilterControl.sh"
+
+start() {
+    echo "Starting $procServ"
+    rm -rf $pidFile
+    touch $pidFile
+    $procServ
+}
+
+stop() {
+    echo "Stopping $procServ"
+    rm -rf $pidFile
+    killall -9 procServ
+}
+
+status() {
+
+    echo $"Status of $device"
+    if [ -e ${pidFile} ]; then
+        for pid in $(cat ${pidFile}); do
+            if ps -p $pid > /dev/null; then
+                echo "$device is running with the PID $pid"
+            fi
+        done
+    else
+        echo "$device is not running"
+    fi
+}
+
+case "$1" in
+  "start")
+        start
+        ;;
+  "stop")
+        stop
+        ;;
+  "status")
+        status
+        ;;
+  "restart")
+        stop
+        start
+        ;;
+   *)
+   echo $"Usage: $device {start|stop|status|restart}"
+   exit 1
+esac
+
+exit 0
