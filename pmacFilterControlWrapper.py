@@ -5,6 +5,7 @@ import logging
 import json
 import zmq
 from softioc import builder
+from typing import Callable, Union
 
 from .zmqadapter import ZeroMQAdapter
 
@@ -50,6 +51,7 @@ class Wrapper:
         self.event_stream = ZeroMQAdapter(ip, event_stream_port, zmq_type=zmq.SUB)
 
         self.status_recv: bool = True
+        self.connected: bool = False
 
         self.pixel_count_thresholds = {"high1": 2, "high2": 2, "low1": 2, "low2": 2}
 
@@ -164,12 +166,12 @@ class Wrapper:
                 resp_json = json.loads(resp[0])
 
                 if "status" in resp_json:
+                    if not self.connected:
+                        self.connected = True
                     status = resp_json["status"]
                     self._handle_status(status)
                     self.status_recv = True
 
-
-            running = zmq_stream.check_if_running()
 
     async def _query_status(self) -> None:
         while True:
@@ -181,9 +183,9 @@ class Wrapper:
                     self.status_recv = False
                     req_status = b'{"command":"status"}'
                     self._send_message(req_status)
-                    running = self.zmq_stream.check_if_running()
                 else:
                     print("No status response. Waiting for reconnect...")
+                    self.connected = False
                     while not self.status_recv:
                         await asyncio.sleep(1)
                     print("Reconnected and status recieved.")
@@ -215,9 +217,20 @@ class Wrapper:
         current_attenuation = status["current_attenuation"]
         self.current_attenuation.set(current_attenuation)
 
+    def _if_connected(func: Callable) -> Callable:
+        def check_connection(*args, **kwargs) -> Union[Callable, bool]:
+            self = args[0]
+            if not self.connected:
+                print("Not connected to device. Try again once connection resumed.")
+                return True
+            return func(*args, *kwargs)
+
+        return check_connection
+
     def _send_message(self, message: bytes) -> bytes:
         self.zmq_stream.send_message([message])
 
+    @_if_connected
     def _set_mode(self, mode: int) -> None:
 
         # Set mode for PFC
@@ -226,23 +239,27 @@ class Wrapper:
 
         self.mode_rbv.set(mode)
 
+    @_if_connected
     def _reset(self, _) -> None:
         if _ == 1:
             reset = b'{"command":"reset"}'
             self._send_message(reset)
 
+    @_if_connected
     def _set_timeout(self, timeout: int) -> None:
 
         # Set timeout for PFC
 
         self.timeout_rbv.set(timeout)
 
+    @_if_connected
     def _clear_timeout(self, _) -> None:
 
         if _ == 1:
             clear_timeout = json.dumps({"command": "clear_timeout"})
             self._send_message(codecs.encode(clear_timeout, "utf-8"))
 
+    @_if_connected
     def _start_singleshot(self, _) -> None:
 
         if _ == 1:
@@ -253,6 +270,7 @@ class Wrapper:
             else:
                 print("WARNING: Must be in SINGLESHOT mode and WAITING state.")
 
+    @_if_connected
     def _set_thresholds(self) -> None:
 
         set_thresholds = json.dumps(
@@ -263,6 +281,7 @@ class Wrapper:
         )
         self._send_message(codecs.encode(set_thresholds, "utf-8"))
 
+    @_if_connected
     def _set_upper_high_threshold(self, threshold: int) -> None:
 
         if threshold != self.pixel_count_thresholds["high2"]:
@@ -274,6 +293,7 @@ class Wrapper:
         else:
             print(f"High 2 is already at value {threshold}.")
 
+    @_if_connected
     def _set_lower_high_threshold(self, threshold: int) -> None:
 
         if threshold != self.pixel_count_thresholds["high1"]:
@@ -285,6 +305,7 @@ class Wrapper:
         else:
             print(f"High 1 is already at value {threshold}.")
 
+    @_if_connected
     def _set_upper_low_threshold(self, threshold: int) -> None:
 
         if threshold != self.pixel_count_thresholds["low2"]:
@@ -296,6 +317,7 @@ class Wrapper:
         else:
             print(f"Low 2 is already at value {threshold}.")
 
+    @_if_connected
     def _set_lower_low_threshold(self, threshold: int) -> None:
 
         if threshold != self.pixel_count_thresholds["low1"]:
@@ -307,6 +329,7 @@ class Wrapper:
         else:
             print(f"Low 1 is already at value {threshold}.")
 
+    @_if_connected
     def _set_filter_set(self, filter_set_num: int) -> None:
 
         in_positions = [
@@ -338,22 +361,26 @@ class Wrapper:
 
         self.filter_set_rbv.set(filter_set_num)
 
+    @_if_connected
     def _set_in_pos(self, filter_set: int) -> None:
 
         if self.filter_set_rbv.get() == filter_set - 1:
             self._set_filter_set(filter_set - 1)
 
+    @_if_connected
     def _set_out_pos(self, filter_set: int) -> None:
 
         if self.filter_set.get() == filter_set - 1:
             self._set_filter_set(filter_set - 1)
 
+    @_if_connected
     def _set_file_path(self, path: str) -> None:
 
         # Set file path for PFC
 
         self._combine_file_path_and_name()
 
+    @_if_connected
     def _set_file_name(self, name: str) -> None:
 
         # Set file name for PFC
