@@ -307,7 +307,7 @@ def test_continuous_timeout(detector_sim: DetectorSim, pfc: PMACFilterControlWra
         }
     )
     # Then the application should timeout after 3 seconds and set max attenuation
-    pfc.assert_status_equal({"state": 3, "current_attenuation": 15}, timeout=4)
+    pfc.assert_status_equal({"state": -1, "current_attenuation": 15}, timeout=4)
 
 
 def test_event(
