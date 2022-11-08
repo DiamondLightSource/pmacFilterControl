@@ -255,6 +255,7 @@ def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
                 "low1": 50,
                 "high1": 1000,
                 "high2": 5000,
+                "high3": 50000,
             }
         }
     )
@@ -265,6 +266,7 @@ def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
         "low1": 50,
         "high1": 1000,
         "high2": 5000,
+        "high3": 50000,
     }
 
 
