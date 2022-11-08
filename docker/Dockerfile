@@ -66,4 +66,4 @@ ENV LD_LIBRARY_PATH=/root/lib:/build/libzmq/prefix/lib:/build/pmacFilterControl/
 WORKDIR /build
 
 # Default command - Build and run hello world
-CMD bash -c "cd /build/pmacFilterControl/tools && mkdir -p build && arm-linux-gnueabihf-g++ -o build/hello_arm hello.cpp && qemu-arm -L /root/ ./build/hello_arm"
+CMD bash -c "cd /build/pmacFilterControl/docker && mkdir -p build && arm-linux-gnueabihf-g++ -o build/hello_arm hello.cpp && qemu-arm -L /root/ ./build/hello_arm"
