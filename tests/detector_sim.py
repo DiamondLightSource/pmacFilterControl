@@ -10,6 +10,7 @@ JSON_TEMPLATE = """
 {{
     "frame_number": {frame_number},
     "parameters": {{
+        "high3": {high3},
         "high2": {high2},
         "high1": {high1},
         "low1": {low1},
@@ -78,6 +79,7 @@ class DetectorSim:
         # Random values
         data = dict(
             frame_number=self.frame_number,
+            high3=0,
             high2=random.randrange(0, THRESHOLD_LEVEL),
             high1=random.randrange(0, THRESHOLD_LEVEL),
             low1=random.randrange(0, THRESHOLD_LEVEL),
@@ -90,7 +92,12 @@ class DetectorSim:
         """Send a "blank" frame - i.e. a frame that causes no processing to take place"""
         # Do not trigger thresholds
         data = dict(
-            frame_number=self.frame_number, high2=0, high1=0, low2=10000, low1=10000
+            frame_number=self.frame_number,
+            high3=0,
+            high2=0,
+            high1=0,
+            low2=10000,
+            low1=10000,
         )
         self._send_frame(data)
 
