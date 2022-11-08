@@ -310,7 +310,7 @@ def test_continuous_timeout(detector_sim: DetectorSim, pfc: PMACFilterControlWra
     pfc.assert_status_equal({"state": -1, "current_attenuation": 15}, timeout=4)
 
 
-def test_event(
+def test_single_event(
     detector_sim: DetectorSim,
     pfc: PMACFilterControlWrapper,
     event_subscriber: EventSubscriber,
@@ -323,6 +323,103 @@ def test_event(
     # Check an event was published
     event = event_subscriber.recv()
     assert event["frame_number"] == 0
+
+
+def test_event_stream(
+    detector_sim: DetectorSim,
+    pfc: PMACFilterControlWrapper,
+    event_subscriber: EventSubscriber,
+):
+    pfc.configure({"mode": 1})
+    pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
+
+    # Frame 0 -> low2
+    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    assert event_subscriber.recv() == {
+        "frame_number": 0,
+        "adjustment": 0,
+        "attenuation": 15,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
+    # Frame 1 -> -2
+    detector_sim.send_frame()
+    assert event_subscriber.recv() == {
+        "frame_number": 1,
+        "adjustment": -2,
+        "attenuation": 13,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
+    # Frame 2 -> low2
+    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    assert event_subscriber.recv() == {
+        "frame_number": 2,
+        "adjustment": 0,
+        "attenuation": 13,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 11})
+    # Frame 3 -> -2
+    detector_sim.send_frame()
+    assert event_subscriber.recv() == {
+        "frame_number": 3,
+        "adjustment": -2,
+        "attenuation": 11,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 11})
+    # Frame 4 -> low1
+    detector_sim.send_frame({"high2": 0, "high1": 0, "low1": 0, "low2": 10})
+    assert event_subscriber.recv() == {
+        "frame_number": 4,
+        "adjustment": 0,
+        "attenuation": 11,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 10})
+    # Frame 5 -> -1
+    detector_sim.send_frame()
+    assert event_subscriber.recv() == {
+        "frame_number": 5,
+        "adjustment": -1,
+        "attenuation": 10,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 10})
+    # Frame 6 -> high2
+    detector_sim.send_frame({"high2": 10})
+    assert event_subscriber.recv() == {
+        "frame_number": 6,
+        "adjustment": 0,
+        "attenuation": 10,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 12})
+    # Frame 7 -> +2
+    detector_sim.send_frame()
+    assert event_subscriber.recv() == {
+        "frame_number": 7,
+        "adjustment": 2,
+        "attenuation": 12,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 12})
+    # Frame 8 -> high1
+    detector_sim.send_frame({"high2": 0, "high1": 10})
+    assert event_subscriber.recv() == {
+        "frame_number": 8,
+        "adjustment": 0,
+        "attenuation": 12,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
+    # Frame 9 -> +1
+    detector_sim.send_frame()
+    assert event_subscriber.recv() == {
+        "frame_number": 9,
+        "adjustment": 1,
+        "attenuation": 13,
+    }
+    pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
+    # Frame 10 -> No change
+    detector_sim.send_frame()
+    assert event_subscriber.recv() == {
+        "frame_number": 10,
+        "adjustment": 0,
+        "attenuation": 13,
+    }
 
 
 def test_max_attenuation(detector_sim: DetectorSim, pfc: PMACFilterControlWrapper):
