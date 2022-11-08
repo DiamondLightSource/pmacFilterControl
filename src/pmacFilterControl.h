@@ -26,21 +26,23 @@ enum ControlMode {
 
 /*!
     @brief State of internal controller logic
+
+    Values >= 0 are healthy states. Values < 0 are error states.
 */
 enum ControlState {
+    /** Threshold high3 was triggered */
+    HIGH3_TRIGGERED = -2,
+    /** Timed out waiting for frames */
+    TIMEOUT = -1,
+
     /** Ignoring all messages */
     IDLE,
     /** At max attenuation and waiting for messages */
     WAITING,
     /** Receiving messages and healthy */
     ACTIVE,
-    /** Waiting for timeout to be cleared to enter WAITING again */
-    TIMEOUT,
     /** Attenuation stablised in singleshot run and waiting for next run */
     SINGLESHOT_COMPLETE,
-
-    /** Convenience for checking valid value range of ControlState */
-    CONTROL_STATE_SIZE
 };
 
 /*!
@@ -94,8 +96,8 @@ class PMACFilterController
         size_t process_period_;
         /** Flag to start a new single shot run */
         bool singleshot_start_;
-        /** Flag to reset timeout and re-enter continuous mode */
-        bool clear_timeout_;
+        /** Flag to clear error state */
+        bool clear_error_;
         /** Flag to interrupt listen loop and shutdown process */
         bool shutdown_;
         /** Thread to subscribe to data channel and control filters */
@@ -134,6 +136,7 @@ class PMACFilterController
         void _process_singleshot_state();
         void _set_max_attenuation();
         bool _process_data(const json& data, json& result);
+        void _trigger_threshold(const std::string threshold, json& result);
         void _send_filter_adjustment(const int adjustment);
         void _publish_event(const json& event);
 };
