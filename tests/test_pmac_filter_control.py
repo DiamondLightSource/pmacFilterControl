@@ -323,3 +323,53 @@ def test_event(
     # Check an event was published
     event = event_subscriber.recv()
     assert event["frame_number"] == 0
+
+
+def test_max_attenuation(detector_sim: DetectorSim, pfc: PMACFilterControlWrapper):
+    pfc.configure({"mode": 1})
+    pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
+
+    # Force trigger high2 threshold - Process frames, but stay at max attenuation
+    for frame_number in range(5):
+        detector_sim.send_frame({"high2": 100})
+        pfc.assert_status_equal(
+            {
+                "state": 2,
+                # Only every other frame processed
+                "last_processed_frame": frame_number & ~1,
+                "last_received_frame": frame_number,
+                "current_attenuation": 15,
+            }
+        )
+
+
+def test_high3_threshold(detector_sim: DetectorSim, pfc: PMACFilterControlWrapper):
+    pfc.configure({"mode": 1})
+    pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
+
+    # Force trigger low2 threshold to reduce attenuation
+    for frame_number in range(5):  # 0, 2 and 4 will be processed -> attenuation 9
+        detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+        pfc.assert_status_equal({"last_received_frame": frame_number})
+
+    # Check now at attenuation 9
+    pfc.assert_status_equal(
+        {
+            "state": 2,
+            "last_processed_frame": 4,
+            "last_received_frame": 4,
+            "current_attenuation": 9,
+        }
+    )
+
+    # Frame 5 should be processed even though 4 was processed because high3 triggered
+    # Check attenuation changes immediately to 15 and error state entered
+    detector_sim.send_frame({"high3": 10})
+    pfc.assert_status_equal(
+        {
+            "state": -2,
+            "last_processed_frame": 5,
+            "last_received_frame": 5,
+            "current_attenuation": 15,
+        }
+    )
