@@ -391,10 +391,6 @@ void PMACFilterController::_process_data_channel() {
     while (!this->shutdown_) {
         this->_process_state_changes();
 
-        if (!(this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE)) {
-            continue;
-        }
-
         // Poll data sockets
         zmq::poll(&pollitems[0], this->zmq_subscribe_sockets_.size(), POLL_TIMEOUT);
         for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++) {
@@ -403,6 +399,12 @@ void PMACFilterController::_process_data_channel() {
 
                 zmq::message_t data_message;
                 this->zmq_subscribe_sockets_[idx].recv(&data_message);
+
+                if (!(this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE)) {
+                    // Receive and ignore messages to keep the sockets clear
+                    continue;
+                }
+
                 this->_handle_data_message(data_message);
 
                 this->process_duration_ = (this->process_duration_ + _useconds_since(process_start_ts)) / 2;
