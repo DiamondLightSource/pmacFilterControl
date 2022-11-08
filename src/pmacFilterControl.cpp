@@ -59,12 +59,6 @@ const std::string PARAM_HIGH2 = "high2";
 const std::string ADJUSTMENT = "adjustment";
 const std::string ATTENUATION = "attenuation";
 
-// The priority in which to process the thresholds.
-// If PARAM_HIGH2 is triggered, then apply it, else if PARAM_HIGH1 is triggered, apply that, etc.
-const std::vector<std::string> THRESHOLD_PRECEDENCE = {
-    PARAM_HIGH2, PARAM_HIGH1, PARAM_LOW2, PARAM_LOW1
-};
-
 // The attenuation adjustments to apply for a given threshold
 // PARAM_HIGH2 -> Add 2 levels of attenuation
 // PARAM_HIGH1 -> Add 1 level of attenuation
@@ -301,10 +295,10 @@ bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_
 bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
     bool success = false;
 
-    std::vector<std::string>::const_iterator it;
-    for(it = THRESHOLD_PRECEDENCE.begin(); it != THRESHOLD_PRECEDENCE.end(); ++it) {
-        if (thresholds.contains(*it)) {
-            this->pixel_count_thresholds_[*it] = thresholds[*it];
+    std::map<std::string, int>::const_iterator it;
+    for(it = THRESHOLD_ADJUSTMENTS.begin(); it != THRESHOLD_ADJUSTMENTS.end(); ++it) {
+        if (thresholds.contains(it->first)) {
+            this->pixel_count_thresholds_[it->first] = thresholds[it->first];
             success = true;
         }
     }
