@@ -108,6 +108,7 @@ PMACFilterController::PMACFilterController(
     shutdown_(false),
     // Filter logic
     current_attenuation_(0),
+    last_adjustment_(0),
     current_demand_(FILTER_COUNT, 0),
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
@@ -507,22 +508,22 @@ void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
         return;
     }
 
+    int frame_number = data[FRAME_NUMBER];
+    this->last_received_frame_ = frame_number;
     _get_time(&this->last_message_ts_);
-    this->last_received_frame_ = data[FRAME_NUMBER];
 
-    json event;
-    event[FRAME_NUMBER] = data[FRAME_NUMBER];
-    if (this->_process_data(data, event)) {
-        this->last_processed_frame_ = data[FRAME_NUMBER];
+    // Publish event with the adjustment made from the previous frame and the resulting current attenuation
+    // This represents the state during the exposure of this frame
+    this->_publish_event(frame_number);
+
+    if (this->_process_data(data)) {
+        this->last_processed_frame_ = frame_number;
         this->process_period_ = _useconds_since(this->last_process_ts_);
         _get_time(&this->last_process_ts_);
     } else {
-        // This message caused no adjustment - create nop event
-        event[ADJUSTMENT] = 0;
-        event[ATTENUATION] = this->current_attenuation_;
+        // Record that no adjustment was made for the most recent frame
+        this->last_adjustment_ = 0;
     }
-
-    this->_publish_event(event);
 }
 
 /*!
@@ -533,15 +534,11 @@ void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
 
     If PARAM_HIGH3 is triggered it will be processed regardless of the frame number.
 
-    If a threshold is triggered, the `result` json will be updated with the attenuation adjustment and new attenuation
-    level.
-
     @param[in] data json structure of data message
-    @param[in] result json structure to update with results of processing
 
     @return true if an attenuation change was made, else false
 */
-bool PMACFilterController::_process_data(const json& data, json& result) {
+bool PMACFilterController::_process_data(const json& data) {
     // Validate the data message
     if (!(data.contains(FRAME_NUMBER) && data.contains(PARAMETERS))) {
         std::cout << "Ignoring message - Does not have keys " << FRAME_NUMBER << " and " << PARAMETERS << std::endl;
@@ -555,7 +552,7 @@ bool PMACFilterController::_process_data(const json& data, json& result) {
 #ifdef __ARM_ARCH
         CommandTS(CLOSE_SHUTTER);
 #endif
-        this->_trigger_threshold(PARAM_HIGH3, result);
+        this->_trigger_threshold(PARAM_HIGH3);
 
         this->_transition_state(ControlState::HIGH3_TRIGGERED);
         std::cout << "Threshold " << PARAM_HIGH3 << " triggered - closing shutter" << std::endl;
@@ -574,15 +571,15 @@ bool PMACFilterController::_process_data(const json& data, json& result) {
     // Process logic for the most appropriate threshold
     // - Too many counts above high thresholds -> increase attenuation
     if (histogram[PARAM_HIGH2] > this->pixel_count_thresholds_[PARAM_HIGH2]) {
-        this->_trigger_threshold(PARAM_HIGH2, result);
+        this->_trigger_threshold(PARAM_HIGH2);
     } else if (histogram[PARAM_HIGH1] > this->pixel_count_thresholds_[PARAM_HIGH1]) {
-        this->_trigger_threshold(PARAM_HIGH1, result);
+        this->_trigger_threshold(PARAM_HIGH1);
     }
     // - Too few counts above low thresholds -> decrease attenuation
     else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2]) {
-        this->_trigger_threshold(PARAM_LOW2, result);
+        this->_trigger_threshold(PARAM_LOW2);
     } else if (histogram[PARAM_LOW1] < this->pixel_count_thresholds_[PARAM_LOW1]) {
-        this->_trigger_threshold(PARAM_LOW1, result);
+        this->_trigger_threshold(PARAM_LOW1);
     } else {
         return false;
     }
@@ -593,20 +590,15 @@ bool PMACFilterController::_process_data(const json& data, json& result) {
 /*!
     @brief Process filter adjustment
 
-    The `result` json will be updated with the attenuation adjustment and new attenuation level.
-
     @param[in] threshold Name of threshold to trigger
-    @param[in] result json structure to update with attenuation change
 */
-void PMACFilterController::_trigger_threshold(const std::string threshold, json& result) {
+void PMACFilterController::_trigger_threshold(const std::string threshold) {
     std::cout << threshold << " threshold triggered" << std::endl;
     std::cout << "Current threshold: " << this->pixel_count_thresholds_[threshold] << std::endl;
 
     int adjustment = THRESHOLD_ADJUSTMENTS.at(threshold);
     this->_send_filter_adjustment(adjustment);
-
-    result[ADJUSTMENT] = adjustment;
-    result[ATTENUATION] = this->current_attenuation_;
+    this->last_adjustment_ = adjustment;
 }
 
 /*!
@@ -671,11 +663,17 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
 }
 
 /*!
-    @brief Publish the given json as a message on the event stream channel
+    @brief Publish an event with the given frame number, previous attenuation adjustment and current attenuation
 
-    @param[in] event json data for event message
+    @param[in] frame_number Frame number of event
 */
-void PMACFilterController::_publish_event(const json& event) {
+void PMACFilterController::_publish_event(int frame_number) {
+    json event = {
+        {FRAME_NUMBER, frame_number},
+        {ADJUSTMENT, this->last_adjustment_},
+        {ATTENUATION, this->current_attenuation_}
+    };
+
     std::string event_str = event.dump();
     zmq::message_t event_msg(event_str.size());
     memcpy(event_msg.data(), event_str.c_str(), event_str.size());
