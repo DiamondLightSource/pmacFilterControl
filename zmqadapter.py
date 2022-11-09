@@ -15,7 +15,7 @@ class ZeroMQAdapter:
 
     zmq_host: str = "127.0.0.1"
     zmq_port: int = 5555
-    zmq_type: int = zmq.REQ
+    zmq_type: int = zmq.DEALER
     running: bool = False
     # _send_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
     # _recv_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
@@ -27,7 +27,7 @@ class ZeroMQAdapter:
 
         self._socket = await aiozmq.create_zmq_stream(
             self.zmq_type, connect=f"tcp://{self.zmq_host}:{self.zmq_port}"
-        )
+        )  # type: ignore
         if self.zmq_type == zmq.SUB:
                 self._socket.transport.setsockopt(zmq.SUBSCRIBE, b"")
         self._socket.transport.setsockopt(zmq.LINGER, 0)
@@ -52,8 +52,17 @@ class ZeroMQAdapter:
         self._send_message_queue.put_nowait(message)
 
     async def _read_response(self) -> bytes:
-        resp = await self._socket.read()
-        return resp
+        if self.zmq_type is not zmq.DEALER:
+            resp = await self._socket.read()
+            return resp[0]
+        else:
+            discard = True
+            while discard:
+                multipart_resp = await self._socket.read()
+                if multipart_resp[0] == b'':
+                    discard = False
+                    resp = multipart_resp[1]
+                    return resp
 
     async def get_response(self) -> bytes:
         return await self._recv_message_queue.get()
@@ -72,7 +81,7 @@ class ZeroMQAdapter:
 
         self.running = True
 
-        if self.zmq_type == zmq.REQ:
+        if self.zmq_type == zmq.DEALER:
             await asyncio.gather(
                 *[
                     self._process_message_queue(),
@@ -102,7 +111,12 @@ class ZeroMQAdapter:
         if message is not None:
             if not self._socket._closing:
                 try:
-                    self._socket.write(message)
+                    if self.zmq_type is not zmq.DEALER:
+                        self._socket.write(message)
+                    else:
+                        self._socket._transport._zmq_sock.send(b"", flags=zmq.SNDMORE)
+                        #self._socket.write("", flags=zmq.SNDMORE)
+                        self._socket.write(message)
                 except zmq.error.ZMQError as e:
                     print("ZMQ Error", e)
                     await asyncio.sleep(1)
