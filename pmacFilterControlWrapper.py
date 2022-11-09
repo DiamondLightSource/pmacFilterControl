@@ -4,8 +4,13 @@ import logging
 
 import json
 import zmq
+import h5py
+import os
+import pathlib
+from numpy import int64 as np_int64
+from datetime import datetime as dt
 from softioc import builder
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 from .zmqadapter import ZeroMQAdapter
 
@@ -25,6 +30,10 @@ FILTER_SET = [
     "Ag 1",
     "Ag 2",
 ]
+
+ATTENUATION_KEY = "attenuation"
+ADJUSTMENT_KEY = "adjustment"
+FRAME_NUMBER_KEY = "frame_number"
 
 
 def _if_connected(func: Callable) -> Callable:
@@ -73,6 +82,8 @@ class Wrapper:
         self.status_recv: bool = True
         self.connected: bool = False
 
+        self.h5f: Optional[h5py.File] = None
+
         self.pixel_count_thresholds = {"high1": 2, "high2": 2, "low1": 2, "low2": 2}
 
         self.device_name = device_name
@@ -80,8 +91,13 @@ class Wrapper:
         self.version = builder.stringIn("VERSION")
         self.state = builder.mbbIn("STATE", *STATES)
 
-        self.mode = builder.mbbOut("MODE", *MODE, on_update=self._set_mode)
-        self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE)
+        self.mode = builder.mbbOut(
+            "MODE",
+            *MODE,
+            on_update=self._set_mode,
+            initial_value=0,
+        )
+        self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE, initial_value=0)
 
         self.reset = builder.boolOut("RESET", on_update=self._reset)
 
@@ -125,9 +141,24 @@ class Wrapper:
             "FILTER_SET_RBV", *FILTER_SET, initial_value=0
         )
 
-        self.file_path = builder.stringOut("FILE:PATH", on_update=self._set_file_path)
-        self.file_name = builder.stringOut("FILE:NAME", on_update=self._set_file_name)
-        self.file_full_name = builder.stringIn("FILE:FULL_NAME")
+        self.file_path = builder.longStringOut(
+            "FILE:PATH",
+            on_update=lambda _: self._combine_file_path_and_name(),
+            length=256,
+            initial_value=str(pathlib.Path(__file__).parent.parent.resolve())
+            + f"/test_{dt.date(dt.now())}",
+        )
+        self.file_name = builder.longStringOut(
+            "FILE:NAME",
+            on_update=lambda _: self._combine_file_path_and_name(),
+            length=256,
+            initial_value="tmp.h5",
+        )
+        self.file_full_name = builder.longStringIn(
+            "FILE:FULL_NAME",
+            # initial_value=str(pathlib.Path(__file__).parent.resolve()) + "/test_data/tmp.h5",
+        )
+        self._combine_file_path_and_name()
 
         self.process_duration = builder.aIn("PROCESS:DURATION", EGU="us")
         self.process_period = builder.aIn("PROCESS:PERIOD", EGU="us")
@@ -182,8 +213,8 @@ class Wrapper:
             if not self.zmq_stream.running:
                 await asyncio.sleep(1)
             else:
-                resp = await zmq_stream.get_response()
-                resp_json = json.loads(resp[0])
+                resp: bytes = await zmq_stream.get_response()
+                resp_json = json.loads(resp)
 
                 if "status" in resp_json:
                     if not self.connected:
@@ -192,7 +223,26 @@ class Wrapper:
                     self._handle_status(status)
                     self.status_recv = True
 
+                if "frame_number" in resp_json:
+                    file_open = self._open_file()
+                    if file_open:
+                        await self._write_to_hdf5(resp_json)
 
+    def _open_file(self) -> bool:
+        if self.h5f is None:
+            if self._check_path():
+                self.h5f = h5py.File(self.file_full_name.get(), "w", libver="latest")
+                self.h5f.swmr_mode = True
+        else:
+            if self.file_full_name.get() != self.h5f.filename:
+                print("Another file is already open and being written to.")
+                return False
+        return True
+
+    def _close_file(self) -> None:
+        assert isinstance(self.h5f, h5py.File)
+        self.h5f.close()
+        self.h5f = None
     async def _query_status(self) -> None:
         while True:
             if not self.zmq_stream.running:
@@ -211,7 +261,7 @@ class Wrapper:
                     print("Reconnected and status recieved.")
                 await asyncio.sleep(0.1)
 
-    def _handle_status(self, status: json) -> None:
+    def _handle_status(self, status) -> None:
 
         state = status["state"]
         self.state.set(state)
@@ -233,11 +283,16 @@ class Wrapper:
 
         time_since_last_frame = status["time_since_last_message"]
         self.time_since_last_frame.set(time_since_last_frame)
+        if time_since_last_frame > self.timeout_rbv.get() and self.h5f is not None:
+            try:
+                self._close_file()
+            except Exception as e:
+                print(f"Failed closing file.\n{e}")
 
         current_attenuation = status["current_attenuation"]
         self.current_attenuation.set(current_attenuation)
 
-    def _send_message(self, message: bytes) -> bytes:
+    def _send_message(self, message: bytes) -> None:
         self.zmq_stream.send_message([message])
 
     @_if_connected
@@ -405,3 +460,57 @@ class Wrapper:
         full_path: str = "/".join([path, name])
 
         self.file_full_name.set(full_path)
+
+    def _check_path(self) -> bool:
+        if self.file_path.get() == "" or self.file_name.get() == "":
+            print(
+                f"Please enter a valid file path and name.\nPath={self.file_path.get()}\nName={self.file_name.get()}\nFullPath={self.file_full_name.get()}"
+            )
+        elif not os.path.isdir(self.file_path.get()):
+            parent_path: str = self.file_path.get().rsplit("/", 1)[0]
+            dir_name: str = self.file_path.get().rsplit("/", 1)[1]
+            if not os.path.isdir(parent_path):
+                print("Path not found. Enter a valid path.")
+            else:
+                print("Parent path exists, making new dir")
+                os.makedirs(dir_name, exist_ok=True)
+                return True
+        elif os.path.isdir(self.file_path.get()):
+            if os.path.isfile(self.file_full_name.get()):
+                new_name = "".join(
+                    [self.file_name.get().strip(".h5"), f"-{dt.time(dt.now())}.h5"]
+                )
+                self.file_name.set(new_name)
+                self._combine_file_path_and_name()
+            return True
+
+        return False
+
+    async def _write_to_hdf5(self, data) -> None:
+
+        assert isinstance(self.h5f, h5py.File)
+
+        if ADJUSTMENT_KEY not in self.h5f.keys():
+            adjustment_dset = self.h5f.create_dataset(
+                ADJUSTMENT_KEY, (128,), maxshape=(None,), dtype=int
+            )
+        if ATTENUATION_KEY not in self.h5f.keys():
+            attenuation_dset = self.h5f.create_dataset(
+                ATTENUATION_KEY, (128,), maxshape=(None,), dtype=int
+            )
+
+        adjustment_dset = self.h5f.get(ADJUSTMENT_KEY)
+        assert isinstance(adjustment_dset, h5py.Dataset)
+        attenuation_dset = self.h5f.get(ATTENUATION_KEY)
+        assert isinstance(attenuation_dset, h5py.Dataset)
+        assert adjustment_dset.size == attenuation_dset.size
+        dset_size = adjustment_dset.size
+        if data[FRAME_NUMBER_KEY] >= dset_size:
+            assert isinstance(dset_size, np_int64)
+            while dset_size <= data[FRAME_NUMBER_KEY]:
+                dset_size = dset_size + 1
+            adjustment_dset.resize((dset_size,))
+            attenuation_dset.resize((dset_size,))
+
+        adjustment_dset[data[FRAME_NUMBER_KEY]] = data[ADJUSTMENT_KEY]
+        attenuation_dset[data[FRAME_NUMBER_KEY]] = data[ATTENUATION_KEY]
