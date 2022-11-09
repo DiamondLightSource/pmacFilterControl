@@ -27,6 +27,26 @@ FILTER_SET = [
 ]
 
 
+def _if_connected(func: Callable) -> Callable:
+    """Decorator function to check if connected to device before calling function.
+
+    Args:
+        func (Callable): Function to call if connected to device
+
+    Returns:
+        Callable: The function to wrap func in.
+    """
+
+    def check_connection(*args, **kwargs) -> Union[Callable, bool]:
+        self = args[0]
+        if not self.connected:
+            print("Not connected to device. Try again once connection resumed.")
+            return True
+        return func(*args, *kwargs)
+
+    return check_connection
+
+
 class Wrapper:
 
     POLL_PERIOD = 0.1
@@ -216,16 +236,6 @@ class Wrapper:
 
         current_attenuation = status["current_attenuation"]
         self.current_attenuation.set(current_attenuation)
-
-    def _if_connected(func: Callable) -> Callable:
-        def check_connection(*args, **kwargs) -> Union[Callable, bool]:
-            self = args[0]
-            if not self.connected:
-                print("Not connected to device. Try again once connection resumed.")
-                return True
-            return func(*args, *kwargs)
-
-        return check_connection
 
     def _send_message(self, message: bytes) -> bytes:
         self.zmq_stream.send_message([message])
