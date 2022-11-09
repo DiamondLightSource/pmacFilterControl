@@ -144,15 +144,15 @@ class PMACFilterControlWrapper:
 
 
 @pytest.fixture
-def detector_sim() -> Iterator[DetectorSim]:
+def sim() -> Iterator[DetectorSim]:
     sim = DetectorSim([10009, 10019])
     yield sim
     sim.stop()
 
 
-# pfc takes detector_sim to ensure detector_sim is instantiated first
+# pfc takes sim to ensure sim is instantiated first
 @pytest.fixture
-def pfc(detector_sim) -> Iterator[PMACFilterControlWrapper]:
+def pfc(sim) -> Iterator[PMACFilterControlWrapper]:
     wrapper = PMACFilterControlWrapper()
     wrapper.start()
     yield wrapper
@@ -160,7 +160,7 @@ def pfc(detector_sim) -> Iterator[PMACFilterControlWrapper]:
 
 
 @pytest.fixture
-def event_subscriber(pfc) -> Iterator[EventSubscriber]:
+def sub(pfc) -> Iterator[EventSubscriber]:
     sub = EventSubscriber("127.0.0.1:9001")
     yield sub
     sub.stop()
@@ -175,11 +175,13 @@ def test_cli_help():
 
 
 def test_initial_status(pfc: PMACFilterControlWrapper):
-    status = pfc.request_status()
-
-    assert status["mode"] == 0  # DISABLE
-    assert status["state"] == 0  # IDLE
-    assert status["current_attenuation"] == 0
+    pfc.assert_status_equal(
+        {
+            "mode": 0,  # DISABLE
+            "state": 0,  # IDLE
+            "current_attenuation": 0,
+        }
+    )
 
 
 def test_shutdown(pfc: PMACFilterControlWrapper):
@@ -205,9 +207,9 @@ def test_configure_positions(pfc: PMACFilterControlWrapper):
         }
     )
 
-    status = pfc.request_status()
-    assert status["in_positions"] == [100, 300, 500, 700]
-    assert status["out_positions"] == [0, 200, 400, 600]
+    pfc.assert_status_equal(
+        {"in_positions": [100, 300, 500, 700], "out_positions": [0, 200, 400, 600]}
+    )
 
 
 @pytest.mark.xfail
@@ -242,9 +244,7 @@ def test_configure_change_position(pfc: PMACFilterControlWrapper):
     pfc.configure({"in_positions": {"filter1": 100}})
     pfc.configure({"in_positions": {"filter1": 200}})
 
-    status = pfc.request_status()
-
-    assert status["in_positions"] == [200, 0, 0, 0]
+    pfc.assert_status_equal({"in_positions": [200, 0, 0, 0]})
 
 
 def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
@@ -260,42 +260,39 @@ def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
         }
     )
 
-    status = pfc.request_status()
-    assert status["pixel_count_thresholds"] == {
-        "low2": 10,
-        "low1": 50,
-        "high1": 1000,
-        "high2": 5000,
-        "high3": 50000,
-    }
+    pfc.assert_status_equal(
+        {
+            "pixel_count_thresholds": {
+                "low2": 10,
+                "low1": 50,
+                "high1": 1000,
+                "high2": 5000,
+                "high3": 50000,
+            }
+        }
+    )
 
 
 def test_configure_mode(pfc: PMACFilterControlWrapper):
     # Changing to CONTINUOUS changes state to WAITING
     pfc.configure({"mode": 1})
-    status = pfc.request_status()
-    assert status["mode"] == 1
-    assert status["state"] == 1
+    pfc.assert_status_equal({"mode": 1, "state": 1})
 
     # Changing to DISABLE changes state to IDLE
     pfc.configure({"mode": 0})
-    status = pfc.request_status()
-    assert status["mode"] == 0
-    assert status["state"] == 0
+    pfc.assert_status_equal({"mode": 0, "state": 0})
 
     # Changing to SINGLESHOT changes state to WAITING
     pfc.configure({"mode": 2})
-    status = pfc.request_status()
-    assert status["mode"] == 2
-    assert status["state"] == 1
+    pfc.assert_status_equal({"mode": 2, "state": 1})
 
 
-def test_continuous_timeout(detector_sim: DetectorSim, pfc: PMACFilterControlWrapper):
+def test_continuous_timeout(sim: DetectorSim, pfc: PMACFilterControlWrapper):
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
 
     # Force trigger low2 threshold
-    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
 
     # Process frame 0, reduce attenuation by 2 and change to ACTIVE
     pfc.assert_status_equal(
@@ -311,124 +308,80 @@ def test_continuous_timeout(detector_sim: DetectorSim, pfc: PMACFilterControlWra
 
 
 def test_single_event(
-    detector_sim: DetectorSim,
+    sim: DetectorSim,
     pfc: PMACFilterControlWrapper,
-    event_subscriber: EventSubscriber,
+    sub: EventSubscriber,
 ):
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
 
-    detector_sim.send_frame()
+    sim.send_frame()
 
     # Check an event was published
-    event = event_subscriber.recv()
+    event = sub.recv()
     assert event["frame_number"] == 0
 
 
 def test_event_stream(
-    detector_sim: DetectorSim,
+    sim: DetectorSim,
     pfc: PMACFilterControlWrapper,
-    event_subscriber: EventSubscriber,
+    sub: EventSubscriber,
 ):
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
 
     # Frame 0 -> low2
-    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
-    assert event_subscriber.recv() == {
-        "frame_number": 0,
-        "adjustment": 0,
-        "attenuation": 15,
-    }
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    assert sub.recv() == {"frame_number": 0, "adjustment": 0, "attenuation": 15}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
     # Frame 1 -> -2
-    detector_sim.send_frame()
-    assert event_subscriber.recv() == {
-        "frame_number": 1,
-        "adjustment": -2,
-        "attenuation": 13,
-    }
+    sim.send_frame()
+    assert sub.recv() == {"frame_number": 1, "adjustment": -2, "attenuation": 13}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
     # Frame 2 -> low2
-    detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
-    assert event_subscriber.recv() == {
-        "frame_number": 2,
-        "adjustment": 0,
-        "attenuation": 13,
-    }
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    assert sub.recv() == {"frame_number": 2, "adjustment": 0, "attenuation": 13}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 11})
     # Frame 3 -> -2
-    detector_sim.send_frame()
-    assert event_subscriber.recv() == {
-        "frame_number": 3,
-        "adjustment": -2,
-        "attenuation": 11,
-    }
+    sim.send_frame()
+    assert sub.recv() == {"frame_number": 3, "adjustment": -2, "attenuation": 11}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 11})
     # Frame 4 -> low1
-    detector_sim.send_frame({"high2": 0, "high1": 0, "low1": 0, "low2": 10})
-    assert event_subscriber.recv() == {
-        "frame_number": 4,
-        "adjustment": 0,
-        "attenuation": 11,
-    }
+    sim.send_frame({"high2": 0, "high1": 0, "low1": 0, "low2": 10})
+    assert sub.recv() == {"frame_number": 4, "adjustment": 0, "attenuation": 11}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 10})
     # Frame 5 -> -1
-    detector_sim.send_frame()
-    assert event_subscriber.recv() == {
-        "frame_number": 5,
-        "adjustment": -1,
-        "attenuation": 10,
-    }
+    sim.send_frame()
+    assert sub.recv() == {"frame_number": 5, "adjustment": -1, "attenuation": 10}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 10})
     # Frame 6 -> high2
-    detector_sim.send_frame({"high2": 10})
-    assert event_subscriber.recv() == {
-        "frame_number": 6,
-        "adjustment": 0,
-        "attenuation": 10,
-    }
+    sim.send_frame({"high2": 10})
+    assert sub.recv() == {"frame_number": 6, "adjustment": 0, "attenuation": 10}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 12})
     # Frame 7 -> +2
-    detector_sim.send_frame()
-    assert event_subscriber.recv() == {
-        "frame_number": 7,
-        "adjustment": 2,
-        "attenuation": 12,
-    }
+    sim.send_frame()
+    assert sub.recv() == {"frame_number": 7, "adjustment": 2, "attenuation": 12}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 12})
     # Frame 8 -> high1
-    detector_sim.send_frame({"high2": 0, "high1": 10})
-    assert event_subscriber.recv() == {
-        "frame_number": 8,
-        "adjustment": 0,
-        "attenuation": 12,
-    }
+    sim.send_frame({"high2": 0, "high1": 10})
+    assert sub.recv() == {"frame_number": 8, "adjustment": 0, "attenuation": 12}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
     # Frame 9 -> +1
-    detector_sim.send_frame()
-    assert event_subscriber.recv() == {
-        "frame_number": 9,
-        "adjustment": 1,
-        "attenuation": 13,
-    }
+    sim.send_frame()
+    assert sub.recv() == {"frame_number": 9, "adjustment": 1, "attenuation": 13}
     pfc.assert_status_equal({"state": 2, "current_attenuation": 13})
     # Frame 10 -> No change
-    detector_sim.send_frame()
-    assert event_subscriber.recv() == {
-        "frame_number": 10,
-        "adjustment": 0,
-        "attenuation": 13,
-    }
+    sim.send_frame()
+    assert sub.recv() == {"frame_number": 10, "adjustment": 0, "attenuation": 13}
 
 
-def test_max_attenuation(detector_sim: DetectorSim, pfc: PMACFilterControlWrapper):
+def test_max_attenuation(sim: DetectorSim, pfc: PMACFilterControlWrapper):
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
 
     # Force trigger high2 threshold - Process frames, but stay at max attenuation
     for frame_number in range(5):
-        detector_sim.send_frame({"high2": 100})
+        sim.send_frame({"high2": 100})
         pfc.assert_status_equal(
             {
                 "state": 2,
@@ -440,13 +393,13 @@ def test_max_attenuation(detector_sim: DetectorSim, pfc: PMACFilterControlWrappe
         )
 
 
-def test_high3_threshold(detector_sim: DetectorSim, pfc: PMACFilterControlWrapper):
+def test_high3_threshold(sim: DetectorSim, pfc: PMACFilterControlWrapper):
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
 
     # Force trigger low2 threshold to reduce attenuation
     for frame_number in range(5):  # 0, 2 and 4 will be processed -> attenuation 9
-        detector_sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+        sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
         pfc.assert_status_equal({"last_received_frame": frame_number})
 
     # Check now at attenuation 9
@@ -461,7 +414,7 @@ def test_high3_threshold(detector_sim: DetectorSim, pfc: PMACFilterControlWrappe
 
     # Frame 5 should be processed even though 4 was processed because high3 triggered
     # Check attenuation changes immediately to 15 and error state entered
-    detector_sim.send_frame({"high3": 10})
+    sim.send_frame({"high3": 10})
     pfc.assert_status_equal(
         {
             "state": -2,
