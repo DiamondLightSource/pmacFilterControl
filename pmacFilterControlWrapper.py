@@ -95,9 +95,8 @@ class Wrapper:
             "MODE",
             *MODE,
             on_update=self._set_mode,
-            initial_value=0,
         )
-        self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE, initial_value=0)
+        self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE)
 
         self.reset = builder.boolOut("RESET", on_update=self._reset)
 
@@ -156,7 +155,6 @@ class Wrapper:
         )
         self.file_full_name = builder.longStringIn(
             "FILE:FULL_NAME",
-            # initial_value=str(pathlib.Path(__file__).parent.resolve()) + "/test_data/tmp.h5",
         )
         self._combine_file_path_and_name()
 
@@ -452,10 +450,15 @@ class Wrapper:
 
         self._combine_file_path_and_name()
 
-    def _combine_file_path_and_name(self) -> None:
+    def _combine_file_path_and_name(self, exists: bool = False) -> None:
 
         path: str = self.file_path.get()
-        name: str = self.file_name.get()
+        if exists:
+            name = "".join(
+                [self.file_name.get().strip(".h5"), f"-{dt.time(dt.now())}.h5"]
+            )
+        else:
+            name = self.file_name.get()
 
         full_path: str = "/".join([path, name])
 
@@ -477,11 +480,7 @@ class Wrapper:
                 return True
         elif os.path.isdir(self.file_path.get()):
             if os.path.isfile(self.file_full_name.get()):
-                new_name = "".join(
-                    [self.file_name.get().strip(".h5"), f"-{dt.time(dt.now())}.h5"]
-                )
-                self.file_name.set(new_name)
-                self._combine_file_path_and_name()
+                self._combine_file_path_and_name(exists=True)
             return True
 
         return False
