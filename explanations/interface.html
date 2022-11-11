@@ -476,21 +476,26 @@ time for the same event.</p>
 <h2>Event Stream Channel<a class="headerlink" href="#event-stream-channel" title="Permalink to this heading">#</a></h2>
 <p>For each successfully processed data message, an event message will be published on the
 event stream channel. The channel will be bound to the publish port given in the CLI
-parameters. The messages will be of the form:</p>
+parameters. The messages will be of the form (where frame 6 caused an adjustment of -1):</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;frame_number&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;attenuation&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;adjustment&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;frame_number&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;adjustment&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;attenuation&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;frame_number&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;adjustment&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nt">&quot;attenuation&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>It is intended for a higher-level application to subscribe to these events in order to
 record the the active attenuation level for each frame and whether the adjustment
-triggered - so, the attenuation of frame <code class="docutils literal notranslate"><span class="pre">N+1</span></code> will be <code class="docutils literal notranslate"><span class="pre">attenuation</span> <span class="pre">+</span> <span class="pre">adjustment</span></code> from
-frame <code class="docutils literal notranslate"><span class="pre">N</span></code>. A non-zero adjustment for a frame means the attenuation was not optimal for
-the corresponding detector data, which may mean data analysis needs to account for the
-discrepancy or ignore the data entirely. It also means the preceding frame will not be
-optimal, as the attenuation will be changed during the exposure.</p>
+triggered. The <code class="docutils literal notranslate"><span class="pre">adjustment</span></code> and <code class="docutils literal notranslate"><span class="pre">attenuation</span></code> of frame <code class="docutils literal notranslate"><span class="pre">N+1</span></code> will be that which
+resulted from processing frame <code class="docutils literal notranslate"><span class="pre">N</span></code>. A non-zero adjustment for frame <code class="docutils literal notranslate"><span class="pre">N+1</span></code> means the
+attenuation was not optimal for frame <code class="docutils literal notranslate"><span class="pre">N</span></code> and will be changed during the exposure of
+frame <code class="docutils literal notranslate"><span class="pre">N+1</span></code>, which means data analysis needs to ignore the data from that frame because
+it is undefined what the exposure was.</p>
 </section>
 <section id="motion-program">
 <h2>Motion Program<a class="headerlink" href="#motion-program" title="Permalink to this heading">#</a></h2>

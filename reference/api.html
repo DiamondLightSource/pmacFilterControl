@@ -500,18 +500,14 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13_process_dataERK4jsonR4json">
-<span id="_CPPv3N20PMACFilterController13_process_dataERK4jsonR4json"></span><span id="_CPPv2N20PMACFilterController13_process_dataERK4jsonR4json"></span><span id="PMACFilterController::_process_data__jsonCR.jsonR"></span><span class="target" id="classPMACFilterController_1a72d40fd6b1a75982865e4c144c2eaaca"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_process_data</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data</span></span>, <span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">result</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController13_process_dataERK4jsonR4json" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13_process_dataERK4json">
+<span id="_CPPv3N20PMACFilterController13_process_dataERK4json"></span><span id="_CPPv2N20PMACFilterController13_process_dataERK4json"></span><span id="PMACFilterController::_process_data__jsonCR"></span><span class="target" id="classPMACFilterController_1a6b8dc6019f68c8d7ca74f5db7afcceb4"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_process_data</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController13_process_dataERK4json" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Process message data. </p>
 <p>Determine if the <code class="docutils literal notranslate"><span class="pre">data</span></code> json should be processed based on the frame number, check which threshold is triggered if any and adjust the attenuation level as necessary.</p>
 <p>If PARAM_HIGH3 is triggered it will be processed regardless of the frame number.</p>
-<p>If a threshold is triggered, the <code class="docutils literal notranslate"><span class="pre">result</span></code> json will be updated with the attenuation adjustment and new attenuation level.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – <strong>[in]</strong> json structure of data message </p></li>
-<li><p><strong>result</strong> – <strong>[in]</strong> json structure to update with results of processing</p></li>
-</ul>
+<dd class="field-odd"><p><strong>data</strong> – <strong>[in]</strong> json structure of data message</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>true if an attenuation change was made, else false </p>
@@ -520,16 +516,12 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController18_trigger_thresholdEKNSt6stringER4json">
-<span id="_CPPv3N20PMACFilterController18_trigger_thresholdEKNSt6stringER4json"></span><span id="_CPPv2N20PMACFilterController18_trigger_thresholdEKNSt6stringER4json"></span><span id="PMACFilterController::_trigger_threshold__ssC.jsonR"></span><span class="target" id="classPMACFilterController_1ad828ee2a550c4ca184c110fa71a4be0f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_trigger_threshold</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">threshold</span></span>, <span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">result</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController18_trigger_thresholdEKNSt6stringER4json" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController18_trigger_thresholdEKNSt6stringE">
+<span id="_CPPv3N20PMACFilterController18_trigger_thresholdEKNSt6stringE"></span><span id="_CPPv2N20PMACFilterController18_trigger_thresholdEKNSt6stringE"></span><span id="PMACFilterController::_trigger_threshold__ssC"></span><span class="target" id="classPMACFilterController_1af90b14d5515e19d85ad91ccdf1a3a2a6"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_trigger_threshold</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">threshold</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController18_trigger_thresholdEKNSt6stringE" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Process filter adjustment. </p>
-<p>The <code class="docutils literal notranslate"><span class="pre">result</span></code> json will be updated with the attenuation adjustment and new attenuation level.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>threshold</strong> – <strong>[in]</strong> Name of threshold to trigger </p></li>
-<li><p><strong>result</strong> – <strong>[in]</strong> json structure to update with attenuation change </p></li>
-</ul>
+<dd class="field-odd"><p><strong>threshold</strong> – <strong>[in]</strong> Name of threshold to trigger </p>
 </dd>
 </dl>
 </dd></dl>
@@ -548,12 +540,12 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14_publish_eventERK4json">
-<span id="_CPPv3N20PMACFilterController14_publish_eventERK4json"></span><span id="_CPPv2N20PMACFilterController14_publish_eventERK4json"></span><span id="PMACFilterController::_publish_event__jsonCR"></span><span class="target" id="classPMACFilterController_1a121eeaaa52b32d4dcb9c838e5182a0c5"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_publish_event</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">event</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController14_publish_eventERK4json" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Publish the given json as a message on the event stream channel. </p>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController14_publish_eventEi">
+<span id="_CPPv3N20PMACFilterController14_publish_eventEi"></span><span id="_CPPv2N20PMACFilterController14_publish_eventEi"></span><span id="PMACFilterController::_publish_event__i"></span><span class="target" id="classPMACFilterController_1ac8de100caa53f607386bc0575fcece15"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_publish_event</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">frame_number</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController14_publish_eventEi" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Publish an event with the given frame number, previous attenuation adjustment and current attenuation. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>event</strong> – <strong>[in]</strong> json data for event message </p>
+<dd class="field-odd"><p><strong>frame_number</strong> – <strong>[in]</strong> Frame number of event </p>
 </dd>
 </dl>
 </dd></dl>
@@ -672,7 +664,13 @@
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController20current_attenuation_E">
 <span id="_CPPv3N20PMACFilterController20current_attenuation_E"></span><span id="_CPPv2N20PMACFilterController20current_attenuation_E"></span><span id="PMACFilterController::current_attenuation___i"></span><span class="target" id="classPMACFilterController_1a81128cbbd970c0f2fd38c558667c5407"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">current_attenuation_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController20current_attenuation_E" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Local store of current attenuation to compare against the next attenuation change request </p>
+<dd><p>Last demanded attenuation to compare against the next attenuation change request </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController16last_adjustment_E">
+<span id="_CPPv3N20PMACFilterController16last_adjustment_E"></span><span id="_CPPv2N20PMACFilterController16last_adjustment_E"></span><span id="PMACFilterController::last_adjustment___i"></span><span class="target" id="classPMACFilterController_1a4178346aad4318f7050bef503c19d641"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">last_adjustment_</span></span></span><a class="headerlink" href="#_CPPv4N20PMACFilterController16last_adjustment_E" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Adjustment from previous frame to publish on the next event </p>
 </dd></dl>
 
 <dl class="cpp var">
