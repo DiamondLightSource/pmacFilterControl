@@ -13,11 +13,11 @@ using json = nlohmann::json;
     @brief User demanded mode of control
 */
 enum ControlMode {
-    /** Ignore messages */
-    DISABLE,
-    /** Run forever */
+    /** Ignore data channel and allow manual control of the filters */
+    MANUAL,
+    /** Monitor data channel and update attenuation based on configured thresholds */
     CONTINUOUS,
-    /** Run until attenuation stablises and then pause at that attenuation until restarted */
+    /** Continuous until attenuation stablises, pausing at that attenuation until restarted */
     SINGLESHOT,
 
     /** Convenience for checking valid value range of ControlMode */

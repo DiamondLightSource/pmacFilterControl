@@ -36,6 +36,7 @@ const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
 const std::string CONFIG_OUT_POSITIONS = "out_positions";
 const std::string CONFIG_PIXEL_COUNT_THRESHOLDS = "pixel_count_thresholds";
+const std::string CONFIG_ATTENUATION = "attenuation";
 const std::string FILTER_1_KEY = "filter1";
 const std::string FILTER_2_KEY = "filter2";
 const std::string FILTER_3_KEY = "filter3";
@@ -113,7 +114,7 @@ PMACFilterController::PMACFilterController(
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
-    mode_(ControlMode::DISABLE),
+    mode_(ControlMode::MANUAL),
     in_positions_({0, 0, 0, 0}),
     out_positions_({0, 0, 0, 0}),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}, {PARAM_HIGH3, 2}})
@@ -229,9 +230,18 @@ bool PMACFilterController::_handle_config(const json& config) {
     if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLDS)) {
         success = this->_set_pixel_count_thresholds(config[CONFIG_PIXEL_COUNT_THRESHOLDS]);
     }
+    if (config.contains(CONFIG_ATTENUATION)) {
+        if (this->mode_ == ControlMode::MANUAL) {
+            this->_set_attenuation(config[CONFIG_ATTENUATION]);
+            success = true;
+        } else {
+            std::cout << "Can only set attenuation in MANUAL mode" << std::endl;
+            success = false;
+        }
+    }
 
     if (!success) {
-        std::cout << "Found no valid config parameters" << std::endl;
+        std::cout << "Given configuration failed or found no valid config parameters" << std::endl;
     }
 
     return success;
@@ -419,8 +429,8 @@ void PMACFilterController::_process_data_channel() {
     @brief Update state based on mode changes from control thread and internal logic
 */
 void PMACFilterController::_process_state_changes() {
-    // Disable
-    if (this->mode_ == ControlMode::DISABLE) {
+    // Manual mode disables monitoring of data channel
+    if (this->mode_ == ControlMode::MANUAL) {
         this->_transition_state(ControlState::IDLE);
     }
 
@@ -476,7 +486,7 @@ void PMACFilterController::_process_singleshot_state() {
 */
 void PMACFilterController::_transition_state(ControlState state) {
     if (state != this->state_) {
-        if (state < 0 || (state == ControlState::WAITING && this->state_ >= 0)) {
+        if (state < 1 || (state == ControlState::WAITING && this->state_ >= 0)) {
             this->_set_attenuation(MAX_ATTENUATION);
         }
     }
@@ -592,7 +602,7 @@ void PMACFilterController::_trigger_threshold(const std::string threshold) {
 }
 
 /*!
-    @brief Set updated attenuation demand to the motion controller
+    @brief Set updated attenuation demand on the motion controller
 
     Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the
     motion controller and then execute the motion program to move the motors.
