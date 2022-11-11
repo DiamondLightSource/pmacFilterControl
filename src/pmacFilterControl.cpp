@@ -29,7 +29,7 @@ const std::string COMMAND_SHUTDOWN = "shutdown";
 const std::string COMMAND_STATUS = "status";
 const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
-const std::string COMMAND_CLEAR_TIMEOUT = "clear_timeout";
+const std::string COMMAND_CLEAR_ERROR = "clear_error";
 const std::string COMMAND_SINGLESHOT_START = "singleshot";
 const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
@@ -54,24 +54,20 @@ const std::string PARAM_LOW1 = "low1";
 const std::string PARAM_LOW2 = "low2";
 const std::string PARAM_HIGH1 = "high1";
 const std::string PARAM_HIGH2 = "high2";
+const std::string PARAM_HIGH3 = "high3";
 
 // Event message keys
 const std::string ADJUSTMENT = "adjustment";
 const std::string ATTENUATION = "attenuation";
 
-// The priority in which to process the thresholds.
-// If PARAM_HIGH2 is triggered, then apply it, else if PARAM_HIGH1 is triggered, apply that, etc.
-const std::vector<std::string> THRESHOLD_PRECEDENCE = {
-    PARAM_HIGH2, PARAM_HIGH1, PARAM_LOW2, PARAM_LOW1
-};
-
 // The attenuation adjustments to apply for a given threshold
+// PARAM_HIGH3 -> Max attenuation
 // PARAM_HIGH2 -> Add 2 levels of attenuation
 // PARAM_HIGH1 -> Add 1 level of attenuation
 // PARAM_LOW1 -> Subtract 1 level of attenuation
 // PARAM_LOW2 -> Subtract 2 levels of attenuation
 const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
-    {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}
+    {PARAM_HIGH3, 15}, {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}
 };
 
 // An initial invalid value to compare with `last_processed_frame_` that always passes the ignore frame checks
@@ -108,7 +104,7 @@ PMACFilterController::PMACFilterController(
     process_duration_(0),
     process_period_(0),
     singleshot_start_(false),
-    clear_timeout_(false),
+    clear_error_(false),
     shutdown_(false),
     // Filter logic
     current_attenuation_(0),
@@ -119,7 +115,7 @@ PMACFilterController::PMACFilterController(
     mode_(ControlMode::DISABLE),
     in_positions_({0, 0, 0, 0}),
     out_positions_({0, 0, 0, 0}),
-    pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}})
+    pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}, {PARAM_HIGH3, 2}})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
     this->zmq_publish_socket_.bind(publish_channel_endpoint_.c_str());
@@ -178,8 +174,8 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
         this->last_received_frame_ = NO_FRAMES_PROCESSED;
         this->last_processed_frame_ = NO_FRAMES_PROCESSED;
         success = true;
-    } else if (request[COMMAND] == COMMAND_CLEAR_TIMEOUT) {
-        this->clear_timeout_ = true;
+    } else if (request[COMMAND] == COMMAND_CLEAR_ERROR) {
+        this->clear_error_ = true;
     } else if (request[COMMAND] == COMMAND_SINGLESHOT_START) {
         this->singleshot_start_ = true;
         success = true;
@@ -301,10 +297,10 @@ bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_
 bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
     bool success = false;
 
-    std::vector<std::string>::const_iterator it;
-    for(it = THRESHOLD_PRECEDENCE.begin(); it != THRESHOLD_PRECEDENCE.end(); ++it) {
-        if (thresholds.contains(*it)) {
-            this->pixel_count_thresholds_[*it] = thresholds[*it];
+    std::map<std::string, int>::const_iterator it;
+    for(it = THRESHOLD_ADJUSTMENTS.begin(); it != THRESHOLD_ADJUSTMENTS.end(); ++it) {
+        if (thresholds.contains(it->first)) {
+            this->pixel_count_thresholds_[it->first] = thresholds[it->first];
             success = true;
         }
     }
@@ -445,9 +441,9 @@ void PMACFilterController::_process_state_changes() {
         this->_transition_state(ControlState::TIMEOUT);
     }
     // Clear timeout if requested from control thread
-    else if (this->state_ == ControlState::TIMEOUT && this->clear_timeout_) {
-        std::cout << "Timeout cleared - waiting for messages" << std::endl;
-        this->clear_timeout_ = false;
+    else if (this->state_ < 0 && this->clear_error_) {
+        std::cout << "Error cleared - waiting for messages" << std::endl;
+        this->clear_error_ = false;
         this->_transition_state(ControlState::WAITING);
     }
 }
@@ -479,9 +475,9 @@ void PMACFilterController::_process_singleshot_state() {
 */
 void PMACFilterController::_transition_state(ControlState state) {
     if (state != this->state_) {
-        if (state == ControlState::TIMEOUT) {
+        if (state < 0) {
             this->_set_max_attenuation();
-        } else if (state == ControlState::WAITING && this->state_ != ControlState::TIMEOUT) {
+        } else if (state == ControlState::WAITING && this->state_ >= 0) {
             this->_set_max_attenuation();
         }
     }
@@ -512,10 +508,12 @@ void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
     }
 
     _get_time(&this->last_message_ts_);
+    this->last_received_frame_ = data[FRAME_NUMBER];
 
     json event;
     event[FRAME_NUMBER] = data[FRAME_NUMBER];
     if (this->_process_data(data, event)) {
+        this->last_processed_frame_ = data[FRAME_NUMBER];
         this->process_period_ = _useconds_since(this->last_process_ts_);
         _get_time(&this->last_process_ts_);
     } else {
@@ -533,7 +531,10 @@ void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
     Determine if the `data` json should be processed based on the frame number, check which threshold is triggered if
     any and adjust the attenuation level as necessary.
 
-    If successful, the `result` json will be updated with the attenuation adjustment and new attenuation level.
+    If PARAM_HIGH3 is triggered it will be processed regardless of the frame number.
+
+    If a threshold is triggered, the `result` json will be updated with the attenuation adjustment and new attenuation
+    level.
 
     @param[in] data json structure of data message
     @param[in] result json structure to update with results of processing
@@ -541,13 +542,28 @@ void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
     @return true if an attenuation change was made, else false
 */
 bool PMACFilterController::_process_data(const json& data, json& result) {
-    this->last_received_frame_ = data[FRAME_NUMBER];
-
     // Validate the data message
     if (!(data.contains(FRAME_NUMBER) && data.contains(PARAMETERS))) {
         std::cout << "Ignoring message - Does not have keys " << FRAME_NUMBER << " and " << PARAMETERS << std::endl;
         return false;
-    } else if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
+    }
+
+    json histogram = data[PARAMETERS];
+
+    // Close shutter if PARAM_HIGH3 threshold exceeded
+    if (histogram[PARAM_HIGH3] > this->pixel_count_thresholds_[PARAM_HIGH3]) {
+#ifdef __ARM_ARCH
+        CommandTS(CLOSE_SHUTTER);
+#endif
+        this->_trigger_threshold(PARAM_HIGH3, result);
+
+        this->_transition_state(ControlState::HIGH3_TRIGGERED);
+        std::cout << "Threshold " << PARAM_HIGH3 << " triggered - closing shutter" << std::endl;
+
+        return true;
+    }
+    // Possibly ignore if PARAM_HIGH3 OK
+    else if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
         std::cout << "Ignoring message " << " - Already processed " << this->last_processed_frame_ << std::endl;
         return false;
     } else if (data[FRAME_NUMBER] == this->last_processed_frame_ + 1) {
@@ -555,40 +571,42 @@ bool PMACFilterController::_process_data(const json& data, json& result) {
         return false;
     }
 
-    json histogram = data[PARAMETERS];
-    std::vector<std::string>::const_iterator threshold;
-
     // Process logic for the most appropriate threshold
-    bool success = true;
-    std::string triggered_threshold = "";
     // - Too many counts above high thresholds -> increase attenuation
     if (histogram[PARAM_HIGH2] > this->pixel_count_thresholds_[PARAM_HIGH2]) {
-        triggered_threshold = PARAM_HIGH2;
+        this->_trigger_threshold(PARAM_HIGH2, result);
     } else if (histogram[PARAM_HIGH1] > this->pixel_count_thresholds_[PARAM_HIGH1]) {
-        triggered_threshold = PARAM_HIGH1;
+        this->_trigger_threshold(PARAM_HIGH1, result);
     }
     // - Too few counts above low thresholds -> decrease attenuation
     else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2]) {
-        triggered_threshold = PARAM_LOW2;
+        this->_trigger_threshold(PARAM_LOW2, result);
     } else if (histogram[PARAM_LOW1] < this->pixel_count_thresholds_[PARAM_LOW1]) {
-        triggered_threshold = PARAM_LOW1;
+        this->_trigger_threshold(PARAM_LOW1, result);
     } else {
-        success = false;
+        return false;
     }
 
-    if (success) {
-        std::cout << triggered_threshold << " threshold triggered" << std::endl;
-        std::cout << "Current threshold: " << this->pixel_count_thresholds_[triggered_threshold] << std::endl;
+    return true;
+}
 
-        int adjustment = THRESHOLD_ADJUSTMENTS.at(triggered_threshold);
-        this->_send_filter_adjustment(adjustment);
+/*!
+    @brief Process filter adjustment
 
-        result[ADJUSTMENT] = adjustment;
-        result[ATTENUATION] = this->current_attenuation_;
-        this->last_processed_frame_ = data[FRAME_NUMBER];
-    }
+    The `result` json will be updated with the attenuation adjustment and new attenuation level.
 
-    return success;
+    @param[in] threshold Name of threshold to trigger
+    @param[in] result json structure to update with attenuation change
+*/
+void PMACFilterController::_trigger_threshold(const std::string threshold, json& result) {
+    std::cout << threshold << " threshold triggered" << std::endl;
+    std::cout << "Current threshold: " << this->pixel_count_thresholds_[threshold] << std::endl;
+
+    int adjustment = THRESHOLD_ADJUSTMENTS.at(threshold);
+    this->_send_filter_adjustment(adjustment);
+
+    result[ADJUSTMENT] = adjustment;
+    result[ATTENUATION] = this->current_attenuation_;
 }
 
 /*!
@@ -606,16 +624,11 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     int new_attenuation_ = this->current_attenuation_ + adjustment;
 
     if (new_attenuation_ <= 0) {
-        std::cout << "Min Attenuation" << std::endl;
+        std::cout << "Min attenuation reached" << std::endl;
         new_attenuation_ = 0;
-    } else if (new_attenuation_ == MAX_ATTENUATION) {
-        std::cout << "Max Attenuation" << std::endl;
-    } else if (new_attenuation_ > MAX_ATTENUATION) {
-        std::cout << "Max Attenuation Exceeded " << std::endl;
+    } else if (new_attenuation_ >= MAX_ATTENUATION) {
+        std::cout << "Max attenuation reached" << std::endl;
         new_attenuation_ = MAX_ATTENUATION;
-#ifdef __ARM_ARCH
-        CommandTS(CLOSE_SHUTTER);
-#endif
     }
 
     std::cout << "New attenuation: " << new_attenuation_ << std::endl;
