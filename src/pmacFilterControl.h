@@ -13,11 +13,11 @@ using json = nlohmann::json;
     @brief User demanded mode of control
 */
 enum ControlMode {
-    /** Ignore messages */
-    DISABLE,
-    /** Run forever */
+    /** Ignore data channel and allow manual control of the filters */
+    MANUAL,
+    /** Monitor data channel and update attenuation based on configured thresholds */
     CONTINUOUS,
-    /** Run until attenuation stablises and then pause at that attenuation until restarted */
+    /** Continuous until attenuation stablises, pausing at that attenuation until restarted */
     SINGLESHOT,
 
     /** Convenience for checking valid value range of ControlMode */
@@ -136,10 +136,9 @@ class PMACFilterController
         void _handle_data_message(zmq::message_t& data_message);
         void _transition_state(ControlState state);
         void _process_singleshot_state();
-        void _set_max_attenuation();
         bool _process_data(const json& data);
         void _trigger_threshold(const std::string threshold);
-        void _send_filter_adjustment(const int adjustment);
+        void _set_attenuation(const int attenuation);
         void _publish_event(int frame_number);
 };
 

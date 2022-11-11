@@ -123,6 +123,7 @@
                 "mode",
                 "in_positions",
                 "out_positions",
+                "attenuation",
             ],
         },
         {

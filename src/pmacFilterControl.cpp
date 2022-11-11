@@ -36,6 +36,7 @@ const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
 const std::string CONFIG_OUT_POSITIONS = "out_positions";
 const std::string CONFIG_PIXEL_COUNT_THRESHOLDS = "pixel_count_thresholds";
+const std::string CONFIG_ATTENUATION = "attenuation";
 const std::string FILTER_1_KEY = "filter1";
 const std::string FILTER_2_KEY = "filter2";
 const std::string FILTER_3_KEY = "filter3";
@@ -113,7 +114,7 @@ PMACFilterController::PMACFilterController(
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
-    mode_(ControlMode::DISABLE),
+    mode_(ControlMode::MANUAL),
     in_positions_({0, 0, 0, 0}),
     out_positions_({0, 0, 0, 0}),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}, {PARAM_HIGH3, 2}})
@@ -229,9 +230,18 @@ bool PMACFilterController::_handle_config(const json& config) {
     if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLDS)) {
         success = this->_set_pixel_count_thresholds(config[CONFIG_PIXEL_COUNT_THRESHOLDS]);
     }
+    if (config.contains(CONFIG_ATTENUATION)) {
+        if (this->mode_ == ControlMode::MANUAL) {
+            this->_set_attenuation(config[CONFIG_ATTENUATION]);
+            success = true;
+        } else {
+            std::cout << "Can only set attenuation in MANUAL mode" << std::endl;
+            success = false;
+        }
+    }
 
     if (!success) {
-        std::cout << "Found no valid config parameters" << std::endl;
+        std::cout << "Given configuration failed or found no valid config parameters" << std::endl;
     }
 
     return success;
@@ -419,8 +429,8 @@ void PMACFilterController::_process_data_channel() {
     @brief Update state based on mode changes from control thread and internal logic
 */
 void PMACFilterController::_process_state_changes() {
-    // Disable
-    if (this->mode_ == ControlMode::DISABLE) {
+    // Manual mode disables monitoring of data channel
+    if (this->mode_ == ControlMode::MANUAL) {
         this->_transition_state(ControlState::IDLE);
     }
 
@@ -476,22 +486,12 @@ void PMACFilterController::_process_singleshot_state() {
 */
 void PMACFilterController::_transition_state(ControlState state) {
     if (state != this->state_) {
-        if (state < 0) {
-            this->_set_max_attenuation();
-        } else if (state == ControlState::WAITING && this->state_ >= 0) {
-            this->_set_max_attenuation();
+        if (state < 1 || (state == ControlState::WAITING && this->state_ >= 0)) {
+            this->_set_attenuation(MAX_ATTENUATION);
         }
     }
 
     this->state_ = state;
-}
-
-/*!
-    @brief Set maximum attenuation
-*/
-void PMACFilterController::_set_max_attenuation() {
-    // Increase attenuation level to MAX_ATTENUATION without exceeding it
-    this->_send_filter_adjustment(MAX_ATTENUATION - this->current_attenuation_);
 }
 
 /*!
@@ -597,12 +597,12 @@ void PMACFilterController::_trigger_threshold(const std::string threshold) {
     std::cout << "Current threshold: " << this->pixel_count_thresholds_[threshold] << std::endl;
 
     int adjustment = THRESHOLD_ADJUSTMENTS.at(threshold);
-    this->_send_filter_adjustment(adjustment);
+    this->_set_attenuation(this->current_attenuation_ + adjustment);
     this->last_adjustment_ = adjustment;
 }
 
 /*!
-    @brief Send updated attenuation demand to the motion controller
+    @brief Set updated attenuation demand on the motion controller
 
     Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the
     motion controller and then execute the motion program to move the motors.
@@ -610,25 +610,23 @@ void PMACFilterController::_trigger_threshold(const std::string threshold) {
     The code to set variables through shared memory is inside of an ARM ifdef fence, so when compiled for x86 it will
     just do the calculations and print a message.
 
-    @param[in] adjustment Attenuation levels to change by (can be positive or negative)
+    @param[in] attenuation Attenuation level to change to [0,15]
 */
-void PMACFilterController::_send_filter_adjustment(int adjustment) {
-    int new_attenuation_ = this->current_attenuation_ + adjustment;
-
-    if (new_attenuation_ <= 0) {
+void PMACFilterController::_set_attenuation(int attenuation) {
+    if (attenuation <= 0) {
         std::cout << "Min attenuation reached" << std::endl;
-        new_attenuation_ = 0;
-    } else if (new_attenuation_ >= MAX_ATTENUATION) {
+        attenuation = 0;
+    } else if (attenuation >= MAX_ATTENUATION) {
         std::cout << "Max attenuation reached" << std::endl;
-        new_attenuation_ = MAX_ATTENUATION;
+        attenuation = MAX_ATTENUATION;
     }
 
-    std::cout << "New attenuation: " << new_attenuation_ << std::endl;
+    std::cout << "New attenuation: " << attenuation << std::endl;
 
     std::cout << "Adjustments (Current | In | Final):" << std::endl;
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
         // Bit shift to get IN/OUT state of each filter
-        this->final_demand_[idx] = (new_attenuation_ >> idx) & 1;
+        this->final_demand_[idx] = (attenuation >> idx) & 1;
         // Prevent moving filters OUT in first move - if demand is OUT but current is IN, then stay IN until final move
         this->post_in_demand_[idx] = this->final_demand_[idx] | this->current_demand_[idx];
 
@@ -638,8 +636,7 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     }
 
 #ifdef __ARM_ARCH
-    std::cout << "Changing attenuation: "
-        << this->current_attenuation_ << " -> " << new_attenuation_ << std::endl;
+    std::cout << "Changing attenuation: " << this->current_attenuation_ << " -> " << attenuation << std::endl;
 
     // Set demands on ppmac (P407{1,2,3,4} and P408{1,2,3,4})
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
@@ -651,15 +648,14 @@ void PMACFilterController::_send_filter_adjustment(int adjustment) {
     // Run the motion program
     CommandTS(RUN_PROG_1);
 #else
-    std::cout << "Not changing attenuation "
-        << this->current_attenuation_ << " -> " << new_attenuation_ << std::endl;
+    std::cout << "Not changing attenuation " << this->current_attenuation_ << " -> " << attenuation << std::endl;
 #endif
 
     // Update current values for next incremental change
     for (int idx = 0; idx < FILTER_COUNT; ++idx) {
         this->current_demand_[idx] = this->final_demand_[idx];
     }
-    this->current_attenuation_ = new_attenuation_;
+    this->current_attenuation_ = attenuation;
 }
 
 /*!

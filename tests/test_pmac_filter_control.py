@@ -287,6 +287,24 @@ def test_configure_mode(pfc: PMACFilterControlWrapper):
     pfc.assert_status_equal({"mode": 2, "state": 1})
 
 
+def test_configure_attenuation(pfc: PMACFilterControlWrapper):
+    pfc.assert_status_equal({"mode": 0, "state": 0, "current_attenuation": 0})
+
+    # Can change attenuation
+    pfc.configure({"attenuation": 7})
+    pfc.assert_status_equal({"mode": 0, "state": 0, "current_attenuation": 7})
+    # Values are pinned to [0,15]
+    pfc.configure({"attenuation": -5})
+    pfc.assert_status_equal({"mode": 0, "state": 0, "current_attenuation": 0})
+    pfc.configure({"attenuation": 23})
+    pfc.assert_status_equal({"mode": 0, "state": 0, "current_attenuation": 15})
+    # And it doesn't time out
+    pfc.configure({"attenuation": 1})
+    pfc.assert_status_equal({"mode": 0, "state": 0, "current_attenuation": 1})
+    sleep(3)
+    pfc.assert_status_equal({"mode": 0, "state": 0, "current_attenuation": 1})
+
+
 def test_continuous_timeout(sim: DetectorSim, pfc: PMACFilterControlWrapper):
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
@@ -305,6 +323,30 @@ def test_continuous_timeout(sim: DetectorSim, pfc: PMACFilterControlWrapper):
     )
     # Then the application should timeout after 3 seconds and set max attenuation
     pfc.assert_status_equal({"state": -1, "current_attenuation": 15}, timeout=4)
+
+
+def test_continuous_to_manual_sets_max_attenuation(
+    sim: DetectorSim, pfc: PMACFilterControlWrapper
+):
+    pfc.configure({"mode": 1})
+    pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
+
+    # Force trigger low2 threshold
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+
+    # Process frame 0, reduce attenuation by 2 and change to ACTIVE
+    pfc.assert_status_equal(
+        {
+            "state": 2,
+            "last_processed_frame": 0,
+            "last_received_frame": 0,
+            "current_attenuation": 13,
+        }
+    )
+
+    # Change to manual sets max attenuation
+    pfc.configure({"mode": 0})
+    pfc.assert_status_equal({"state": 0, "current_attenuation": 15})
 
 
 def test_single_event(
