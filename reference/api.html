@@ -494,12 +494,6 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController20_set_max_attenuationEv">
-<span id="_CPPv3N20PMACFilterController20_set_max_attenuationEv"></span><span id="_CPPv2N20PMACFilterController20_set_max_attenuationEv"></span><span id="PMACFilterController::_set_max_attenuation"></span><span class="target" id="classPMACFilterController_1a77cfd89d3b5485ddfb577c2d1918a9c6"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_set_max_attenuation</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController20_set_max_attenuationEv" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Set maximum attenuation. </p>
-</dd></dl>
-
-<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController13_process_dataERK4json">
 <span id="_CPPv3N20PMACFilterController13_process_dataERK4json"></span><span id="_CPPv2N20PMACFilterController13_process_dataERK4json"></span><span id="PMACFilterController::_process_data__jsonCR"></span><span class="target" id="classPMACFilterController_1a6b8dc6019f68c8d7ca74f5db7afcceb4"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_process_data</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController13_process_dataERK4json" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Process message data. </p>
@@ -527,14 +521,14 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController23_send_filter_adjustmentEKi">
-<span id="_CPPv3N20PMACFilterController23_send_filter_adjustmentEKi"></span><span id="_CPPv2N20PMACFilterController23_send_filter_adjustmentEKi"></span><span id="PMACFilterController::_send_filter_adjustment__iC"></span><span class="target" id="classPMACFilterController_1a785dbd346914d9fd4ae907f2a2a06489"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_send_filter_adjustment</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">adjustment</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController23_send_filter_adjustmentEKi" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Send updated attenuation demand to the motion controller. </p>
+<dt class="sig sig-object cpp" id="_CPPv4N20PMACFilterController16_set_attenuationEKi">
+<span id="_CPPv3N20PMACFilterController16_set_attenuationEKi"></span><span id="_CPPv2N20PMACFilterController16_set_attenuationEKi"></span><span id="PMACFilterController::_set_attenuation__iC"></span><span class="target" id="classPMACFilterController_1a37b6f9a877c067417c1fb83cab30c16f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">_set_attenuation</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attenuation</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N20PMACFilterController16_set_attenuationEKi" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Set updated attenuation demand on the motion controller. </p>
 <p>Calculate positions of individual filters based on a bitmask of the attenuation level, set the parameters on the motion controller and then execute the motion program to move the motors.</p>
 <p>The code to set variables through shared memory is inside of an ARM ifdef fence, so when compiled for x86 it will just do the calculations and print a message.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>adjustment</strong> – <strong>[in]</strong> Attenuation levels to change by (can be positive or negative) </p>
+<dd class="field-odd"><p><strong>attenuation</strong> – <strong>[in]</strong> Attenuation level to change to [0,15] </p>
 </dd>
 </dl>
 </dd></dl>
@@ -727,21 +721,21 @@
 <dd><p>User demanded mode of control. </p>
 <p><em>Values:</em></p>
 <dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N11ControlMode7DISABLEE">
-<span id="_CPPv3N11ControlMode7DISABLEE"></span><span id="_CPPv2N11ControlMode7DISABLEE"></span><span class="target" id="pmacFilterControl_8h_1aee3ea37f4f505980157cf93a84687bcbad3a9df141be0ccf10389b640f492b26d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DISABLE</span></span></span><a class="headerlink" href="#_CPPv4N11ControlMode7DISABLEE" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Ignore messages </p>
+<dt class="sig sig-object cpp" id="_CPPv4N11ControlMode6MANUALE">
+<span id="_CPPv3N11ControlMode6MANUALE"></span><span id="_CPPv2N11ControlMode6MANUALE"></span><span class="target" id="pmacFilterControl_8h_1aee3ea37f4f505980157cf93a84687bcba506e8dd29460ea318b68d035f679b01b"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MANUAL</span></span></span><a class="headerlink" href="#_CPPv4N11ControlMode6MANUALE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Ignore data channel and allow manual control of the filters </p>
 </dd></dl>
 
 <dl class="cpp enumerator">
 <dt class="sig sig-object cpp" id="_CPPv4N11ControlMode10CONTINUOUSE">
 <span id="_CPPv3N11ControlMode10CONTINUOUSE"></span><span id="_CPPv2N11ControlMode10CONTINUOUSE"></span><span class="target" id="pmacFilterControl_8h_1aee3ea37f4f505980157cf93a84687bcba9191b0f571007d73a6fc0f6a39d2b866"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CONTINUOUS</span></span></span><a class="headerlink" href="#_CPPv4N11ControlMode10CONTINUOUSE" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Run forever </p>
+<dd><p>Monitor data channel and update attenuation based on configured thresholds </p>
 </dd></dl>
 
 <dl class="cpp enumerator">
 <dt class="sig sig-object cpp" id="_CPPv4N11ControlMode10SINGLESHOTE">
 <span id="_CPPv3N11ControlMode10SINGLESHOTE"></span><span id="_CPPv2N11ControlMode10SINGLESHOTE"></span><span class="target" id="pmacFilterControl_8h_1aee3ea37f4f505980157cf93a84687bcbaba181805fc9449f677e99c6838e17b16"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">SINGLESHOT</span></span></span><a class="headerlink" href="#_CPPv4N11ControlMode10SINGLESHOTE" title="Permalink to this definition">#</a><br /></dt>
-<dd><p>Run until attenuation stablises and then pause at that attenuation until restarted </p>
+<dd><p>Continuous until attenuation stablises, pausing at that attenuation until restarted </p>
 </dd></dl>
 
 <dl class="cpp enumerator">
