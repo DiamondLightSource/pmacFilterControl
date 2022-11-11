@@ -17,7 +17,7 @@ from .zmqadapter import ZeroMQAdapter
 STATES = ["IDLE", "WAITING", "ACTIVE", "TIMEOUT", "SINGLESHOT COMPLETE"]
 
 MODE = [
-    "DISABLE",
+    "MANUAL",
     "CONTINUOUS",
     "SINGLE-SHOT",
 ]
@@ -29,6 +29,25 @@ FILTER_SET = [
     "Mo 3",
     "Ag 1",
     "Ag 2",
+]
+
+ATTENUATION = [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
 ]
 
 ATTENUATION_KEY = "attenuation"
@@ -166,6 +185,9 @@ class Wrapper:
         self.time_since_last_frame = builder.aIn("FRAME:LAST_TIME", EGU="s")
 
         self.current_attenuation = builder.aIn("ATTENUATION_RBV")
+        self.attenuation = builder.mbbOut(
+            "ATTENUATION", *ATTENUATION, on_update=self._set_manual_attenuation
+        )
 
         self.filter_sets_in = {}
         self.filter_sets_out = {}
@@ -303,6 +325,16 @@ class Wrapper:
         self.mode_rbv.set(mode)
 
     @_if_connected
+    def _set_manual_attenuation(self, attenuation: int) -> None:
+
+        if self.state.get() == 0 and self.mode_rbv.get() == 0:
+            # Set manual attenuation for PFC
+            attenuation_config = json.dumps({"command": "configure", "params": {"attenuation": attenuation}})
+            self._send_message(codecs.encode(attenuation_config, "utf-8"))
+        else:
+            print("ERROR: Must be in MANUAL mode and IDLE state.")
+
+    @_if_connected
     def _reset(self, _) -> None:
         if _ == 1:
             reset = b'{"command":"reset"}'
@@ -331,7 +363,7 @@ class Wrapper:
                 start_singleshot = json.dumps({"command": "singleshot"})
                 self._send_message(codecs.encode(start_singleshot, "utf-8"))
             else:
-                print("WARNING: Must be in SINGLESHOT mode and WAITING state.")
+                print("ERROR: Must be in SINGLESHOT mode and WAITING state.")
 
     @_if_connected
     def _set_thresholds(self) -> None:
