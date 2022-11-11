@@ -104,10 +104,15 @@ the following form are expected on these channels:
         "low2": 4,
         "low1": 10,
         "high1": 17,
-        "high2": 3
+        "high2": 3,
+        "high3": 1
     }
 }
 ```
+
+The `pixel_count_thresholds` for each of these bins determine the action taken for
+received data messages. The low thresholds are triggered if there are not enough pixels
+above the given value, while the high thresholds are triggered if there are too many.
 
 Any messages with a `frame_number` less than `last_processed_frame` will be ignored -
 because it is too late to correct for them - as will frames equal to

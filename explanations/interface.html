@@ -457,11 +457,15 @@ the following form are expected on these channels:</p>
 <span class="w">        </span><span class="nt">&quot;low2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"></span>
 <span class="w">        </span><span class="nt">&quot;low1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"></span>
 <span class="w">        </span><span class="nt">&quot;high1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">17</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="nt">&quot;high2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="w"></span>
+<span class="w">        </span><span class="nt">&quot;high2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nt">&quot;high3&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
+<p>The <code class="docutils literal notranslate"><span class="pre">pixel_count_thresholds</span></code> for each of these bins determine the action taken for
+received data messages. The low thresholds are triggered if there are not enough pixels
+above the given value, while the high thresholds are triggered if there are too many.</p>
 <p>Any messages with a <code class="docutils literal notranslate"><span class="pre">frame_number</span></code> less than <code class="docutils literal notranslate"><span class="pre">last_processed_frame</span></code> will be ignored -
 because it is too late to correct for them - as will frames equal to
 <code class="docutils literal notranslate"><span class="pre">last_processed_frame</span> <span class="pre">+</span> <span class="pre">1</span></code> - because the change from the previous message will not have
