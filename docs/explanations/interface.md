@@ -124,23 +124,28 @@ time for the same event.
 
 For each successfully processed data message, an event message will be published on the
 event stream channel. The channel will be bound to the publish port given in the CLI
-parameters. The messages will be of the form:
+parameters. The messages will be of the form (where frame 6 caused an adjustment of -1):
 
 ```json
 {
-    "frame_number": 0,
-    "attenuation": 4,
-    "adjustment": -1
+    "frame_number": 6,
+    "adjustment": 0,
+    "attenuation": 5
+}
+{
+    "frame_number": 7,
+    "adjustment": -1,
+    "attenuation": 4
 }
 ```
 
 It is intended for a higher-level application to subscribe to these events in order to
 record the the active attenuation level for each frame and whether the adjustment
-triggered - so, the attenuation of frame `N+1` will be `attenuation + adjustment` from
-frame `N`. A non-zero adjustment for a frame means the attenuation was not optimal for
-the corresponding detector data, which may mean data analysis needs to account for the
-discrepancy or ignore the data entirely. It also means the preceding frame will not be
-optimal, as the attenuation will be changed during the exposure.
+triggered. The `adjustment` and `attenuation` of frame `N+1` will be that which
+resulted from processing frame `N`. A non-zero adjustment for frame `N+1` means the
+attenuation was not optimal for frame `N` and will be changed during the exposure of
+frame `N+1`, which means data analysis needs to ignore the data from that frame because
+it is undefined what the exposure was.
 
 ## Motion Program
 
