@@ -54,6 +54,8 @@ ATTENUATION_KEY = "attenuation"
 ADJUSTMENT_KEY = "adjustment"
 FRAME_NUMBER_KEY = "frame_number"
 
+IOC_PATH = str(pathlib.Path(__file__).parent.parent.resolve())
+
 
 def _if_connected(func: Callable) -> Callable:
     """Decorator function to check if connected to device before calling function.
@@ -89,6 +91,7 @@ class Wrapper:
         device_name: str,
         filter_set_total: int,
         filters_per_set: int,
+        autosave_pos_file: str,
     ):
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -97,6 +100,8 @@ class Wrapper:
         self.port = port
         self.zmq_stream = ZeroMQAdapter(ip, port)
         self.event_stream = ZeroMQAdapter(ip, event_stream_port, zmq_type=zmq.SUB)
+
+        self.autosave_pos_file: str = autosave_pos_file
 
         self.status_recv: bool = True
         self.connected: bool = False
@@ -161,14 +166,15 @@ class Wrapper:
 
         self.file_path = builder.longStringOut(
             "FILE:PATH",
-            on_update=lambda _: self._combine_file_path_and_name(),
+            on_update=self._set_file_path,
+            FTVL="UCHAR",
             length=256,
-            initial_value=str(pathlib.Path(__file__).parent.parent.resolve())
-            + f"/test_{dt.date(dt.now())}",
+            initial_value=IOC_PATH + f"/test_{dt.date(dt.now())}",
         )
         self.file_name = builder.longStringOut(
             "FILE:NAME",
-            on_update=lambda _: self._combine_file_path_and_name(),
+            on_update=self._set_file_name,
+            FTVL="UCHAR",
             length=256,
             initial_value="tmp.h5",
         )
@@ -189,6 +195,27 @@ class Wrapper:
             "ATTENUATION", *ATTENUATION, on_update=self._set_manual_attenuation
         )
 
+        self._generate_pos_pvs(filter_set_total, filters_per_set)
+
+    def _check_autosave_file(self) -> Optional[dict]:
+        if os.path.exists(IOC_PATH + f"/{self.autosave_pos_file}"):
+            pos_dict = {}
+            with open(IOC_PATH + f"/{self.autosave_pos_file}", "r") as pos_file:
+                for line in pos_file:
+                    line = line.strip().split(" ")
+                    pos_dict[line[0]] = float(line[1])
+            return pos_dict
+        else:
+            return None
+
+    def _generate_pos_pvs(
+        self,
+        filter_set_total: int,
+        filters_per_set: int,
+    ) -> None:
+
+        pos_dict = self._check_autosave_file()
+
         self.filter_sets_in = {}
         self.filter_sets_out = {}
         for i in range(1, filter_set_total + 1):
@@ -198,21 +225,50 @@ class Wrapper:
 
             for j in range(1, filters_per_set + 1):
 
-                in_key = f"filter_set_{i}_in_pos_{j}"
-                in_value = builder.aOut(
-                    f"FILTER_SET:{i}:IN:{j}",
-                    initial_value=100,
-                    on_update=lambda _, i=i: self._set_in_pos(i),
-                )
-                self.filter_sets_in[filter_set_key][in_key] = in_value
+                IN_KEY = f"FILTER_SET:{i}:IN:{j}"
+                OUT_KEY = f"FILTER_SET:{i}:OUT:{j}"
 
-                out_key = f"filter_set_{i}_out_pos_{j}"
-                out_value = builder.aOut(
-                    f"FILTER_SET:{i}:OUT:{j}",
-                    initial_value=0,
-                    on_update=lambda _, i=i: self._set_out_pos(i),
-                )
-                self.filter_sets_out[filter_set_key][out_key] = out_value
+                if pos_dict is not None:
+
+                    # in_key = f"filter_set_{i}_in_pos_{j}"
+                    in_value = builder.aOut(
+                        IN_KEY,
+                        initial_value=pos_dict[
+                            f"{self.device_name}:FILTER_SET:{i}:IN:{j}"
+                        ],
+                        on_update=lambda _, i=i: self._set_pos(i, "IN"),
+                    )
+
+                    # out_key = f"filter_set_{i}_out_pos_{j}"
+                    out_value = builder.aOut(
+                        OUT_KEY,
+                        initial_value=pos_dict[
+                            f"{self.device_name}:FILTER_SET:{i}:OUT:{j}"
+                        ],
+                        on_update=lambda _, i=i: self._set_pos(i, "OUT"),
+                    )
+
+                else:
+                    with open(IOC_PATH + f"/{self.autosave_pos_file}", "a") as pos_file:
+
+                        # in_key = f"filter_set_{i}_in_pos_{j}"
+                        in_value = builder.aOut(
+                            IN_KEY,
+                            initial_value=100,
+                            on_update=lambda _, i=i: self._set_pos(i, "IN"),
+                        )
+                        pos_file.write(f"{self.device_name}:{IN_KEY} {100}\n")
+
+                        # out_key = f"filter_set_{i}_out_pos_{j}"
+                        out_value = builder.aOut(
+                            OUT_KEY,
+                            initial_value=0,
+                            on_update=lambda _, i=i: self._set_pos(i, "OUT"),
+                        )
+                        pos_file.write(f"{self.device_name}:{OUT_KEY} {0}\n")
+
+                self.filter_sets_in[filter_set_key][IN_KEY] = in_value
+                self.filter_sets_out[filter_set_key][OUT_KEY] = out_value
 
     async def run_forever(self) -> None:
 
@@ -263,6 +319,7 @@ class Wrapper:
         assert isinstance(self.h5f, h5py.File)
         self.h5f.close()
         self.h5f = None
+
     async def _query_status(self) -> None:
         while True:
             if not self.zmq_stream.running:
@@ -329,7 +386,9 @@ class Wrapper:
 
         if self.state.get() == 0 and self.mode_rbv.get() == 0:
             # Set manual attenuation for PFC
-            attenuation_config = json.dumps({"command": "configure", "params": {"attenuation": attenuation}})
+            attenuation_config = json.dumps(
+                {"command": "configure", "params": {"attenuation": attenuation}}
+            )
             self._send_message(codecs.encode(attenuation_config, "utf-8"))
         else:
             print("ERROR: Must be in MANUAL mode and IDLE state.")
@@ -457,16 +516,24 @@ class Wrapper:
         self.filter_set_rbv.set(filter_set_num)
 
     @_if_connected
-    def _set_in_pos(self, filter_set: int) -> None:
+    def _set_pos(self, filter_set: int, in_out: str) -> None:
 
         if self.filter_set_rbv.get() == filter_set - 1:
             self._set_filter_set(filter_set - 1)
 
-    @_if_connected
-    def _set_out_pos(self, filter_set: int) -> None:
+        self._save_pos()
 
-        if self.filter_set.get() == filter_set - 1:
-            self._set_filter_set(filter_set - 1)
+    def _save_pos(self) -> None:
+        with open(IOC_PATH + f"/{self.autosave_pos_file}", "w") as pos_file:
+            for _, filter_set in self.filter_sets_in.items():
+                for key, in_record in filter_set.items():
+                    pos_file.write(f"{self.device_name}:{key} {in_record.get()}\n")
+
+            for _, filter_set in self.filter_sets_out.items():
+                for key, out_record in filter_set.items():
+                    pos_file.write(f"{self.device_name}:{key} {out_record.get()}\n")
+
+        print("Updated autosave file with new positions.")
 
     @_if_connected
     def _set_file_path(self, path: str) -> None:
