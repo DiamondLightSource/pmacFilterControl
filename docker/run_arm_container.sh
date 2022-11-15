@@ -4,7 +4,7 @@ ARM_PMACFILTERCONTROL="/build/pmacFilterControl"
 ARM_BUILD="${ARM_PMACFILTERCONTROL}/arm_build"
 ARM_PREFIX="${ARM_PMACFILTERCONTROL}/arm_prefix"
 
-CONTAINER_RUN="podman run --rm -it -v ${PMACFILTERCONTROL}:${ARM_PMACFILTERCONTROL} --privileged --net=host arm-crosscompiler"
+CONTAINER_RUN="podman run --rm -it -v ${PMACFILTERCONTROL}:${ARM_PMACFILTERCONTROL} --privileged --net=host ghcr.io/dls-controls/arm-crosscompiler:latest"
 
 if [ -z "$1" ]; then
   ${CONTAINER_RUN}
