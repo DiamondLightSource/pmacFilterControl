@@ -16,7 +16,6 @@
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;  // Number of filters
-const int CONTINUOUS_MODE_TIMEOUT = 3;  // Seconds of no messages before setting max attenuation in continuous mode
 const int STABILITY_THRESHOLD = 10;  // Number of messages without adjustment to consider attenuation level stable
 
 // Command to send to motion controller to execute the motion program and move to the set demands
@@ -257,8 +256,6 @@ bool PMACFilterController::_handle_config(const json& config) {
 
     @param[in] mode ControlMode (enum value) of mode to set
 
-    @throw json::type_error if given a config parameter with the wrong type
-
     @return true if the mode was set successfully, else false
 */
 bool PMACFilterController::_set_mode(ControlMode mode) {
@@ -277,16 +274,22 @@ bool PMACFilterController::_set_mode(ControlMode mode) {
     return success;
 }
 
+/*!
+    @brief Update timeout config variable from given value
+
+    @param[in] timeout Timeout value in seconds
+
+    @return true if the mode was set successfully, else false
+*/
 bool PMACFilterController::_set_timeout(float timeout) {
     bool success = true;
-
-    std::cout << "Changing timeout to " << timeout << " seconds" << std::endl;
 
     if (timeout < 0.0) {
         std::cout << "Timeout must be >= 0.0 (seconds)" << std::endl;
         success = false;
     }
     else {
+        std::cout << "Changing timeout to " << timeout << " seconds" << std::endl;
         this->timeout_ = timeout;
     }
     return success;
@@ -354,6 +357,7 @@ void PMACFilterController::_handle_status(json& response) {
     status["last_processed_frame"] = this->last_processed_frame_;
     status["time_since_last_message"] = _seconds_since(this->last_message_ts_);
     status["current_attenuation"] = this->current_attenuation_;
+    status["timeout"] = this->timeout_;
     status["state"] = this->state_;
     // Readback values for config items
     status[CONFIG_MODE] = this->mode_;
@@ -467,7 +471,7 @@ void PMACFilterController::_process_state_changes() {
     }
 
     // Set max attenuation and stop if timeout reached
-    if (this->state_ == ControlState::ACTIVE && _seconds_since(this->last_message_ts_) >= CONTINUOUS_MODE_TIMEOUT) {
+    if (this->state_ == ControlState::ACTIVE && _seconds_since(this->last_message_ts_) >= this->timeout_) {
         std::cout << "Timeout waiting for messages" << std::endl;
         this->_transition_state(ControlState::TIMEOUT);
     }

@@ -118,7 +118,7 @@ class PMACFilterController
         /* Control Channel Parameters */
         /** The current mode of operation */
         ControlMode mode_;
-        /** The current timeout period */
+        /** Seconds of no messages before setting max attenuation in continuous mode */
         float timeout_;
         /** Filter in positions in counts (can be +ve or -ve) */
         std::vector<int> in_positions_;
