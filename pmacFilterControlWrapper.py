@@ -108,7 +108,13 @@ class Wrapper:
 
         self.h5f: Optional[h5py.File] = None
 
-        self.pixel_count_thresholds = {"high1": 2, "high2": 2, "low1": 2, "low2": 2}
+        self.pixel_count_thresholds = {
+            "high1": 2,
+            "high2": 2,
+            "high3": 100,
+            "low1": 2,
+            "low2": 2,
+        }
 
         self.device_name = device_name
 
@@ -136,6 +142,11 @@ class Wrapper:
             "SINGLESHOT:START", on_update=self._start_singleshot
         )
 
+        self.extreme_high_threshold = builder.aOut(
+            "HIGH:THRESHOLD:EXTREME",
+            initial_value=100,
+            on_update=self._set_extreme_high_threshold,
+        )
         self.upper_high_threshold = builder.aOut(
             "HIGH:THRESHOLD:UPPER",
             initial_value=2,
@@ -434,6 +445,15 @@ class Wrapper:
             }
         )
         self._send_message(codecs.encode(set_thresholds, "utf-8"))
+
+    @_if_connected
+    def _set_extreme_high_threshold(self, threshold: int) -> None:
+
+        if threshold != self.pixel_count_thresholds["high3"]:
+            self.pixel_count_thresholds["high3"] = threshold
+
+            # Set upper high threshold for PFC
+            self._set_thresholds()
 
     @_if_connected
     def _set_upper_high_threshold(self, threshold: int) -> None:
