@@ -37,6 +37,7 @@ const std::string CONFIG_IN_POSITIONS = "in_positions";
 const std::string CONFIG_OUT_POSITIONS = "out_positions";
 const std::string CONFIG_PIXEL_COUNT_THRESHOLDS = "pixel_count_thresholds";
 const std::string CONFIG_ATTENUATION = "attenuation";
+const std::string CONFIG_TIMEOUT = "timeout";
 const std::string FILTER_1_KEY = "filter1";
 const std::string FILTER_2_KEY = "filter2";
 const std::string FILTER_3_KEY = "filter3";
@@ -115,6 +116,7 @@ PMACFilterController::PMACFilterController(
     final_demand_(FILTER_COUNT, 0),
     // Default config parameter values
     mode_(ControlMode::MANUAL),
+    timeout_(3.0),
     in_positions_({0, 0, 0, 0}),
     out_positions_({0, 0, 0, 0}),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}, {PARAM_HIGH3, 2}})
@@ -239,6 +241,9 @@ bool PMACFilterController::_handle_config(const json& config) {
             success = false;
         }
     }
+    if (config.contains(CONFIG_TIMEOUT)) {
+        success = this->_set_timeout(config[CONFIG_TIMEOUT]);
+    }
 
     if (!success) {
         std::cout << "Given configuration failed or found no valid config parameters" << std::endl;
@@ -269,6 +274,21 @@ bool PMACFilterController::_set_mode(ControlMode mode) {
         success = false;
     }
 
+    return success;
+}
+
+bool PMACFilterController::_set_timeout(float timeout) {
+    bool success = true;
+
+    std::cout << "Changing timeout to " << timeout << " seconds" << std::endl;
+
+    if (timeout < 0.0) {
+        std::cout << "Timeout must be >= 0.0 (seconds)" << std::endl;
+        success = false;
+    }
+    else {
+        this->timeout_ = timeout;
+    }
     return success;
 }
 

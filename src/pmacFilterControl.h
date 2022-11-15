@@ -118,6 +118,8 @@ class PMACFilterController
         /* Control Channel Parameters */
         /** The current mode of operation */
         ControlMode mode_;
+        /** The current timeout period */
+        float timeout_;
         /** Filter in positions in counts (can be +ve or -ve) */
         std::vector<int> in_positions_;
         /** Filter out positions in counts (can be +ve or -ve) */
@@ -129,6 +131,7 @@ class PMACFilterController
         void _handle_status(json& response);
         bool _handle_config(const json& config);
         bool _set_mode(const ControlMode mode);
+        bool _set_timeout(const float timeout);
         bool _set_positions(std::vector<int>& positions, const json new_positions);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
