@@ -7,6 +7,7 @@ import zmq
 import h5py
 import os
 import pathlib
+from aioca import caput
 from numpy import int64 as np_int64
 from datetime import datetime as dt
 from softioc import builder
@@ -141,6 +142,12 @@ class Wrapper:
         self.singleshot_start = builder.boolOut(
             "SINGLESHOT:START", on_update=self._start_singleshot
         )
+
+        self.shutter = builder.boolOut(
+            "SHUTTER", on_update=self._set_shutter, ZNAM="CLOSED", ONAM="OPEN"
+        )
+        self.shutter_pos_open = builder.aOut("SHUTTER:OPEN", initial_value=0)
+        self.shutter_pos_closed = builder.aOut("SHUTTER:CLOSED", initial_value=500)
 
         self.extreme_high_threshold = builder.aOut(
             "HIGH:THRESHOLD:EXTREME",
@@ -434,6 +441,14 @@ class Wrapper:
                 self._send_message(codecs.encode(start_singleshot, "utf-8"))
             else:
                 print("ERROR: Must be in SINGLESHOT mode and WAITING state.")
+
+    @_if_connected
+    async def _set_shutter(self, open_closed) -> None:
+        if open_closed == 0:
+            pos = self.shutter_pos_closed.get()
+        else:
+            pos = self.shutter_pos_open.get()
+        await caput("BL07I-MO-FILT-01:SHUTTER", pos)
 
     @_if_connected
     def _set_thresholds(self) -> None:
