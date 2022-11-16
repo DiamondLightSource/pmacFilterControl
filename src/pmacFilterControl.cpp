@@ -471,7 +471,9 @@ void PMACFilterController::_process_state_changes() {
     }
 
     // Set max attenuation and stop if timeout reached
-    if (this->state_ == ControlState::ACTIVE && _seconds_since(this->last_message_ts_) >= this->timeout_) {
+    if ((
+        this->state_ == ControlState::ACTIVE || this->state_ == ControlState::SINGLESHOT_COMPLETE) &&
+            _seconds_since(this->last_message_ts_) >= this->timeout_) {
         std::cout << "Timeout waiting for messages" << std::endl;
         this->_transition_state(ControlState::TIMEOUT);
     }
