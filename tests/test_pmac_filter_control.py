@@ -324,6 +324,19 @@ def test_continuous_timeout(sim: DetectorSim, pfc: PMACFilterControlWrapper):
     # Then the application should timeout after 3 seconds and set max attenuation
     pfc.assert_status_equal({"state": -1, "current_attenuation": 15}, timeout=4)
 
+    # Reconfigure timeout
+    pfc.configure({"timeout": 1})
+    # Clear timeout error to allow for more measurements
+    pfc.request({"command": "clear_error"})
+
+    pfc.assert_status_equal({"state": 1, "current_attenuation": 15})
+
+    # Force trigger low2 threshold
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+
+    # Then the application should timeout after 1 seconds and set max attenuation
+    pfc.assert_status_equal({"state": -1, "current_attenuation": 15}, timeout=2)
+
 
 def test_continuous_to_manual_sets_max_attenuation(
     sim: DetectorSim, pfc: PMACFilterControlWrapper
