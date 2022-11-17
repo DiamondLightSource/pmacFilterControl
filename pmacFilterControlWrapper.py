@@ -135,8 +135,9 @@ class Wrapper:
             "TIMEOUT", initial_value=3, on_update=self._set_timeout
         )
         self.timeout_rbv = builder.aIn("TIMEOUT_RBV", initial_value=3, EGU="s")
-        self.clear_timeout = builder.boolOut(
-            "TIMEOUT:CLEAR", on_update=self._clear_timeout
+        
+        self.clear_error = builder.boolOut(
+            "ERROR:CLEAR", on_update=self._clear_error
         )
 
         self.singleshot_start = builder.boolOut(
@@ -144,7 +145,7 @@ class Wrapper:
         )
 
         self.shutter = builder.boolOut(
-            "SHUTTER", on_update=self._set_shutter, ZNAM="CLOSED", ONAM="OPEN"
+            "SHUTTER:POS", on_update=self._set_shutter, ZNAM="CLOSED", ONAM="OPEN"
         )
         self.shutter_pos_open = builder.aOut("SHUTTER:OPEN", initial_value=0)
         self.shutter_pos_closed = builder.aOut("SHUTTER:CLOSED", initial_value=500)
@@ -425,11 +426,11 @@ class Wrapper:
         self.timeout_rbv.set(timeout)
 
     @_if_connected
-    def _clear_timeout(self, _) -> None:
+    def _clear_error(self, _) -> None:
 
         if _ == 1:
-            clear_timeout = json.dumps({"command": "clear_timeout"})
-            self._send_message(codecs.encode(clear_timeout, "utf-8"))
+            clear_error = json.dumps({"command": "clear_error"})
+            self._send_message(codecs.encode(clear_error, "utf-8"))
 
     @_if_connected
     def _start_singleshot(self, _) -> None:
@@ -448,7 +449,7 @@ class Wrapper:
             pos = self.shutter_pos_closed.get()
         else:
             pos = self.shutter_pos_open.get()
-        await caput("BL07I-MO-FILT-01:SHUTTER", pos)
+        await caput("BL07I-MO-FILT-01:SHUTTER:POS", pos)
 
     @_if_connected
     def _set_thresholds(self) -> None:
