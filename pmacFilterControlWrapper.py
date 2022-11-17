@@ -11,7 +11,7 @@ from aioca import caput
 from numpy import int64 as np_int64
 from datetime import datetime as dt
 from softioc import builder
-from typing import Callable, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
 from .zmqadapter import ZeroMQAdapter
 
@@ -391,12 +391,15 @@ class Wrapper:
     def _send_message(self, message: bytes) -> None:
         self.zmq_stream.send_message([message])
 
+    def _configure_param(self, param: Dict[str, Union[int, Dict[str, int]]]) -> None:
+        configure = json.dumps({"command": "configure", "params": param})
+        self._send_message(codecs.encode(configure, "utf-8"))
+
     @_if_connected
     def _set_mode(self, mode: int) -> None:
 
         # Set mode for PFC
-        mode_config = json.dumps({"command": "configure", "params": {"mode": mode}})
-        self._send_message(codecs.encode(mode_config, "utf-8"))
+        self._configure_param({"mode": mode})
 
         self.mode_rbv.set(mode)
 
@@ -405,10 +408,8 @@ class Wrapper:
 
         if self.state.get() == 0 and self.mode_rbv.get() == 0:
             # Set manual attenuation for PFC
-            attenuation_config = json.dumps(
-                {"command": "configure", "params": {"attenuation": attenuation}}
-            )
-            self._send_message(codecs.encode(attenuation_config, "utf-8"))
+            self._configure_param({"attenuation": attenuation})
+
         else:
             print("ERROR: Must be in MANUAL mode and IDLE state.")
 
@@ -422,6 +423,7 @@ class Wrapper:
     def _set_timeout(self, timeout: int) -> None:
 
         # Set timeout for PFC
+        self._configure_param({"timeout": timeout})
 
         self.timeout_rbv.set(timeout)
 
@@ -454,13 +456,7 @@ class Wrapper:
     @_if_connected
     def _set_thresholds(self) -> None:
 
-        set_thresholds = json.dumps(
-            {
-                "command": "configure",
-                "params": {"pixel_count_thresholds": self.pixel_count_thresholds},
-            }
-        )
-        self._send_message(codecs.encode(set_thresholds, "utf-8"))
+        self._configure_param({"pixel_count_thresholds": self.pixel_count_thresholds})
 
     @_if_connected
     def _set_extreme_high_threshold(self, threshold: int) -> None:
@@ -540,14 +536,7 @@ class Wrapper:
             out_pos[f"filter{id+1}"] = pos
 
         # Set filter set positions for PFC
-        set_filter_set = json.dumps(
-            {
-                "command": "configure",
-                "params": {"in_positions": in_pos, "out_positions": out_pos},
-            }
-        )
-
-        self._send_message(codecs.encode(set_filter_set, "utf-8"))
+        self._configure_param({"in_positions": in_pos, "out_positions": out_pos})
 
         self.filter_set_rbv.set(filter_set_num)
 
