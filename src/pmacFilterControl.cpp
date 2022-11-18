@@ -16,7 +16,6 @@
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;  // Number of filters
-const int STABILITY_THRESHOLD = 10;  // Number of messages without adjustment to consider attenuation level stable
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -493,8 +492,10 @@ void PMACFilterController::_process_state_changes() {
 */
 void PMACFilterController::_process_singleshot_state() {
     // Complete if singleshot run has stablised
-    if (this->state_ == ControlState::ACTIVE &&
-        this->last_received_frame_ - this->last_processed_frame_ > STABILITY_THRESHOLD
+    if (this->state_ == ControlState::ACTIVE && (
+            this->last_received_frame_ > this->last_processed_frame_ ||
+            this->current_attenuation_ == 0
+        )
     ) {
         std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
         this->_transition_state(ControlState::SINGLESHOT_COMPLETE);
