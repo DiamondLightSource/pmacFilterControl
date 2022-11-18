@@ -6,6 +6,7 @@ on:
     # Builds from PRs are not pushed to the registry because of rules in the steps
     branches:
       - main
+      - container-ci
     tags:
       - "*"
   pull_request:
