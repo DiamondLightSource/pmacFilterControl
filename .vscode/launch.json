@@ -111,7 +111,7 @@
             "options": [
                 "shutdown",
                 "reset",
-                "clear_timeout"
+                "clear_error"
             ],
         },
         {
