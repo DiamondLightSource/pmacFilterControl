@@ -842,13 +842,16 @@ void _get_time(struct timespec* ts) {
     @return Microseconds since start time
 */
 
-size_t _useconds_since(const struct timespec& start_ts) {
+unsigned long _useconds_since(const struct timespec& start_ts) {
     struct timespec end_ts;
-    size_t start_ns, end_ns;
+    long diff_s, diff_ns;
     clock_gettime(CLOCK_REALTIME, &end_ts);
-    start_ns = ((size_t) start_ts.tv_sec * 1000000000) + (size_t) start_ts.tv_nsec;
-    end_ns = ((size_t) end_ts.tv_sec * 1000000000) + (size_t) end_ts.tv_nsec;
-    return (end_ns - start_ns) / 1000;
+    diff_ns = end_ts.tv_nsec - start_ts.tv_nsec;
+    diff_s = end_ts.tv_sec - start_ts.tv_sec;
+
+    long total_diff_us = (diff_s * 1000000) + (diff_ns / 1000);
+
+    return total_diff_us;
 }
 
 /*!
@@ -861,6 +864,9 @@ size_t _useconds_since(const struct timespec& start_ts) {
     @return Seconds since start time
 */
 
-size_t _seconds_since(const struct timespec& start_ts) {
-    return _useconds_since(start_ts) / 1000000;
+unsigned long _seconds_since(const struct timespec& start_ts) {
+    struct timespec end_ts;
+    clock_gettime(CLOCK_REALTIME, &end_ts);
+
+    return end_ts.tv_sec - start_ts.tv_sec;
 }
