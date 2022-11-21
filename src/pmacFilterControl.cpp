@@ -16,7 +16,6 @@
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;  // Number of filters
-const int STABILITY_THRESHOLD = 10;  // Number of messages without adjustment to consider attenuation level stable
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -493,8 +492,10 @@ void PMACFilterController::_process_state_changes() {
 */
 void PMACFilterController::_process_singleshot_state() {
     // Complete if singleshot run has stablised
-    if (this->state_ == ControlState::ACTIVE &&
-        this->last_received_frame_ - this->last_processed_frame_ > STABILITY_THRESHOLD
+    if (this->state_ == ControlState::ACTIVE && (
+            this->last_received_frame_ > this->last_processed_frame_ ||
+            this->current_attenuation_ == 0
+        )
     ) {
         std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
         this->_transition_state(ControlState::SINGLESHOT_COMPLETE);
@@ -841,13 +842,16 @@ void _get_time(struct timespec* ts) {
     @return Microseconds since start time
 */
 
-size_t _useconds_since(const struct timespec& start_ts) {
+unsigned long _useconds_since(const struct timespec& start_ts) {
     struct timespec end_ts;
-    size_t start_ns, end_ns;
+    long diff_s, diff_ns;
     clock_gettime(CLOCK_REALTIME, &end_ts);
-    start_ns = ((size_t) start_ts.tv_sec * 1000000000) + (size_t) start_ts.tv_nsec;
-    end_ns = ((size_t) end_ts.tv_sec * 1000000000) + (size_t) end_ts.tv_nsec;
-    return (end_ns - start_ns) / 1000;
+    diff_ns = end_ts.tv_nsec - start_ts.tv_nsec;
+    diff_s = end_ts.tv_sec - start_ts.tv_sec;
+
+    long total_diff_us = (diff_s * 1000000) + (diff_ns / 1000);
+
+    return total_diff_us;
 }
 
 /*!
@@ -860,6 +864,9 @@ size_t _useconds_since(const struct timespec& start_ts) {
     @return Seconds since start time
 */
 
-size_t _seconds_since(const struct timespec& start_ts) {
-    return _useconds_since(start_ts) / 1000000;
+unsigned long _seconds_since(const struct timespec& start_ts) {
+    struct timespec end_ts;
+    clock_gettime(CLOCK_REALTIME, &end_ts);
+
+    return end_ts.tv_sec - start_ts.tv_sec;
 }

@@ -151,7 +151,7 @@ std::vector<std::string> _parse_endpoints(std::string endpoint_arg);
 bool _message_queued(zmq::pollitem_t& pollitem);
 bool _is_valid_request(const json& request);
 void _get_time(struct timespec* ts);
-size_t _useconds_since(const struct timespec& start_ts);
-size_t _seconds_since(const struct timespec& start_ts);
+unsigned long _useconds_since(const struct timespec& start_ts);
+unsigned long _seconds_since(const struct timespec& start_ts);
 
 #endif  // PMAC_FILTER_CONTROLLER_H_
