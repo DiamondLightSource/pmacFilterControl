@@ -278,13 +278,13 @@ def test_configure_mode(pfc: PMACFilterControlWrapper):
     pfc.configure({"mode": 1})
     pfc.assert_status_equal({"mode": 1, "state": 1})
 
-    # Changing to DISABLE changes state to IDLE
+    # Changing to MANUAL changes state to IDLE
     pfc.configure({"mode": 0})
     pfc.assert_status_equal({"mode": 0, "state": 0})
 
     # Changing to SINGLESHOT changes state to WAITING
     pfc.configure({"mode": 2})
-    pfc.assert_status_equal({"mode": 2, "state": 1})
+    pfc.assert_status_equal({"mode": 2, "state": 3})
 
 
 def test_configure_attenuation(pfc: PMACFilterControlWrapper):
