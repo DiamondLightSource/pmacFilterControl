@@ -478,3 +478,48 @@ def test_high3_threshold(sim: DetectorSim, pfc: PMACFilterControlWrapper):
             "current_attenuation": 15,
         }
     )
+
+
+def test_singleshot_scan(
+    sim: DetectorSim,
+    pfc: PMACFilterControlWrapper,
+):
+    pfc.configure({"timeout": 3})
+    pfc.configure({"mode": 2})
+
+    # Start singleshot run
+    pfc.request({"command": "singleshot"})
+    pfc.assert_status_equal({"mode": 2, "state": 1, "current_attenuation": 15})
+
+    # Reduce attenuation
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    pfc.assert_status_equal({"mode": 2, "state": 2, "current_attenuation": 13})
+
+    # Stablise for timeout duration
+    sim.send_blank()
+    pfc.assert_status_equal({"mode": 2, "state": 3})
+    sleep(1)
+    pfc.assert_status_equal({"mode": 2, "state": 3})
+
+    # Reset
+    sim.reset()
+    pfc.request({"command": "reset"})
+
+    # Repeat for next run
+    pfc.request({"command": "singleshot"})
+    pfc.assert_status_equal({"mode": 2, "state": 1})
+
+    # Reduce attenuation
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    pfc.assert_status_equal({"mode": 2, "state": 2, "current_attenuation": 13})
+
+    # Stablise for timeout duration
+    sim.send_blank()
+    pfc.assert_status_equal({"mode": 2, "state": 3})
+    sleep(1)
+    pfc.assert_status_equal({"mode": 2, "state": 3})
+
+    # Then time out
+    pfc.assert_status_equal(
+        {"mode": 2, "state": -1, "current_attenuation": 15}, timeout=4
+    )

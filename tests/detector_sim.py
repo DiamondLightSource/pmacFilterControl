@@ -117,6 +117,10 @@ class DetectorSim:
 
         self.frame_number += 1
 
+    def reset(self):
+        """Reset frame counter"""
+        self.frame_number = 0
+
     def stop(self):
         """Close sockets"""
         for socket in self.sockets:
