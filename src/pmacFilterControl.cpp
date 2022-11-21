@@ -464,7 +464,7 @@ void PMACFilterController::_process_state_changes() {
         }
     } else if (this->mode_ == ControlMode::SINGLESHOT) {
         if (this->state_ == ControlState::IDLE) {
-            this->_transition_state(ControlState::WAITING);
+            this->_transition_state(ControlState::SINGLESHOT_WAITING);
         }
         this->_process_singleshot_state();
     }
@@ -481,7 +481,12 @@ void PMACFilterController::_process_state_changes() {
     else if (this->state_ < 0 && this->clear_error_) {
         std::cout << "Error cleared - waiting for messages" << std::endl;
         this->clear_error_ = false;
-        this->_transition_state(ControlState::WAITING);
+        if (this->mode_ == ControlMode::SINGLESHOT) {
+            this->_transition_state(ControlState::SINGLESHOT_WAITING);
+        }
+        else {
+            this->_transition_state(ControlState::WAITING);
+        }
     }
 }
 
