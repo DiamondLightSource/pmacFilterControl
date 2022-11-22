@@ -1,7 +1,8 @@
 # pmacFilterControl
 
-A C++ application for PowerPMAC (ARM) to optimise x-ray attenuation by adjusting a filter
-set based on a stream of statistics from a detector DAQ pipeline.
+A C++ application  for PowerPMAC (ARM) and Python EPICS IOC to optimise x-ray
+attenuation by adjusting a filter set based on a stream of statistics from a detector
+DAQ pipeline.
 
 [![Code CI](https://github.com/dls-controls/pmacFilterControl/actions/workflows/code.yml/badge.svg?branch=dev)](https://github.com/dls-controls/pmacFilterControl/actions/workflows/code.yml)
 [![Docs CI](https://github.com/dls-controls/pmacFilterControl/actions/workflows/docs.yml/badge.svg?branch=dev)](https://github.com/dls-controls/pmacFilterControl/actions/workflows/docs.yml)

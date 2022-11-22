@@ -1,5 +1,0 @@
-typer
-zmq
-pytest
-black
-flake8
