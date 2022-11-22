@@ -1,5 +1,6 @@
 import asyncio
 import codecs
+from enum import Enum
 import logging
 
 import json
@@ -15,12 +16,27 @@ from typing import Callable, Dict, Optional, Union
 
 from .zmqadapter import ZeroMQAdapter
 
-STATES = ["IDLE", "WAITING", "ACTIVE", "TIMEOUT", "SINGLESHOT COMPLETE"]
+#STATES = ["IDLE", "WAITING", "ACTIVE", "TIMEOUT", "SINGLESHOT COMPLETE"]
+
+# class STATES_(Enum):
+#     # Ignoring all messages
+#     IDLE = 0,
+#     # At max attenuation and waiting for messages
+#     WAITING = 1,
+#     # Receiving messages and healthy
+#     ACTIVE = 2,
+#     # Attenuation stablised in singleshot run and waiting for next run
+#     SINGLESHOT_COMPLETE = 3,
+        
+#     # Threshold high3 was triggered
+#     HIGH3_TRIGGERED = 15,
+#     # Timed out waiting for frames
+#     TIMEOUT = 14,
 
 MODE = [
     "MANUAL",
     "CONTINUOUS",
-    "SINGLE-SHOT",
+    "SINGLESHOT",
 ]
 
 FILTER_SET = [
@@ -120,7 +136,25 @@ class Wrapper:
         self.device_name = device_name
 
         self.version = builder.stringIn("VERSION")
-        self.state = builder.mbbIn("STATE", *STATES)
+        # STATES = {state.name: state.value for state in STATES_}
+        # self.state = builder.mbbIn("STATE", *STATES)
+        self.state = builder.mbbIn(
+            "STATE",
+            FFST="TIMEOUT",
+            FTST="HIGH3_TRIGGERED",
+            ZRST="IDLE",
+            ONST="WAITING",
+            TWST="ACTIVE",
+            THST="SINGLESHOT_WAITING",
+            FRST="SINGLESHOT_COMPLETE",
+            FFVL=15,
+            FTVL=14,
+            ZRVL=0,
+            ONVL=1,
+            TWVL=2,
+            THVL=3,
+            FRVL=4,
+        )
 
         self.mode = builder.mbbOut(
             "MODE",
@@ -135,10 +169,8 @@ class Wrapper:
             "TIMEOUT", initial_value=3, on_update=self._set_timeout
         )
         self.timeout_rbv = builder.aIn("TIMEOUT_RBV", initial_value=3, EGU="s")
-        
-        self.clear_error = builder.boolOut(
-            "ERROR:CLEAR", on_update=self._clear_error
-        )
+
+        self.clear_error = builder.boolOut("ERROR:CLEAR", on_update=self._clear_error)
 
         self.singleshot_start = builder.boolOut(
             "SINGLESHOT:START", on_update=self._start_singleshot
@@ -213,6 +245,8 @@ class Wrapper:
         self.attenuation = builder.mbbOut(
             "ATTENUATION", *ATTENUATION, on_update=self._set_manual_attenuation
         )
+
+        self.histogram_scale = builder.aOut("HISTOGRAM:SCALE", initial_value=1, EGU="x")
 
         self._generate_pos_pvs(filter_set_total, filters_per_set)
 
@@ -328,6 +362,7 @@ class Wrapper:
             if self._check_path():
                 self.h5f = h5py.File(self.file_full_name.get(), "w", libver="latest")
                 self.h5f.swmr_mode = True
+                print(f"File {self.h5f} is open.")
         else:
             if self.file_full_name.get() != self.h5f.filename:
                 print("Another file is already open and being written to.")
@@ -360,6 +395,8 @@ class Wrapper:
     def _handle_status(self, status) -> None:
 
         state = status["state"]
+        if state < 0:
+            state = 16 + state
         self.state.set(state)
 
         version = status["version"]
@@ -414,10 +451,12 @@ class Wrapper:
             print("ERROR: Must be in MANUAL mode and IDLE state.")
 
     @_if_connected
-    def _reset(self, _) -> None:
+    async def _reset(self, _) -> None:
         if _ == 1:
             reset = b'{"command":"reset"}'
             self._send_message(reset)
+
+            self.reset.set(0)
 
     @_if_connected
     def _set_timeout(self, timeout: int) -> None:
@@ -428,22 +467,27 @@ class Wrapper:
         self.timeout_rbv.set(timeout)
 
     @_if_connected
-    def _clear_error(self, _) -> None:
+    async def _clear_error(self, _) -> None:
+        print(self.clear_error.get())
 
         if _ == 1:
             clear_error = json.dumps({"command": "clear_error"})
             self._send_message(codecs.encode(clear_error, "utf-8"))
 
+            self.clear_error.set(0)
+
     @_if_connected
-    def _start_singleshot(self, _) -> None:
+    async def _start_singleshot(self, _) -> None:
 
         if _ == 1:
 
-            if self.state.get() == 1 and self.mode_rbv.get() == 2:
+            if (self.state.get() == 3 or self.state.get() == 4) and self.mode_rbv.get() == 2:
                 start_singleshot = json.dumps({"command": "singleshot"})
                 self._send_message(codecs.encode(start_singleshot, "utf-8"))
             else:
                 print("ERROR: Must be in SINGLESHOT mode and WAITING state.")
+
+            self.singleshot_start.set(0)
 
     @_if_connected
     async def _set_shutter(self, open_closed) -> None:
@@ -634,6 +678,8 @@ class Wrapper:
                 dset_size = dset_size + 1
             adjustment_dset.resize((dset_size,))
             attenuation_dset.resize((dset_size,))
+
+        print(data)
 
         adjustment_dset[data[FRAME_NUMBER_KEY]] = data[ADJUSTMENT_KEY]
         attenuation_dset[data[FRAME_NUMBER_KEY]] = data[ATTENUATION_KEY]
