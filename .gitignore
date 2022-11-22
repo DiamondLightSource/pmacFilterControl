@@ -4,6 +4,8 @@
 # Python
 **/__pycache__
 **/venv
+*.egg-info/
+src/*/_version.py
 
 # Ignore copied in libraries
 thirdparty/ppmac

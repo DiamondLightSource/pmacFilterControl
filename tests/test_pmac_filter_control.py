@@ -9,8 +9,8 @@ from typing import Any, Dict, Iterator
 import pytest
 import zmq
 
-from detector_sim import DetectorSim
-from event_subscriber import EventSubscriber
+from pmacfiltercontrol.detector_sim import DetectorSim
+from pmacfiltercontrol.event_subscriber import EventSubscriber
 
 
 DEFAULT_TIMEOUT_MS = 1000

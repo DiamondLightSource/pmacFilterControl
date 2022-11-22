@@ -23,8 +23,13 @@ jobs:
         run: docs/doxygen/doxygen.sh
         shell: bash
 
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
       - name: Build Docs
-        run: pip install -r docs/requirements.txt && sphinx-build -ET docs build/html/
+        run: pip install .[dev] && sphinx-build -ET docs build/html/
 
       - name: Publish Docs
         if: github.event_name == 'push'
