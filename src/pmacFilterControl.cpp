@@ -498,7 +498,7 @@ void PMACFilterController::_process_state_changes() {
 void PMACFilterController::_process_singleshot_state() {
     // Complete if singleshot run has stablised
     if (this->state_ == ControlState::ACTIVE && (
-            this->last_received_frame_ > this->last_processed_frame_ ||
+            this->last_received_frame_ >= this->last_processed_frame_ + 2 ||
             this->current_attenuation_ == 0
         )
     ) {
