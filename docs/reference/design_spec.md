@@ -73,6 +73,10 @@ are received on the data stream to notify of the required attenuation level, the
 attenuation level should be set. This will cause the watchdog healthy state to drop for
 the visibility of the hardware PLC.
 
+```{raw} html
+:file: ../images/pfc-state-flow-diagram-continuous-mode.svg
+```
+
 ### 2. Single-shot & Reset
 
 In this mode the system will start at max attenuation and then lower the attenuation
@@ -83,6 +87,10 @@ It may be viable to have a timeout longer than this to reset to max attenuation,
 reacting after many seconds of beam exposure may be redundant, so this may no make
 sense.
 
+```{raw} html
+:file: ../images/pfc-state-flow-diagram-singleshot-mode.svg
+```
+
 ### 3. Manual Mode
 
 Automatic adjustment of filters is completely disabled allowing manual control of each
@@ -90,6 +98,10 @@ filter. The system must not try to change the filter positions based on the data
 and it should not set max attenuation after a timeout as mode 1 does. This system itself
 could also provide an API to do the simple moves to avoid any conflict with other
 demands to the motion controller.
+
+```{raw} html
+:file: ../images/pfc-state-flow-diagram-manual-mode.svg
+```
 
 ## Filter Motion
 
