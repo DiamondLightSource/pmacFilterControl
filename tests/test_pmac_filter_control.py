@@ -487,6 +487,9 @@ def test_singleshot_scan(
     pfc.configure({"timeout": 3})
     pfc.configure({"mode": 2})
 
+    # Check in SINGLESHOT_WAITING state
+    pfc.assert_status_equal({"mode": 2, "state": 3, "current_attenuation": 15})
+
     # Start singleshot run
     pfc.request({"command": "singleshot"})
     pfc.assert_status_equal({"mode": 2, "state": 1, "current_attenuation": 15})
@@ -497,9 +500,10 @@ def test_singleshot_scan(
 
     # Stablise for timeout duration
     sim.send_blank()
-    pfc.assert_status_equal({"mode": 2, "state": 3})
+    pfc.assert_status_equal({"mode": 2, "state": 2})
     sleep(1)
-    pfc.assert_status_equal({"mode": 2, "state": 3})
+    sim.send_blank()
+    pfc.assert_status_equal({"mode": 2, "state": 4})
 
     # Reset
     sim.reset()
@@ -515,11 +519,16 @@ def test_singleshot_scan(
 
     # Stablise for timeout duration
     sim.send_blank()
-    pfc.assert_status_equal({"mode": 2, "state": 3})
+    pfc.assert_status_equal({"mode": 2, "state": 2})
     sleep(1)
-    pfc.assert_status_equal({"mode": 2, "state": 3})
+    sim.send_blank()
+    pfc.assert_status_equal({"mode": 2, "state": 4})
 
     # Then time out
     pfc.assert_status_equal(
         {"mode": 2, "state": -1, "current_attenuation": 15}, timeout=4
     )
+
+    # Check correct state after timeout clear
+    pfc.request({"command": "clear_error"})
+    pfc.assert_status_equal({"mode": 2, "state": 3})

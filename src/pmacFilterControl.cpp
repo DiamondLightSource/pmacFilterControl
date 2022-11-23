@@ -518,8 +518,11 @@ void PMACFilterController::_process_singleshot_state() {
     @brief Transition to the given state applying relevant logic for specific transitions
 */
 void PMACFilterController::_transition_state(ControlState state) {
-    if (state != this->state_) {
-        if (state < 1 || (state == ControlState::WAITING && this->state_ >= 0)) {
+    if (state != this->state_)
+    {
+        if (state < 1 ||
+            ((state == ControlState::WAITING || state == ControlState::SINGLESHOT_WAITING) && this->state_ >= 0))
+        {
             this->_set_attenuation(MAX_ATTENUATION);
         }
     }
