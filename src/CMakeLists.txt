@@ -1,4 +1,9 @@
-add_executable(pmacFilterControl pmacFilterControl.cpp)
+# Substitute current git version via version.h
+execute_process(COMMAND git describe --dirty --tags --long COMMAND tr --delete '\n' OUTPUT_VARIABLE GIT_VERSION)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in "${CMAKE_CURRENT_BINARY_DIR}/version.h")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+add_executable(pmacFilterControl pmacFilterControl.cpp ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
 # When building within the ARM container, set --dynamic-linker
 if(ARM)
