@@ -6,12 +6,11 @@
 #include <sstream>  // std::stringstream, std::getline
 
 #include "pmacFilterControl.h"
+#include "version.h"
 
 #ifdef __ARM_ARCH
 #include "gplib.h"  // pshm, CommandTS
 #endif
-
-#define VERSION "0.1"
 
 const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
