@@ -1,6 +1,7 @@
 #include <map>  // std::map
 #include <thread>  // std::thread
 #include <vector>  // std::vector
+#include <string>  // std::string
 
 #include "zmq/zmq.hpp"
 #include "nlohmann_json/json.hpp"
