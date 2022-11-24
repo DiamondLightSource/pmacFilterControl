@@ -15,12 +15,11 @@ from typing import Callable, Dict, Optional, Union
 
 from .zmqadapter import ZeroMQAdapter
 
-STATES = ["IDLE", "WAITING", "ACTIVE", "TIMEOUT", "SINGLESHOT COMPLETE"]
 
 MODE = [
     "MANUAL",
     "CONTINUOUS",
-    "SINGLE-SHOT",
+    "SINGLESHOT",
 ]
 
 FILTER_SET = [
@@ -120,7 +119,24 @@ class Wrapper:
         self.device_name = device_name
 
         self.version = builder.stringIn("VERSION")
-        self.state = builder.mbbIn("STATE", *STATES)
+
+        self.state = builder.mbbIn(
+            "STATE",
+            FFST="TIMEOUT",
+            FTST="HIGH3_TRIGGERED",
+            ZRST="IDLE",
+            ONST="WAITING",
+            TWST="ACTIVE",
+            THST="SINGLESHOT_WAITING",
+            FRST="SINGLESHOT_COMPLETE",
+            FFVL=15,
+            FTVL=14,
+            ZRVL=0,
+            ONVL=1,
+            TWVL=2,
+            THVL=3,
+            FRVL=4,
+        )
 
         self.mode = builder.mbbOut(
             "MODE",
@@ -135,10 +151,8 @@ class Wrapper:
             "TIMEOUT", initial_value=3, on_update=self._set_timeout
         )
         self.timeout_rbv = builder.aIn("TIMEOUT_RBV", initial_value=3, EGU="s")
-        
-        self.clear_error = builder.boolOut(
-            "ERROR:CLEAR", on_update=self._clear_error
-        )
+
+        self.clear_error = builder.boolOut("ERROR:CLEAR", on_update=self._clear_error)
 
         self.singleshot_start = builder.boolOut(
             "SINGLESHOT:START", on_update=self._start_singleshot
@@ -327,7 +341,7 @@ class Wrapper:
         if self.h5f is None:
             if self._check_path():
                 self.h5f = h5py.File(self.file_full_name.get(), "w", libver="latest")
-                self.h5f.swmr_mode = True
+                print(f"File {self.h5f} is open.")
         else:
             if self.file_full_name.get() != self.h5f.filename:
                 print("Another file is already open and being written to.")
@@ -360,6 +374,8 @@ class Wrapper:
     def _handle_status(self, status) -> None:
 
         state = status["state"]
+        if state < 0:
+            state = 16 + state
         self.state.set(state)
 
         version = status["version"]
@@ -414,10 +430,12 @@ class Wrapper:
             print("ERROR: Must be in MANUAL mode and IDLE state.")
 
     @_if_connected
-    def _reset(self, _) -> None:
+    async def _reset(self, _) -> None:
         if _ == 1:
             reset = b'{"command":"reset"}'
             self._send_message(reset)
+
+            self.reset.set(0)
 
     @_if_connected
     def _set_timeout(self, timeout: int) -> None:
@@ -428,22 +446,27 @@ class Wrapper:
         self.timeout_rbv.set(timeout)
 
     @_if_connected
-    def _clear_error(self, _) -> None:
+    async def _clear_error(self, _) -> None:
+        print(self.clear_error.get())
 
         if _ == 1:
             clear_error = json.dumps({"command": "clear_error"})
             self._send_message(codecs.encode(clear_error, "utf-8"))
 
+            self.clear_error.set(0)
+
     @_if_connected
-    def _start_singleshot(self, _) -> None:
+    async def _start_singleshot(self, _) -> None:
 
         if _ == 1:
 
-            if self.state.get() == 1 and self.mode_rbv.get() == 2:
+            if (self.state.get() == 3 or self.state.get() == 4) and self.mode_rbv.get() == 2:
                 start_singleshot = json.dumps({"command": "singleshot"})
                 self._send_message(codecs.encode(start_singleshot, "utf-8"))
             else:
                 print("ERROR: Must be in SINGLESHOT mode and WAITING state.")
+
+            self.singleshot_start.set(0)
 
     @_if_connected
     async def _set_shutter(self, open_closed) -> None:
@@ -626,6 +649,9 @@ class Wrapper:
         assert isinstance(adjustment_dset, h5py.Dataset)
         attenuation_dset = self.h5f.get(ATTENUATION_KEY)
         assert isinstance(attenuation_dset, h5py.Dataset)
+
+        self.h5f.swmr_mode = True
+
         assert adjustment_dset.size == attenuation_dset.size
         dset_size = adjustment_dset.size
         if data[FRAME_NUMBER_KEY] >= dset_size:
