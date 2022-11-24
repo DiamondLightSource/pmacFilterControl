@@ -41,6 +41,8 @@ enum ControlState {
     WAITING,
     /** Receiving messages and healthy */
     ACTIVE,
+    /** Waiting for singleshot run */
+    SINGLESHOT_WAITING,
     /** Attenuation stablised in singleshot run and waiting for next run */
     SINGLESHOT_COMPLETE,
 };
