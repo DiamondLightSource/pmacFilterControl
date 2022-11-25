@@ -235,9 +235,6 @@ class Wrapper:
             "HISTOGRAM:SCALE",
             initial_value=1.0,
             EGU="x",
-        )
-        self._histogram_scale_set = builder.aOut(
-            "HISTOGRAM:SCALE:SET",
             on_update=self._set_histogram_scale,
         )
 
@@ -560,13 +557,11 @@ class Wrapper:
             print(f"Low 1 is already at value {threshold}.")
 
     @_if_connected
-    async def _set_histogram_scale(self, set: int) -> None:
-
-        scale = self.histogram_scale.get()
+    async def _set_histogram_scale(self, scale: float) -> None:
 
         new_thresholds = self._initial_hists
 
-        if set == 1:
+        if scale != 1.0:
             await self._get_initial_hists()
 
             new_thresholds = {
