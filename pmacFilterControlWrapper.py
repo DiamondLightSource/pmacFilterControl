@@ -7,7 +7,7 @@ import zmq
 import h5py
 import os
 import pathlib
-from aioca import caput
+from aioca import caput, caget
 from numpy import int64 as np_int64
 from datetime import datetime as dt
 from softioc import builder
@@ -91,6 +91,7 @@ class Wrapper:
         device_name: str,
         filter_set_total: int,
         filters_per_set: int,
+        detector: str,
         autosave_pos_file: str,
     ):
 
@@ -100,6 +101,8 @@ class Wrapper:
         self.port = port
         self.zmq_stream = ZeroMQAdapter(ip, port)
         self.event_stream = ZeroMQAdapter(ip, event_stream_port, zmq_type=zmq.SUB)
+
+        self.detector: str = detector
 
         self.autosave_pos_file: str = autosave_pos_file
 
@@ -228,6 +231,16 @@ class Wrapper:
             "ATTENUATION", *ATTENUATION, on_update=self._set_manual_attenuation
         )
 
+        self.histogram_scale = builder.aOut(
+            "HISTOGRAM:SCALE",
+            initial_value=1.0,
+            EGU="x",
+        )
+        self._histogram_scale_set = builder.aOut(
+            "HISTOGRAM:SCALE:SET",
+            on_update=self._set_histogram_scale,
+        )
+
         self._generate_pos_pvs(filter_set_total, filters_per_set)
 
     def _check_autosave_file(self) -> Optional[dict]:
@@ -263,7 +276,6 @@ class Wrapper:
 
                 if pos_dict is not None:
 
-                    # in_key = f"filter_set_{i}_in_pos_{j}"
                     in_value = builder.aOut(
                         IN_KEY,
                         initial_value=pos_dict[
@@ -272,7 +284,6 @@ class Wrapper:
                         on_update=lambda _, i=i: self._set_pos(i, "IN"),
                     )
 
-                    # out_key = f"filter_set_{i}_out_pos_{j}"
                     out_value = builder.aOut(
                         OUT_KEY,
                         initial_value=pos_dict[
@@ -284,7 +295,6 @@ class Wrapper:
                 else:
                     with open(IOC_PATH + f"/{self.autosave_pos_file}", "a") as pos_file:
 
-                        # in_key = f"filter_set_{i}_in_pos_{j}"
                         in_value = builder.aOut(
                             IN_KEY,
                             initial_value=100,
@@ -292,7 +302,6 @@ class Wrapper:
                         )
                         pos_file.write(f"{self.device_name}:{IN_KEY} {100}\n")
 
-                        # out_key = f"filter_set_{i}_out_pos_{j}"
                         out_value = builder.aOut(
                             OUT_KEY,
                             initial_value=0,
@@ -302,6 +311,16 @@ class Wrapper:
 
                 self.filter_sets_in[filter_set_key][IN_KEY] = in_value
                 self.filter_sets_out[filter_set_key][OUT_KEY] = out_value
+
+    async def _get_initial_hists(self) -> None:
+
+        self._initial_hists: Dict[str, float] = {
+            "High3": await caget(f"{self.detector}:OD:SUM:Histogram:High3"),
+            "High2": await caget(f"{self.detector}:OD:SUM:Histogram:High2"),
+            "High1": await caget(f"{self.detector}:OD:SUM:Histogram:High1"),
+            "Low1": await caget(f"{self.detector}:OD:SUM:Histogram:Low1"),
+            "Low2": await caget(f"{self.detector}:OD:SUM:Histogram:Low2"),
+        }
 
     async def run_forever(self) -> None:
 
@@ -460,7 +479,9 @@ class Wrapper:
 
         if _ == 1:
 
-            if (self.state.get() == 3 or self.state.get() == 4) and self.mode_rbv.get() == 2:
+            if (
+                self.state.get() == 3 or self.state.get() == 4
+            ) and self.mode_rbv.get() == 2:
                 start_singleshot = json.dumps({"command": "singleshot"})
                 self._send_message(codecs.encode(start_singleshot, "utf-8"))
             else:
@@ -537,6 +558,23 @@ class Wrapper:
 
         else:
             print(f"Low 1 is already at value {threshold}.")
+
+    @_if_connected
+    async def _set_histogram_scale(self, set: int) -> None:
+
+        scale = self.histogram_scale.get()
+
+        if set == 1:
+            await self._get_initial_hists()
+
+            for key, threshold in self._initial_hists.items():
+
+                threshold = threshold * scale
+                caput(f"{self.detector}:OD:SUM:Histogram:{key}", threshold)
+
+        else:
+            for key, threshold in self._initial_hists.items():
+                caput(f"{self.detector}:OD:SUM:Histogram:{key}", threshold)
 
     @_if_connected
     def _set_filter_set(self, filter_set_num: int) -> None:
