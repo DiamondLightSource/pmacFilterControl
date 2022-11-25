@@ -564,17 +564,17 @@ class Wrapper:
 
         scale = self.histogram_scale.get()
 
+        new_thresholds = self._initial_hists
+
         if set == 1:
             await self._get_initial_hists()
 
-            for key, threshold in self._initial_hists.items():
+            new_thresholds = {
+                key: threshold * scale for key, threshold in self._initial_hists.items()
+            }
 
-                threshold = threshold * scale
-                caput(f"{self.detector}:OD:SUM:Histogram:{key}", threshold)
-
-        else:
-            for key, threshold in self._initial_hists.items():
-                caput(f"{self.detector}:OD:SUM:Histogram:{key}", threshold)
+        for key, threshold in new_thresholds.items():
+            caput(f"{self.detector}:OD:SUM:Histogram:{key}", threshold)
 
     @_if_connected
     def _set_filter_set(self, filter_set_num: int) -> None:
