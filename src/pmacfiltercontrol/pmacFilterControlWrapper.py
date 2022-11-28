@@ -54,6 +54,9 @@ ATTENUATION_KEY = "attenuation"
 ADJUSTMENT_KEY = "adjustment"
 FRAME_NUMBER_KEY = "frame_number"
 
+SHUTTER_CLOSED = "CLOSED"
+SHUTTER_OPEN = "OPEN"
+
 IOC_PATH = str(pathlib.Path(__file__).parent.parent.resolve())
 
 
@@ -161,38 +164,6 @@ class Wrapper:
             "SINGLESHOT:START", on_update=self._start_singleshot
         )
 
-        self.shutter = builder.boolOut(
-            "SHUTTER:POS", on_update=self._set_shutter, ZNAM="CLOSED", ONAM="OPEN"
-        )
-        self.shutter_pos_open = builder.aOut("SHUTTER:OPEN", initial_value=0)
-        self.shutter_pos_closed = builder.aOut("SHUTTER:CLOSED", initial_value=500)
-
-        self.extreme_high_threshold = builder.aOut(
-            "HIGH:THRESHOLD:EXTREME",
-            initial_value=100,
-            on_update=self._set_extreme_high_threshold,
-        )
-        self.upper_high_threshold = builder.aOut(
-            "HIGH:THRESHOLD:UPPER",
-            initial_value=2,
-            on_update=self._set_upper_high_threshold,
-        )
-        self.lower_high_threshold = builder.aOut(
-            "HIGH:THRESHOLD:LOWER",
-            initial_value=2,
-            on_update=self._set_lower_high_threshold,
-        )
-        self.upper_low_threshold = builder.aOut(
-            "LOW:THRESHOLD:UPPER",
-            initial_value=2,
-            on_update=self._set_upper_low_threshold,
-        )
-        self.lower_low_threshold = builder.aOut(
-            "LOW:THRESHOLD:LOWER",
-            initial_value=2,
-            on_update=self._set_lower_low_threshold,
-        )
-
         self.filter_set = builder.mbbOut(
             "FILTER_SET", *FILTER_SET, initial_value=0, on_update=self._set_filter_set
         )
@@ -238,26 +209,45 @@ class Wrapper:
             on_update=self._set_histogram_scale,
         )
 
-        self._generate_pos_pvs(filter_set_total, filters_per_set)
+        self.autosave_exists: bool = self._check_autosave_file_exists()
+        self._autosave_pos_dict: Dict[str, float] = {}
 
-    def _check_autosave_file(self) -> Optional[dict]:
+        if self.autosave_exists:
+            self._autosave_pos_dict = self._get_autosave()
+
+        self._generate_filter_pos_records(filter_set_total, filters_per_set)
+        self._generate_shutter_records()
+        self._generate_pixel_threshold_records()
+
+        self.write_autosave()
+
+    def _check_autosave_file_exists(self) -> bool:
         if os.path.exists(IOC_PATH + f"/{self.autosave_pos_file}"):
-            pos_dict = {}
-            with open(IOC_PATH + f"/{self.autosave_pos_file}", "r") as pos_file:
-                for line in pos_file:
-                    line = line.strip().split(" ")
-                    pos_dict[line[0]] = float(line[1])
-            return pos_dict
+            return True
         else:
-            return None
+            return False
 
-    def _generate_pos_pvs(
+    def _get_autosave(self) -> Dict[str, float]:
+        pos_dict = {}
+        with open(IOC_PATH + f"/{self.autosave_pos_file}", "r") as pos_file:
+            for line in pos_file:
+                line = line.strip().split(" ")
+                pos_dict[line[0]] = float(line[1])
+        return pos_dict
+
+    def write_autosave(self) -> None:
+
+        with open(IOC_PATH + f"/{self.autosave_pos_file}", "w") as pos_file:
+            for key, value in self._autosave_pos_dict.items():
+                pos_file.write(f"{key} {value}\n")
+
+        print("Updated autosave file with new positions.")
+
+    def _generate_filter_pos_records(
         self,
         filter_set_total: int,
         filters_per_set: int,
     ) -> None:
-
-        pos_dict = self._check_autosave_file()
 
         self.filter_sets_in = {}
         self.filter_sets_out = {}
@@ -271,43 +261,108 @@ class Wrapper:
                 IN_KEY = f"FILTER_SET:{i}:IN:{j}"
                 OUT_KEY = f"FILTER_SET:{i}:OUT:{j}"
 
-                if pos_dict is not None:
+                in_value: float = (
+                    self._autosave_pos_dict[f"{self.device_name}:{IN_KEY}"]
+                    if self.autosave_exists
+                    else 100.0
+                )
+                in_record: builder.aOut = builder.aOut(
+                    IN_KEY,
+                    initial_value=in_value,
+                    on_update=lambda val, i=i: self._set_pos(i, IN_KEY, val),
+                )
 
-                    in_value = builder.aOut(
-                        IN_KEY,
-                        initial_value=pos_dict[
-                            f"{self.device_name}:FILTER_SET:{i}:IN:{j}"
-                        ],
-                        on_update=lambda _, i=i: self._set_pos(i, "IN"),
-                    )
+                out_value: float = (
+                    self._autosave_pos_dict[f"{self.device_name}:{IN_KEY}"]
+                    if self.autosave_exists
+                    else 0.0
+                )
+                out_record: builder.aOut = builder.aOut(
+                    OUT_KEY,
+                    initial_value=out_value,
+                    on_update=lambda val, i=i: self._set_pos(i, OUT_KEY, val),
+                )
 
-                    out_value = builder.aOut(
-                        OUT_KEY,
-                        initial_value=pos_dict[
-                            f"{self.device_name}:FILTER_SET:{i}:OUT:{j}"
-                        ],
-                        on_update=lambda _, i=i: self._set_pos(i, "OUT"),
-                    )
+                if not self.autosave_exists:
+                    self._autosave_pos_dict[in_record.name] = in_value
+                    self._autosave_pos_dict[out_record.name] = out_value
 
-                else:
-                    with open(IOC_PATH + f"/{self.autosave_pos_file}", "a") as pos_file:
+                self.filter_sets_in[filter_set_key][IN_KEY] = in_record
+                self.filter_sets_out[filter_set_key][OUT_KEY] = out_record
 
-                        in_value = builder.aOut(
-                            IN_KEY,
-                            initial_value=100,
-                            on_update=lambda _, i=i: self._set_pos(i, "IN"),
-                        )
-                        pos_file.write(f"{self.device_name}:{IN_KEY} {100}\n")
+    def _generate_shutter_records(self) -> None:
 
-                        out_value = builder.aOut(
-                            OUT_KEY,
-                            initial_value=0,
-                            on_update=lambda _, i=i: self._set_pos(i, "OUT"),
-                        )
-                        pos_file.write(f"{self.device_name}:{OUT_KEY} {0}\n")
+        self.shutter = builder.boolOut(
+            "SHUTTER:POS", on_update=self._set_shutter, ZNAM="CLOSED", ONAM="OPEN"
+        )
 
-                self.filter_sets_in[filter_set_key][IN_KEY] = in_value
-                self.filter_sets_out[filter_set_key][OUT_KEY] = out_value
+        shutter_open_pos = (
+            self._autosave_pos_dict[f"{self.device_name}:SHUTTER:OPEN"]
+            if self.autosave_exists
+            else 0
+        )
+        shutter_closed_pos = (
+            self._autosave_pos_dict[f"{self.device_name}:SHUTTER:CLOSED"]
+            if self.autosave_exists
+            else 500
+        )
+
+        self.shutter_pos_open = builder.aOut(
+            "SHUTTER:OPEN",
+            initial_value=shutter_open_pos,
+            on_update=lambda val: self._set_shutter_pos(val, SHUTTER_OPEN),
+        )
+        self.shutter_pos_closed = builder.aOut(
+            "SHUTTER:CLOSED",
+            initial_value=shutter_closed_pos,
+            on_update=lambda val: self._set_shutter_pos(val, SHUTTER_CLOSED),
+        )
+
+        if not self.autosave_exists:
+            self._autosave_pos_dict[f"{self.device_name}:SHUTTER:OPEN"] = 0.0
+            self._autosave_pos_dict[f"{self.device_name}:SHUTTER:CLOSED"] = 500.0
+
+    def _generate_pixel_threshold_records(self) -> None:
+
+        self.extreme_high_threshold = builder.aOut(
+            "HIGH:THRESHOLD:EXTREME",
+            initial_value=100,
+            on_update=self._set_extreme_high_threshold,
+        )
+        self.upper_high_threshold = builder.aOut(
+            "HIGH:THRESHOLD:UPPER",
+            initial_value=2,
+            on_update=self._set_upper_high_threshold,
+        )
+        self.lower_high_threshold = builder.aOut(
+            "HIGH:THRESHOLD:LOWER",
+            initial_value=2,
+            on_update=self._set_lower_high_threshold,
+        )
+        self.upper_low_threshold = builder.aOut(
+            "LOW:THRESHOLD:UPPER",
+            initial_value=2,
+            on_update=self._set_upper_low_threshold,
+        )
+        self.lower_low_threshold = builder.aOut(
+            "LOW:THRESHOLD:LOWER",
+            initial_value=2,
+            on_update=self._set_lower_low_threshold,
+        )
+
+        pixel_threshold_records = [
+            self.extreme_high_threshold,
+            self.upper_high_threshold,
+            self.lower_high_threshold,
+            self.upper_low_threshold,
+            self.lower_low_threshold,
+        ]
+
+        for record in pixel_threshold_records:
+            if not self.autosave_exists:
+                self._autosave_pos_dict[record.name] = record.get()
+            else:
+                record.set(self._autosave_pos_dict[record.name])
 
     async def _get_initial_hists(self) -> None:
 
@@ -487,12 +542,22 @@ class Wrapper:
             self.singleshot_start.set(0)
 
     @_if_connected
-    async def _set_shutter(self, open_closed) -> None:
-        if open_closed == 0:
+    async def _set_shutter(self, shutter_state: int) -> None:
+        if shutter_state == SHUTTER_CLOSED:
             pos = self.shutter_pos_closed.get()
         else:
             pos = self.shutter_pos_open.get()
         await caput("BL07I-MO-FILT-01:SHUTTER:POS", pos)
+
+    def _set_shutter_pos(self, val: float, shutter_state: int) -> None:
+
+        current_shutter_state = "CLOSED" if self.shutter.get() == 0 else "OPEN"
+        if current_shutter_state == shutter_state:
+            self._set_shutter(shutter_state)
+
+        self._autosave_pos_dict[f"{self.device_name}:SHUTTER:{shutter_state}"] = val
+
+        self.write_autosave()
 
     @_if_connected
     def _set_thresholds(self) -> None:
@@ -597,24 +662,14 @@ class Wrapper:
         self.filter_set_rbv.set(filter_set_num)
 
     @_if_connected
-    def _set_pos(self, filter_set: int, in_out: str) -> None:
+    def _set_pos(self, filter_set: int, in_out_key: str, val: float) -> None:
+
+        self._autosave_pos_dict[f"{self.device_name}:{in_out_key}"] = val
 
         if self.filter_set_rbv.get() == filter_set - 1:
             self._set_filter_set(filter_set - 1)
 
-        self._save_pos()
-
-    def _save_pos(self) -> None:
-        with open(IOC_PATH + f"/{self.autosave_pos_file}", "w") as pos_file:
-            for _, filter_set in self.filter_sets_in.items():
-                for key, in_record in filter_set.items():
-                    pos_file.write(f"{self.device_name}:{key} {in_record.get()}\n")
-
-            for _, filter_set in self.filter_sets_out.items():
-                for key, out_record in filter_set.items():
-                    pos_file.write(f"{self.device_name}:{key} {out_record.get()}\n")
-
-        print("Updated autosave file with new positions.")
+        self.write_autosave()
 
     @_if_connected
     def _set_file_path(self, path: str) -> None:
