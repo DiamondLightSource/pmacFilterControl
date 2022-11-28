@@ -95,6 +95,7 @@ class Wrapper:
         filter_set_total: int,
         filters_per_set: int,
         detector: str,
+        motors: str,
         autosave_pos_file: str,
     ):
 
@@ -106,6 +107,7 @@ class Wrapper:
         self.event_stream = ZeroMQAdapter(ip, event_stream_port, zmq_type=zmq.SUB)
 
         self.detector: str = detector
+        self.motors: str = motors
 
         self.autosave_pos_file: str = autosave_pos_file
 
@@ -547,7 +549,7 @@ class Wrapper:
             pos = self.shutter_pos_closed.get()
         else:
             pos = self.shutter_pos_open.get()
-        await caput("BL07I-MO-FILT-01:SHUTTER:POS", pos)
+        await caput(f"{self.motors}:SHUTTER:POS", pos)
 
     def _set_shutter_pos(self, val: float, shutter_state: int) -> None:
 
