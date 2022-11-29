@@ -6,7 +6,6 @@ import json
 import zmq
 import h5py
 import os
-import pathlib
 from aioca import caput, caget
 from numpy import int64 as np_int64
 from datetime import datetime as dt
@@ -57,8 +56,6 @@ FRAME_NUMBER_KEY = "frame_number"
 SHUTTER_CLOSED = "CLOSED"
 SHUTTER_OPEN = "OPEN"
 
-IOC_PATH = str(pathlib.Path(__file__).parent.parent.resolve())
-
 
 def _if_connected(func: Callable) -> Callable:
     """Decorator function to check if connected to device before calling function.
@@ -96,7 +93,7 @@ class Wrapper:
         filters_per_set: int,
         detector: str,
         motors: str,
-        autosave_pos_file: str,
+        autosave_pos_file_path: str,
     ):
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -109,7 +106,7 @@ class Wrapper:
         self.detector: str = detector
         self.motors: str = motors
 
-        self.autosave_pos_file: str = autosave_pos_file
+        self.autosave_pos_file_path: str = autosave_pos_file_path
 
         self.status_recv: bool = True
         self.connected: bool = False
@@ -178,7 +175,7 @@ class Wrapper:
             on_update=self._set_file_path,
             FTVL="UCHAR",
             length=256,
-            initial_value=IOC_PATH + f"/test_{dt.date(dt.now())}",
+            initial_value=f"/tmp/test_{dt.date(dt.now())}",
         )
         self.file_name = builder.longStringOut(
             "FILE:NAME",
@@ -224,14 +221,14 @@ class Wrapper:
         self.write_autosave()
 
     def _check_autosave_file_exists(self) -> bool:
-        if os.path.exists(IOC_PATH + f"/{self.autosave_pos_file}"):
+        if os.path.exists(self.autosave_pos_file_path):
             return True
         else:
             return False
 
     def _get_autosave(self) -> Dict[str, float]:
         pos_dict = {}
-        with open(IOC_PATH + f"/{self.autosave_pos_file}", "r") as pos_file:
+        with open(self.autosave_pos_file_path, "r") as pos_file:
             for line in pos_file:
                 line = line.strip().split(" ")
                 pos_dict[line[0]] = float(line[1])
@@ -239,7 +236,7 @@ class Wrapper:
 
     def write_autosave(self) -> None:
 
-        with open(IOC_PATH + f"/{self.autosave_pos_file}", "w") as pos_file:
+        with open(self.autosave_pos_file_path, "w") as pos_file:
             for key, value in self._autosave_pos_dict.items():
                 pos_file.write(f"{key} {value}\n")
 
@@ -275,7 +272,7 @@ class Wrapper:
                 )
 
                 out_value: float = (
-                    self._autosave_pos_dict[f"{self.device_name}:{IN_KEY}"]
+                    self._autosave_pos_dict[f"{self.device_name}:{OUT_KEY}"]
                     if self.autosave_exists
                     else 0.0
                 )
