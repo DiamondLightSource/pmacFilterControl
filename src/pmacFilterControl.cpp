@@ -458,11 +458,16 @@ void PMACFilterController::_process_state_changes() {
 
     // Transition state to waiting depending on mode change
     if (this->mode_ == ControlMode::CONTINUOUS) {
-        if (this->state_ == ControlState::IDLE || this->state_ == ControlState::SINGLESHOT_COMPLETE) {
+        if (this->state_ == ControlState::IDLE ||
+            this->state_ == ControlState::SINGLESHOT_COMPLETE ||
+            this->state_ == ControlState::SINGLESHOT_WAITING
+        ) {
             this->_transition_state(ControlState::WAITING);
         }
     } else if (this->mode_ == ControlMode::SINGLESHOT) {
-        if (this->state_ == ControlState::IDLE) {
+        if (this->state_ == ControlState::IDLE ||
+            (this->state_ == ControlState::WAITING && this->mode_ == ControlMode::CONTINUOUS)
+        ) {
             this->_transition_state(ControlState::SINGLESHOT_WAITING);
         }
         this->_process_singleshot_state();
