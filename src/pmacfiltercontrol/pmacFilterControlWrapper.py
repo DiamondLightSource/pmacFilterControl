@@ -95,6 +95,7 @@ class Wrapper:
         detector: str,
         motors: str,
         autosave_pos_file_path: str,
+        hdf_file_path: str,
     ):
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -176,7 +177,7 @@ class Wrapper:
             on_update=self._set_file_path,
             FTVL="UCHAR",
             length=256,
-            initial_value=f"/dls/tmp/i07-fatt/test_{dt.date(dt.now())}",
+            initial_value=f"{hdf_file_path}/test_{dt.date(dt.now())}",
         )
         self.file_name = builder.longStringOut(
             "FILE:NAME",
