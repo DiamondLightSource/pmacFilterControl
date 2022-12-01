@@ -28,6 +28,7 @@ const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
 const std::string COMMAND_CLEAR_ERROR = "clear_error";
 const std::string COMMAND_SINGLESHOT_START = "singleshot";
+const std::string COMMAND_REESTABLISH_POSITIONS = "reestablish_positions";
 const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
@@ -197,6 +198,10 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
             std::cout << "Received config command with no parameters" << std::endl;
             success = false;
         }
+    } else if (request[COMMAND] == COMMAND_REESTABLISH_POSITIONS) {
+        this->_set_attenuation(this->current_attenuation_);
+        std::cout << "Re-establishing filter positions" << std::endl;
+        success = true;
     } else {
         std::cout << "Invalid command" << std::endl;
         success = false;
