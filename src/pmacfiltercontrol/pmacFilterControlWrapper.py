@@ -52,6 +52,7 @@ ATTENUATION = [
 ATTENUATION_KEY = "attenuation"
 ADJUSTMENT_KEY = "adjustment"
 FRAME_NUMBER_KEY = "frame_number"
+UID_KEY = "/uid"
 
 SHUTTER_CLOSED = "CLOSED"
 SHUTTER_OPEN = "OPEN"
@@ -175,7 +176,7 @@ class Wrapper:
             on_update=self._set_file_path,
             FTVL="UCHAR",
             length=256,
-            initial_value=f"/tmp/test_{dt.date(dt.now())}",
+            initial_value=f"/dls/tmp/i07-fatt/test_{dt.date(dt.now())}",
         )
         self.file_name = builder.longStringOut(
             "FILE:NAME",
@@ -732,10 +733,17 @@ class Wrapper:
                 ATTENUATION_KEY, (128,), maxshape=(None,), dtype=int
             )
 
+        if UID_KEY not in self.h5f.keys():
+            uid_dataset = self.h5f.create_dataset(
+                UID_KEY, (128,), maxshape=(None,), dtype=int
+            )
+
         adjustment_dset = self.h5f.get(ADJUSTMENT_KEY)
         assert isinstance(adjustment_dset, h5py.Dataset)
         attenuation_dset = self.h5f.get(ATTENUATION_KEY)
         assert isinstance(attenuation_dset, h5py.Dataset)
+        uid_dataset = self.h5f.get(UID_KEY)
+        assert isinstance(uid_dataset, h5py.Dataset)
 
         self.h5f.swmr_mode = True
 
@@ -747,6 +755,8 @@ class Wrapper:
                 dset_size = dset_size + 1
             adjustment_dset.resize((dset_size,))
             attenuation_dset.resize((dset_size,))
+            uid_dataset.rezise((dset_size,))
 
         adjustment_dset[data[FRAME_NUMBER_KEY]] = data[ADJUSTMENT_KEY]
         attenuation_dset[data[FRAME_NUMBER_KEY]] = data[ATTENUATION_KEY]
+        uid_dataset[data[FRAME_NUMBER_KEY]] = int(data[FRAME_NUMBER_KEY]) + 1
