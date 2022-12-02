@@ -179,12 +179,22 @@ class Wrapper:
             length=256,
             initial_value=f"{hdf_file_path}",
         )
+        self.file_path_rbv = builder.longStringIn(
+            "FILE:PATH_RBV",
+            FTVL="UCHAR",
+            length=256,
+        )
         self.file_name = builder.longStringOut(
             "FILE:NAME",
             on_update=self._set_file_name,
             FTVL="UCHAR",
             length=256,
             initial_value="attenuation.h5",
+        )
+        self.file_name_rbv = builder.longStringIn(
+            "FILE:NAME_RBV",
+            FTVL="UCHAR",
+            length=256,
         )
         self.file_full_name = builder.longStringIn(
             "FILE:FULL_NAME",
@@ -680,6 +690,7 @@ class Wrapper:
     def _set_file_path(self, path: str) -> None:
 
         # Set file path for PFC
+        self.file_path_rbv.set(path)
 
         self._combine_file_path_and_name()
 
@@ -687,6 +698,7 @@ class Wrapper:
     def _set_file_name(self, name: str) -> None:
 
         # Set file name for PFC
+        self.file_name_rbv.set(name)
 
         self._combine_file_path_and_name()
 
