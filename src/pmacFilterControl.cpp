@@ -506,13 +506,17 @@ void PMACFilterController::_process_singleshot_state() {
     ) {
         std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
         this->_transition_state(ControlState::SINGLESHOT_COMPLETE);
+        this->singleshot_start_ = false;
     }
     // Start singleshot run
-    else if (this->singleshot_start_) {
+    else if (this->singleshot_start_ && (
+        this->state_ == ControlState::SINGLESHOT_WAITING ||
+        this->state_ == ControlState::SINGLESHOT_COMPLETE
+        )
+    ) {
         // Set max attenuation and trigger the next run
-        std::cout << "Starting a new singleshot run" << std::endl;
         this->_transition_state(ControlState::WAITING);
-        this->singleshot_start_ = false;
+        std::cout << "Starting a new singleshot run" << std::endl;
     }
 }
 
