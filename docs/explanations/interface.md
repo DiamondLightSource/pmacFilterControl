@@ -30,7 +30,7 @@ For example:
 
 The configuration requests are exposed via the `config` command request. Config
 requests must contain a `params` key and its value must be a dictionary with at least
-one ofwith with at least one config options:
+one of the following config options:
 
 |                 Config | Description                                                                                                                            |
 | ---------------------: | :------------------------------------------------------------------------------------------------------------------------------------- |
