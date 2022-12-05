@@ -32,6 +32,7 @@ const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
 const std::string CONFIG_OUT_POSITIONS = "out_positions";
+const std::string CONFIG_SHUTTER_CLOSED_POSITION = "shutter_closed_position";
 const std::string CONFIG_PIXEL_COUNT_THRESHOLDS = "pixel_count_thresholds";
 const std::string CONFIG_ATTENUATION = "attenuation";
 const std::string CONFIG_TIMEOUT = "timeout";
@@ -116,6 +117,7 @@ PMACFilterController::PMACFilterController(
     timeout_(3.0),
     in_positions_({0, 0, 0, 0}),
     out_positions_({0, 0, 0, 0}),
+    shutter_closed_position_(0),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}, {PARAM_HIGH3, 2}})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
@@ -226,6 +228,9 @@ bool PMACFilterController::_handle_config(const json& config) {
     if (config.contains(CONFIG_OUT_POSITIONS)) {
         success = this->_set_positions(this->out_positions_, config[CONFIG_OUT_POSITIONS]);
     }
+    if (config.contains(CONFIG_SHUTTER_CLOSED_POSITION)) {
+        success = this->_set_shutter_closed_position(config[CONFIG_SHUTTER_CLOSED_POSITION]);
+    }
     if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLDS)) {
         success = this->_set_pixel_count_thresholds(config[CONFIG_PIXEL_COUNT_THRESHOLDS]);
     }
@@ -313,6 +318,21 @@ bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_
             success = true;
         }
     }
+
+    return success;
+}
+
+/**
+ * @brief Update the given shutter closed position from the given value
+ * 
+ * @param[in] shutter_closed_position shutter closed position
+ * 
+ * @return true if the position was set, else false
+ */
+bool PMACFilterController::_set_shutter_closed_position(int shutter_closed_position) {
+    bool success = true;
+
+    this->shutter_closed_position_ = shutter_closed_position;
 
     return success;
 }
