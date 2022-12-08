@@ -177,14 +177,14 @@ class Wrapper:
             on_update=self._set_file_path,
             FTVL="UCHAR",
             length=256,
-            initial_value=f"{hdf_file_path}/test_{dt.date(dt.now())}",
+            initial_value=f"{hdf_file_path}",
         )
         self.file_name = builder.longStringOut(
             "FILE:NAME",
             on_update=self._set_file_name,
             FTVL="UCHAR",
             length=256,
-            initial_value="tmp.h5",
+            initial_value="attenuation.h5",
         )
         self.file_full_name = builder.longStringIn(
             "FILE:FULL_NAME",
@@ -422,6 +422,7 @@ class Wrapper:
 
     def _close_file(self) -> None:
         assert isinstance(self.h5f, h5py.File)
+        print(f"File {self.h5f} has been closed.")
         self.h5f.close()
         self.h5f = None
 
