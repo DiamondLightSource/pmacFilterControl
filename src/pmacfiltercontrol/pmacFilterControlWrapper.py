@@ -426,6 +426,9 @@ class Wrapper:
         self.h5f.close()
         self.h5f = None
 
+    def _req_status(self) -> None:
+        req_status = b'{"command":"status"}'
+        self._send_message(req_status)
     async def _query_status(self) -> None:
         while True:
             if not self.zmq_stream.running:
@@ -434,13 +437,13 @@ class Wrapper:
             else:
                 if self.status_recv:
                     self.status_recv = False
-                    req_status = b'{"command":"status"}'
-                    self._send_message(req_status)
+                    self._req_status()
                 else:
                     print("No status response. Waiting for reconnect...")
                     self.connected = False
                     while not self.status_recv:
                         await asyncio.sleep(1)
+                        self._req_status()
                     print("Reconnected and status recieved.")
                 await asyncio.sleep(0.1)
 
