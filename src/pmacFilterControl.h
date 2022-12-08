@@ -99,6 +99,8 @@ class PMACFilterController
         size_t process_period_;
         /** Flag to start a new single shot run */
         bool singleshot_start_;
+        /** The command string to close the shutter */
+        std::string shutter_close_string_;
         /** Flag to clear error state */
         bool clear_error_;
         /** Flag to interrupt listen loop and shutdown process */
@@ -146,6 +148,7 @@ class PMACFilterController
         void _transition_state(ControlState state);
         void _process_singleshot_state();
         bool _process_data(const json& data);
+        void _close_shutter();
         void _trigger_threshold(const std::string threshold);
         void _set_attenuation(const int attenuation);
         void _publish_event(int frame_number);

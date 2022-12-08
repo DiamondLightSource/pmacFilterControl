@@ -18,7 +18,9 @@ const int FILTER_COUNT = 4;  // Number of filters
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
-char CLOSE_SHUTTER[] = "#5J=1000";
+char CLOSE_SHUTTER_STR[] = "#5J=";
+char *pos_str;
+char buffer[100];
 
 // Control message keys
 const std::string COMMAND = "command";
@@ -28,6 +30,7 @@ const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
 const std::string COMMAND_CLEAR_ERROR = "clear_error";
 const std::string COMMAND_SINGLESHOT_START = "singleshot";
+const std::string COMMAND_SHUTTER_CLOSE = "shutter_close";
 const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
@@ -104,6 +107,7 @@ PMACFilterController::PMACFilterController(
     process_duration_(0),
     process_period_(0),
     singleshot_start_(false),
+    shutter_close_string_("#5J=1000"),
     clear_error_(false),
     shutdown_(false),
     // Filter logic
@@ -181,6 +185,9 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
         this->clear_error_ = true;
     } else if (request[COMMAND] == COMMAND_SINGLESHOT_START) {
         this->singleshot_start_ = true;
+        success = true;
+    } else if (request[COMMAND] == COMMAND_SHUTTER_CLOSE) {
+        this->_close_shutter();
         success = true;
     } else if (request[COMMAND] == COMMAND_STATUS) {
         this->_handle_status(response);
@@ -333,6 +340,11 @@ bool PMACFilterController::_set_shutter_closed_position(int shutter_closed_posit
     bool success = true;
 
     this->shutter_closed_position_ = shutter_closed_position;
+
+    asprintf(&pos_str, "%d", this->shutter_closed_position_);
+    strcat(strcpy(buffer, CLOSE_SHUTTER_STR), pos_str);
+
+    this->shutter_close_string_.assign(buffer);
 
     return success;
 }
@@ -609,9 +621,8 @@ bool PMACFilterController::_process_data(const json& data) {
 
     // Close shutter if PARAM_HIGH3 threshold exceeded
     if (histogram[PARAM_HIGH3] > this->pixel_count_thresholds_[PARAM_HIGH3]) {
-#ifdef __ARM_ARCH
-        CommandTS(CLOSE_SHUTTER);
-#endif
+        this->_close_shutter();
+
         this->_trigger_threshold(PARAM_HIGH3);
 
         this->_transition_state(ControlState::HIGH3_TRIGGERED);
@@ -645,6 +656,21 @@ bool PMACFilterController::_process_data(const json& data) {
     }
 
     return true;
+}
+
+/*!
+    @brief Close shutter
+*/
+void PMACFilterController::_close_shutter() {
+    
+    char* temp = strdup(this->shutter_close_string_.c_str());
+
+#ifdef __ARM_ARCH
+        CommandTS(temp);
+#endif
+
+    free(temp);
+
 }
 
 /*!
