@@ -220,20 +220,38 @@ class Wrapper:
             on_update=self._set_histogram_scale,
         )
 
-        self.autosave_exists: bool = self._check_autosave_file_exists()
+        self.autosave_exists: bool = self._check_autosave_file_exists(
+            self.autosave_pos_file_path
+        )
+
+        stripped_name = self.autosave_pos_file_path.strip(".txt")
+        self.autosave_backup_name: str = (
+            f"{stripped_name}_{dt.date(dt.now()):%Y_%m_%d}.txt"
+        )
+        self.autosave_backup_exists: bool = self._check_autosave_file_exists(
+            self.autosave_backup_name
+        )
+
         self._autosave_pos_dict: Dict[str, float] = {}
 
         if self.autosave_exists:
+            print("--- Autosave exists, restoring ---")
             self._autosave_pos_dict = self._get_autosave()
+            if not self.autosave_backup_exists:
+                print(f"--- Creating backup of autosave: {self.autosave_backup_name} ---")
+                self.write_autosave(backup=True)
+            else:
+                print("--- Backup of autosave exists. ---")
 
         self._generate_filter_pos_records(filter_set_total, filters_per_set)
         self._generate_shutter_records()
         self._generate_pixel_threshold_records()
 
-        self.write_autosave()
+        if not self.autosave_exists:
+            self.write_autosave()
 
-    def _check_autosave_file_exists(self) -> bool:
-        if os.path.exists(self.autosave_pos_file_path):
+    def _check_autosave_file_exists(self, autosave_path: str) -> bool:
+        if os.path.exists(autosave_path):
             return True
         else:
             return False
@@ -246,13 +264,18 @@ class Wrapper:
                 pos_dict[line[0]] = float(line[1])
         return pos_dict
 
-    def write_autosave(self) -> None:
+    def write_autosave(self, backup: bool = False) -> None:
 
-        with open(self.autosave_pos_file_path, "w") as pos_file:
+        if not backup:
+            autosave_name = self.autosave_pos_file_path
+        else:
+            autosave_name = self.autosave_backup_name
+
+        with open(autosave_name, "w") as pos_file:
             for key, value in self._autosave_pos_dict.items():
                 pos_file.write(f"{key} {value}\n")
 
-        print("Updated autosave file with new positions.")
+        print(f"Updated {autosave_name} with new positions.")
 
     def _generate_filter_pos_records(
         self,
