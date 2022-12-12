@@ -30,7 +30,6 @@ const std::string COMMAND_CONFIGURE = "configure";
 const std::string COMMAND_RESET = "reset";
 const std::string COMMAND_CLEAR_ERROR = "clear_error";
 const std::string COMMAND_SINGLESHOT_START = "singleshot";
-const std::string COMMAND_SHUTTER_CLOSE = "shutter_close";
 const std::string PARAMS = "params";
 const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
@@ -185,9 +184,6 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
         this->clear_error_ = true;
     } else if (request[COMMAND] == COMMAND_SINGLESHOT_START) {
         this->singleshot_start_ = true;
-        success = true;
-    } else if (request[COMMAND] == COMMAND_SHUTTER_CLOSE) {
-        this->_close_shutter();
         success = true;
     } else if (request[COMMAND] == COMMAND_STATUS) {
         this->_handle_status(response);

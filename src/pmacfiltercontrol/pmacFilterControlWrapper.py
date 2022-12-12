@@ -547,12 +547,10 @@ class Wrapper:
     @_if_connected
     async def _set_shutter(self, shutter_state: int) -> None:
         if shutter_state == SHUTTER_CLOSED:
-            shutter_close = json.dumps({"command": "shutter_close"})
-            self._send_message(codecs.encode(shutter_close, "utf-8"))
-
+            pos = self.shutter_pos_closed.get()
         else:
             pos = self.shutter_pos_open.get()
-            await caput(f"{self.motors}:SHUTTER:POS", pos)
+        await caput(f"{self.motors}:SHUTTER:POS", pos)
 
     def _set_shutter_pos(self, val: float, shutter_state: int) -> None:
 
