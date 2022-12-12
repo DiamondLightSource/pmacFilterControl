@@ -224,24 +224,11 @@ class Wrapper:
             self.autosave_pos_file_path
         )
 
-        stripped_name = self.autosave_pos_file_path.strip(".txt")
-        self.autosave_backup_name: str = (
-            f"{stripped_name}_{dt.date(dt.now()):%Y_%m_%d}.txt"
-        )
-        self.autosave_backup_exists: bool = self._check_autosave_file_exists(
-            self.autosave_backup_name
-        )
-
         self._autosave_pos_dict: Dict[str, float] = {}
 
         if self.autosave_exists:
             print("--- Autosave exists, restoring ---")
             self._autosave_pos_dict = self._get_autosave()
-            if not self.autosave_backup_exists:
-                print(f"--- Creating backup of autosave: {self.autosave_backup_name} ---")
-                self.write_autosave(backup=True)
-            else:
-                print("--- Backup of autosave exists. ---")
 
         self._generate_filter_pos_records(filter_set_total, filters_per_set)
         self._generate_shutter_records()
@@ -249,6 +236,8 @@ class Wrapper:
 
         if not self.autosave_exists:
             self.write_autosave()
+
+        self.setup_autosave_backup()
 
     def _check_autosave_file_exists(self, autosave_path: str) -> bool:
         if os.path.exists(autosave_path):
@@ -267,6 +256,9 @@ class Wrapper:
     def write_autosave(self, backup: bool = False) -> None:
 
         if not backup:
+            if (dt.now().timestamp() - self.autosave_datetime.timestamp() > 60 * 60):
+                self.setup_autosave_backup(expired=True)
+
             autosave_name = self.autosave_pos_file_path
         else:
             autosave_name = self.autosave_backup_name
@@ -276,6 +268,23 @@ class Wrapper:
                 pos_file.write(f"{key} {value}\n")
 
         print(f"Updated {autosave_name} with new positions.")
+
+    def setup_autosave_backup(self, expired: bool = False) -> None:
+        stripped_name = self.autosave_pos_file_path.strip(".txt")
+        self.autosave_datetime: dt = dt.now()
+        self.autosave_backup_name: str = (
+            f"{stripped_name}_{dt.date(self.autosave_datetime):%Y_%m_%d}.txt"
+        )
+
+        self.autosave_backup_exists: bool = self._check_autosave_file_exists(
+            self.autosave_backup_name
+        )
+
+        if not self.autosave_backup_exists or expired:
+            print(f"--- Creating backup of autosave: {self.autosave_backup_name} ---")
+            self.write_autosave(backup=True)
+        else:
+            print("--- Backup of autosave exists. ---")
 
     def _generate_filter_pos_records(
         self,
