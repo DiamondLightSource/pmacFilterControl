@@ -129,8 +129,6 @@ class PMACFilterController
         std::vector<int> in_positions_;
         /** Filter out positions in counts (can be +ve or -ve) */
         std::vector<int> out_positions_;
-        /** Shutter closed position in counts (can be +ve or -ve) */
-        int shutter_closed_position_;
         /** Thresholds for histogram bins above which some action should be taken */
         std::map<std::string, uint64_t> pixel_count_thresholds_;
 

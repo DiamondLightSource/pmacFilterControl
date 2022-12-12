@@ -18,9 +18,8 @@ const int FILTER_COUNT = 4;  // Number of filters
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
-char CLOSE_SHUTTER_STR[] = "#5J=";
-char *pos_str;
-char buffer[100];
+
+const std::string CLOSE_SHUTTER_STR = "#5J=";
 
 // Control message keys
 const std::string COMMAND = "command";
@@ -120,7 +119,6 @@ PMACFilterController::PMACFilterController(
     timeout_(3.0),
     in_positions_({0, 0, 0, 0}),
     out_positions_({0, 0, 0, 0}),
-    shutter_closed_position_(0),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}, {PARAM_HIGH3, 2}})
 {
     this->zmq_control_socket_.bind(control_channel_endpoint_.c_str());
@@ -335,12 +333,11 @@ bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_
 bool PMACFilterController::_set_shutter_closed_position(int shutter_closed_position) {
     bool success = true;
 
-    this->shutter_closed_position_ = shutter_closed_position;
+    std::string shutter_close_string = "";
 
-    asprintf(&pos_str, "%d", this->shutter_closed_position_);
-    strcat(strcpy(buffer, CLOSE_SHUTTER_STR), pos_str);
+    shutter_close_string = CLOSE_SHUTTER_STR + std::to_string(shutter_closed_position);
 
-    this->shutter_close_string_.assign(buffer);
+    this->shutter_close_string_.assign(shutter_close_string);
 
     return success;
 }
