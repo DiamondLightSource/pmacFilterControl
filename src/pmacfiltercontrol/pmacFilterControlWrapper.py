@@ -234,11 +234,6 @@ class Wrapper:
         self._generate_shutter_records()
         self._generate_pixel_threshold_records()
 
-        if not self.autosave_exists:
-            self.write_autosave()
-
-        self.setup_autosave_backup()
-
     def _check_autosave_file_exists(self, autosave_path: str) -> bool:
         if os.path.exists(autosave_path):
             return True
@@ -256,9 +251,6 @@ class Wrapper:
     def write_autosave(self, backup: bool = False) -> None:
 
         if not backup:
-            if (dt.now().timestamp() - self.autosave_datetime.timestamp() > 60 * 60):
-                self.setup_autosave_backup(expired=True)
-
             autosave_name = self.autosave_pos_file_path
         else:
             autosave_name = self.autosave_backup_name
@@ -269,22 +261,18 @@ class Wrapper:
 
         print(f"Updated {autosave_name} with new positions.")
 
-    def setup_autosave_backup(self, expired: bool = False) -> None:
+        if not backup:
+            self.setup_autosave_backup()
+
+    def setup_autosave_backup(self) -> None:
         stripped_name = self.autosave_pos_file_path.strip(".txt")
         self.autosave_datetime: dt = dt.now()
         self.autosave_backup_name: str = (
             f"{stripped_name}_{self.autosave_datetime:%Y%m%d-%H}.txt"
         )
 
-        self.autosave_backup_exists: bool = self._check_autosave_file_exists(
-            self.autosave_backup_name
-        )
-
-        if not self.autosave_backup_exists or expired:
-            print(f"--- Creating backup of autosave: {self.autosave_backup_name} ---")
-            self.write_autosave(backup=True)
-        else:
-            print("--- Backup of autosave exists. ---")
+        print(f"--- Creating backup of autosave: {self.autosave_backup_name} ---")
+        self.write_autosave(backup=True)
 
     def _generate_filter_pos_records(
         self,
