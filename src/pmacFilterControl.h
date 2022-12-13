@@ -99,6 +99,8 @@ class PMACFilterController
         size_t process_period_;
         /** Flag to start a new single shot run */
         bool singleshot_start_;
+        /** The command string to close the shutter */
+        std::string shutter_close_string_;
         /** Flag to clear error state */
         bool clear_error_;
         /** Flag to interrupt listen loop and shutdown process */
@@ -136,6 +138,7 @@ class PMACFilterController
         bool _set_mode(const ControlMode mode);
         bool _set_timeout(const float timeout);
         bool _set_positions(std::vector<int>& positions, const json new_positions);
+        bool _set_shutter_closed_position(const int shutter_closed_position);
         bool _set_pixel_count_thresholds(json thresholds);
         void _process_data_channel();
         void _process_state_changes();
@@ -143,6 +146,7 @@ class PMACFilterController
         void _transition_state(ControlState state);
         void _process_singleshot_state();
         bool _process_data(const json& data);
+        void _close_shutter();
         void _trigger_threshold(const std::string threshold);
         void _set_attenuation(const int attenuation);
         void _publish_event(int frame_number);
