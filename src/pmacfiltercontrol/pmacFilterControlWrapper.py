@@ -273,7 +273,7 @@ class Wrapper:
         stripped_name = self.autosave_pos_file_path.strip(".txt")
         self.autosave_datetime: dt = dt.now()
         self.autosave_backup_name: str = (
-            f"{stripped_name}_{dt.date(self.autosave_datetime):%Y_%m_%d}.txt"
+            f"{stripped_name}_{self.autosave_datetime:%Y%m%d-%H}.txt"
         )
 
         self.autosave_backup_exists: bool = self._check_autosave_file_exists(
