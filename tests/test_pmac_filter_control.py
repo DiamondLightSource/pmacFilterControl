@@ -241,10 +241,10 @@ def test_configure_positions_bad(pfc: PMACFilterControlWrapper):
 
 
 def test_configure_change_position(pfc: PMACFilterControlWrapper):
-    pfc.configure({"in_positions": {"filter1": 100}})
     pfc.configure({"in_positions": {"filter1": 200}})
+    pfc.configure({"in_positions": {"filter1": 300}})
 
-    pfc.assert_status_equal({"in_positions": [200, 0, 0, 0]})
+    pfc.assert_status_equal({"in_positions": [300, 100, 100, 100]})
 
 
 def test_configure_pixel_count_thresholds(pfc: PMACFilterControlWrapper):
