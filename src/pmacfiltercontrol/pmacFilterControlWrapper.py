@@ -329,8 +329,6 @@ class Wrapper:
             on_update=lambda val: self._set_shutter_pos(val, SHUTTER_CLOSED),
         )
 
-        self._configure_param({"shutter_closed_position": self.shutter_pos_closed.get()})
-
         if not self.autosave_exists:
             self._autosave_pos_dict[f"{self.device_name}:SHUTTER:OPEN"] = 0.0
             self._autosave_pos_dict[f"{self.device_name}:SHUTTER:CLOSED"] = 500.0
