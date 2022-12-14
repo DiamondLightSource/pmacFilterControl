@@ -391,15 +391,15 @@ class Wrapper:
 
         await asyncio.gather(
             *[
-                self.monitor_responses(self.zmq_stream),
-                self.monitor_responses(self.event_stream),
+                self.monitor_command_stream(self.zmq_stream),
+                self.monitor_event_stream(self.event_stream),
                 self.zmq_stream.run_forever(),
                 self.event_stream.run_forever(),
                 self._query_status(),
             ]
         )
 
-    async def monitor_responses(self, zmq_stream: ZeroMQAdapter) -> None:
+    async def monitor_command_stream(self, zmq_stream: ZeroMQAdapter) -> None:
         while True:
             if not self.zmq_stream.running:
                 await asyncio.sleep(1)
@@ -413,6 +413,14 @@ class Wrapper:
                     status = resp_json["status"]
                     self._handle_status(status)
                     self.status_recv = True
+
+    async def monitor_event_stream(self, zmq_stream: ZeroMQAdapter) -> None:
+        while True:
+            if not self.zmq_stream.running:
+                await asyncio.sleep(1)
+            else:
+                resp: bytes = await zmq_stream.get_response()
+                resp_json = json.loads(resp)
 
                 if "frame_number" in resp_json:
                     file_open = self._open_file()
