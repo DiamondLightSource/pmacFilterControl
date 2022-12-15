@@ -117,7 +117,7 @@ PMACFilterController::PMACFilterController(
     // Default config parameter values
     mode_(ControlMode::MANUAL),
     timeout_(3.0),
-    in_positions_({0, 0, 0, 0}),
+    in_positions_({100, 100, 100, 100}),
     out_positions_({0, 0, 0, 0}),
     pixel_count_thresholds_({{PARAM_LOW1, 2}, {PARAM_LOW2, 2}, {PARAM_HIGH1, 2}, {PARAM_HIGH2, 2}, {PARAM_HIGH3, 2}})
 {
