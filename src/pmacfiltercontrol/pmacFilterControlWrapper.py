@@ -231,6 +231,11 @@ class Wrapper:
         self._generate_shutter_records()
         self._generate_pixel_threshold_records()
 
+    def _send_initial_config(self) -> None:
+
+        self._configure_param({"shutter_closed_position": self.shutter_pos_closed.get()})
+        self._set_filter_set(1)
+
     def _get_autosave(self) -> Dict[str, float]:
         pos_dict = {}
         with self.autosave_file.open("r") as autosave_file:
