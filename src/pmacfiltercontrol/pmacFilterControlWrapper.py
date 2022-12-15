@@ -3,6 +3,7 @@ import codecs
 import logging
 
 import json
+from pathlib import Path
 import zmq
 import h5py
 import os
@@ -94,7 +95,7 @@ class Wrapper:
         filters_per_set: int,
         detector: str,
         motors: str,
-        autosave_pos_file_path: str,
+        autosave_file_path: str,
         hdf_file_path: str,
     ):
 
@@ -108,7 +109,7 @@ class Wrapper:
         self.detector: str = detector
         self.motors: str = motors
 
-        self.autosave_pos_file_path: str = autosave_pos_file_path
+        self.autosave_file: Path = Path(autosave_file_path)
 
         self.status_recv: bool = True
         self.connected: bool = False
@@ -220,13 +221,9 @@ class Wrapper:
             on_update=self._set_histogram_scale,
         )
 
-        self.autosave_exists: bool = self._check_autosave_file_exists(
-            self.autosave_pos_file_path
-        )
-
         self._autosave_pos_dict: Dict[str, float] = {}
 
-        if self.autosave_exists:
+        if self.autosave_file.exists():
             print("--- Autosave exists, restoring ---")
             self._autosave_pos_dict = self._get_autosave()
 
@@ -234,16 +231,10 @@ class Wrapper:
         self._generate_shutter_records()
         self._generate_pixel_threshold_records()
 
-    def _check_autosave_file_exists(self, autosave_path: str) -> bool:
-        if os.path.exists(autosave_path):
-            return True
-        else:
-            return False
-
     def _get_autosave(self) -> Dict[str, float]:
         pos_dict = {}
-        with open(self.autosave_pos_file_path, "r") as pos_file:
-            for line in pos_file:
+        with self.autosave_file.open("r") as autosave_file:
+            for line in autosave_file:
                 line = line.strip().split(" ")
                 pos_dict[line[0]] = float(line[1])
         return pos_dict
@@ -251,27 +242,29 @@ class Wrapper:
     def write_autosave(self, backup: bool = False) -> None:
 
         if not backup:
-            autosave_name = self.autosave_pos_file_path
+            autosave_file = self.autosave_file
         else:
-            autosave_name = self.autosave_backup_name
+            autosave_file = self.autosave_backup_file
 
-        with open(autosave_name, "w") as pos_file:
-            for key, value in self._autosave_pos_dict.items():
-                pos_file.write(f"{key} {value}\n")
+        autosave_file.write_text(
+            "\n".join(
+                f"{key} {value}" for key, value in self._autosave_pos_dict.items()
+            )
+        )
 
-        print(f"Updated {autosave_name} with new positions.")
+        print(f"Updated {autosave_file.name} with new positions.")
 
         if not backup:
             self.setup_autosave_backup()
 
     def setup_autosave_backup(self) -> None:
-        stripped_name = self.autosave_pos_file_path.strip(".txt")
+        parent_dir = self.autosave_file.parent
         self.autosave_datetime: dt = dt.now()
-        self.autosave_backup_name: str = (
-            f"{stripped_name}_{self.autosave_datetime:%Y%m%d-%H}.txt"
+        self.autosave_backup_file: Path = parent_dir.joinpath(
+            f"{self.autosave_datetime:%Y%m%d-%H}.txt"
         )
 
-        print(f"--- Creating backup of autosave: {self.autosave_backup_name} ---")
+        print(f"--- Creating backup of autosave: {self.autosave_backup_file.name} ---")
         self.write_autosave(backup=True)
 
     def _generate_filter_pos_records(
@@ -467,6 +460,7 @@ class Wrapper:
     def _req_status(self) -> None:
         req_status = b'{"command":"status"}'
         self._send_message(req_status)
+
     async def _query_status(self) -> None:
         while True:
             if not self.zmq_stream.running:
