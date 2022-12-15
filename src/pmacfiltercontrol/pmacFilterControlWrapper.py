@@ -261,7 +261,7 @@ class Wrapper:
         parent_dir = self.autosave_file.parent
         self.autosave_datetime: dt = dt.now()
         self.autosave_backup_file: Path = parent_dir.joinpath(
-            f"{self.autosave_datetime:%Y%m%d-%H}.txt"
+            f"autosave-{self.autosave_datetime:%Y%m%d-%H}.txt"
         )
 
         print(f"--- Creating backup of autosave: {self.autosave_backup_file.name} ---")
@@ -287,27 +287,27 @@ class Wrapper:
 
                 in_value: float = (
                     self._autosave_pos_dict[f"{self.device_name}:{IN_KEY}"]
-                    if self.autosave_exists
+                    if self.autosave_file.exists()
                     else 100.0
                 )
                 in_record: builder.aOut = builder.aOut(
                     IN_KEY,
                     initial_value=in_value,
-                    on_update=lambda val, i=i: self._set_pos(i, IN_KEY, val),
+                    on_update=lambda val, i=i, in_key=IN_KEY: self._set_pos(i, in_key, val),
                 )
 
                 out_value: float = (
                     self._autosave_pos_dict[f"{self.device_name}:{OUT_KEY}"]
-                    if self.autosave_exists
+                    if self.autosave_file.exists()
                     else 0.0
                 )
                 out_record: builder.aOut = builder.aOut(
                     OUT_KEY,
                     initial_value=out_value,
-                    on_update=lambda val, i=i: self._set_pos(i, OUT_KEY, val),
+                    on_update=lambda val, i=i, out_key=OUT_KEY: self._set_pos(i, out_key, val),
                 )
 
-                if not self.autosave_exists:
+                if not self.autosave_file.exists():
                     self._autosave_pos_dict[in_record.name] = in_value
                     self._autosave_pos_dict[out_record.name] = out_value
 
@@ -322,12 +322,12 @@ class Wrapper:
 
         shutter_open_pos = (
             self._autosave_pos_dict[f"{self.device_name}:SHUTTER:OPEN"]
-            if self.autosave_exists
+            if self.autosave_file.exists()
             else 0
         )
         shutter_closed_pos = (
             self._autosave_pos_dict[f"{self.device_name}:SHUTTER:CLOSED"]
-            if self.autosave_exists
+            if self.autosave_file.exists()
             else 500
         )
 
@@ -342,7 +342,7 @@ class Wrapper:
             on_update=lambda val: self._set_shutter_pos(val, SHUTTER_CLOSED),
         )
 
-        if not self.autosave_exists:
+        if not self.autosave_file.exists():
             self._autosave_pos_dict[f"{self.device_name}:SHUTTER:OPEN"] = 0.0
             self._autosave_pos_dict[f"{self.device_name}:SHUTTER:CLOSED"] = 500.0
 
@@ -383,7 +383,7 @@ class Wrapper:
         ]
 
         for record in pixel_threshold_records:
-            if not self.autosave_exists:
+            if not self.autosave_file.exists():
                 self._autosave_pos_dict[record.name] = record.get()
             else:
                 record.set(self._autosave_pos_dict[record.name])
