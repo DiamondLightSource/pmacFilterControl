@@ -233,8 +233,16 @@ class Wrapper:
 
     def _send_initial_config(self) -> None:
 
+        async def while_not_connected() -> None:
+            while not self.connected:
+                await asyncio.sleep(0.5)
+
+        if not self.connected:
+            print("~ Initial Config: Waiting For Connection")
+            asyncio.run(while_not_connected())
         self._configure_param({"shutter_closed_position": self.shutter_pos_closed.get()})
-        self._set_filter_set(1)
+        self._set_filter_set(0)
+        print("~ Initial Config: Complete")
 
     def _get_autosave(self) -> Dict[str, float]:
         pos_dict = {}
