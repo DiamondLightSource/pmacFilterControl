@@ -252,33 +252,22 @@ class Wrapper:
                 pos_dict[line[0]] = float(line[1])
         return pos_dict
 
-    def write_autosave(self, backup: bool = False) -> None:
+    def write_autosave(self) -> None:
 
-        if not backup:
-            autosave_file = self.autosave_file
-        else:
-            autosave_file = self.autosave_backup_file
-
-        autosave_file.write_text(
-            "\n".join(
-                f"{key} {value}" for key, value in self._autosave_pos_dict.items()
-            )
-        )
-
-        print(f"Updated {autosave_file.name} with new positions.")
-
-        if not backup:
-            self.setup_autosave_backup()
-
-    def setup_autosave_backup(self) -> None:
         parent_dir = self.autosave_file.parent
         self.autosave_datetime: dt = dt.now()
         self.autosave_backup_file: Path = parent_dir.joinpath(
             f"autosave-{self.autosave_datetime:%Y%m%d-%H}.txt"
         )
 
-        print(f"--- Creating backup of autosave: {self.autosave_backup_file.name} ---")
-        self.write_autosave(backup=True)
+        for autosave_file in [self.autosave_file, self.autosave_backup_file]:
+            autosave_file.write_text(
+                "\n".join(
+                    f"{key} {value}" for key, value in self._autosave_pos_dict.items()
+                )
+            )
+
+            print(f"Updated {autosave_file.name} with new positions.")
 
     def _generate_filter_pos_records(
         self,
