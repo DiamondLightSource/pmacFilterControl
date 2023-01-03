@@ -119,6 +119,8 @@ class PMACFilterController
         std::vector<int> post_in_demand_;
         /** Filter positions after filter in and out moves applied */
         std::vector<int> final_demand_;
+        /** The move duration of the filters in ms */
+        int move_duration_;
 
         /* Control Channel Parameters */
         /** The current mode of operation */
