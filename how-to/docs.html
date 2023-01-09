@@ -346,20 +346,20 @@ $ doxygen
 <p>This is also done by running the CMake build.</p>
 </div>
 <p>To build and view the documentation:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python -m venv venv
-$ <span class="nb">source</span> venv/bin/activate
-$ <span class="nb">cd</span> pmacFilterControl
-<span class="o">(</span>venv<span class="o">)</span> $ pip install -r docs/requirements.txt
-<span class="o">(</span>venv<span class="o">)</span> $ sphinx-build -b html docs docs/_build/html
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+$<span class="w"> </span><span class="nb">source</span><span class="w"> </span>venv/bin/activate
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>pmacFilterControl
+<span class="o">(</span>venv<span class="o">)</span><span class="w"> </span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>docs/requirements.txt
+<span class="o">(</span>venv<span class="o">)</span><span class="w"> </span>$<span class="w"> </span>sphinx-build<span class="w"> </span>-b<span class="w"> </span>html<span class="w"> </span>docs<span class="w"> </span>docs/_build/html
 </pre></div>
 </div>
 <p>This will build the docs into <code class="docutils literal notranslate"><span class="pre">docs/_build/html</span></code>. They can be viewed by opening
 <code class="docutils literal notranslate"><span class="pre">index.html</span></code> in a web browser. When editing the docs it is useful to get a live preview.
 In this case, use <code class="docutils literal notranslate"><span class="pre">sphinx-autobuild</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>venv<span class="o">)</span> $ sphinx-autobuild docs docs/_build/html
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>venv<span class="o">)</span><span class="w"> </span>$<span class="w"> </span>sphinx-autobuild<span class="w"> </span>docs<span class="w"> </span>docs/_build/html
 ...
-The HTML pages are <span class="k">in</span> docs/_build/html.
-<span class="o">[</span>sphinx-autobuild<span class="o">]</span> Serving on http://127.0.0.1:8000
+The<span class="w"> </span>HTML<span class="w"> </span>pages<span class="w"> </span>are<span class="w"> </span><span class="k">in</span><span class="w"> </span>docs/_build/html.
+<span class="o">[</span>sphinx-autobuild<span class="o">]</span><span class="w"> </span>Serving<span class="w"> </span>on<span class="w"> </span>http://127.0.0.1:8000
 </pre></div>
 </div>
 <p>This will build the docs and host them on local web server to view them live

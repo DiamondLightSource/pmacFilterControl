@@ -336,10 +336,10 @@ architecture at compile time. This means the same code can be built and deployed
 target and built for host to test against locally. The build uses cmake - this is
 configured in <code class="docutils literal notranslate"><span class="pre">.vscode/settings.json</span></code> so can be built using the <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=twxs.cmake">CMake extension</a>.
 To build manually:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir prefix
-$ mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd</span> build
-$ cmake .. -DCMAKE_INSTALL_PREFIX<span class="o">=</span>../prefix
-$ make install
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>mkdir<span class="w"> </span>prefix
+$<span class="w"> </span>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+$<span class="w"> </span>cmake<span class="w"> </span>..<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span>../prefix
+$<span class="w"> </span>make<span class="w"> </span>install
 </pre></div>
 </div>
 </section>
@@ -368,9 +368,9 @@ select <code class="docutils literal notranslate"><span class="pre">build</span>
 </ul>
 <p>Make sure the application isn’t already running or the copy may fail with the following
 error:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ scp -r arm_prefix/* root@172.23.107.175:/root/prefix/
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>scp<span class="w"> </span>-r<span class="w"> </span>arm_prefix/*<span class="w"> </span>root@172.23.107.175:/root/prefix/
 ...
-scp: /root/prefix/bin/pmacFilterControl: Text file busy
+scp:<span class="w"> </span>/root/prefix/bin/pmacFilterControl:<span class="w"> </span>Text<span class="w"> </span>file<span class="w"> </span>busy
 </pre></div>
 </div>
 <p>The zmq libraries should also be copied to <code class="docutils literal notranslate"><span class="pre">/root/</span></code> so that the application can find
@@ -427,10 +427,10 @@ demands.</p>
 <h3>Building<a class="headerlink" href="#building" title="Permalink to this heading">#</a></h3>
 <p>The plc contains macros that must be expanded using <code class="docutils literal notranslate"><span class="pre">msi</span></code> before downloading to the
 ppmac. To build filter_control.plc run make in <code class="docutils literal notranslate"><span class="pre">src/plc</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ make -C src/plc
-make: Entering directory /dls_sw/work/tools/RHEL7-x86_64/pmacFilterControl/src/plc
-mkdir -p build
-msi filter_control.psub &gt; build/filter_control.plc
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>make<span class="w"> </span>-C<span class="w"> </span>src/plc
+make:<span class="w"> </span>Entering<span class="w"> </span>directory<span class="w"> </span>/dls_sw/work/tools/RHEL7-x86_64/pmacFilterControl/src/plc
+mkdir<span class="w"> </span>-p<span class="w"> </span>build
+msi<span class="w"> </span>filter_control.psub<span class="w"> </span>&gt;<span class="w"> </span>build/filter_control.plc
 </pre></div>
 </div>
 <p>The expanded file will appear in <code class="docutils literal notranslate"><span class="pre">src/plc/build</span></code>. The motion program contains no macros
@@ -440,7 +440,7 @@ so is already valid script.</p>
 <h3>Deployment<a class="headerlink" href="#deployment" title="Permalink to this heading">#</a></h3>
 <p>This is painful. There are various possible ways, but none of them work well. The manual
 way is:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ scp src/plc/example.plc root@&lt;ppmac ip&gt;:<span class="s2">&quot;/var/ftp/usrflash/Project/PMAC\ Script\ Language/PLC\ Programs/plc3_filter_control.plc&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>scp<span class="w"> </span>src/plc/example.plc<span class="w"> </span>root@&lt;ppmac<span class="w"> </span>ip&gt;:<span class="s2">&quot;/var/ftp/usrflash/Project/PMAC\ Script\ Language/PLC\ Programs/plc3_filter_control.plc&quot;</span>
 <span class="c1"># pproj -l</span>
 </pre></div>
 </div>
@@ -451,11 +451,11 @@ doesn’t like, or it may just give a vague error. In the latter case, there mig
 useful information in the log files, e.g.:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># pproj -l</span>
 ...
-Error: projpp <span class="nv">errors</span> <span class="o">=</span> <span class="m">1</span>
-root@172.23.107.175:/opt/ppmac# cat /var/ftp/usrflash/Project/Log/pp_error.log
+Error:<span class="w"> </span>projpp<span class="w"> </span><span class="nv">errors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+root@172.23.107.175:/opt/ppmac#<span class="w"> </span>cat<span class="w"> </span>/var/ftp/usrflash/Project/Log/pp_error.log
 <span class="o">[</span>PMAC_PROJECT<span class="o">]</span>
-/var/ftp/usrflash/Project/PMAC Script Language/PLC Programs/plc3_filter_control.plc:168:1: error <span class="c1">#31: invalid data:  while (M140 != 1) and (M240 != 1) and (M340 != 1) and (M440 != 1) {}</span>
-Error: downloading preprocessed File: <span class="s2">&quot;/var/ftp/usrflash/Temp/pp_proj.pma&quot;</span>
+/var/ftp/usrflash/Project/PMAC<span class="w"> </span>Script<span class="w"> </span>Language/PLC<span class="w"> </span>Programs/plc3_filter_control.plc:168:1:<span class="w"> </span>error<span class="w"> </span><span class="c1">#31: invalid data:  while (M140 != 1) and (M240 != 1) and (M340 != 1) and (M440 != 1) {}</span>
+Error:<span class="w"> </span>downloading<span class="w"> </span>preprocessed<span class="w"> </span>File:<span class="w"> </span><span class="s2">&quot;/var/ftp/usrflash/Temp/pp_proj.pma&quot;</span>
 </pre></div>
 </div>
 <p>Uploading files in this way will conflict with use of the IDE to upload things to the
@@ -466,13 +466,13 @@ ppmac and things may be overwritten if the project is uploaded from there.</p>
 <h2>PowerPMAC Network Routes<a class="headerlink" href="#powerpmac-network-routes" title="Permalink to this heading">#</a></h2>
 <p>It may only be possible to ping and connect to the brick from the local subnet. In order
 to connect from outside the routes can be changed:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac# ip route
-default via <span class="m">172</span>.23.107.175 dev eth0
-<span class="m">172</span>.23.107.0/24 dev eth0  proto kernel  scope link  src <span class="m">172</span>.23.107.175
-root@172.23.107.175:/opt/ppmac# ip route replace default via <span class="m">172</span>.23.107.254 dev eth0
-root@172.23.107.175:/opt/ppmac# ip route
-default via <span class="m">172</span>.23.107.254 dev eth0
-<span class="m">172</span>.23.107.0/24 dev eth0  proto kernel  scope link  src <span class="m">172</span>.23.107.175
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@172.23.107.175:/opt/ppmac#<span class="w"> </span>ip<span class="w"> </span>route
+default<span class="w"> </span>via<span class="w"> </span><span class="m">172</span>.23.107.175<span class="w"> </span>dev<span class="w"> </span>eth0
+<span class="m">172</span>.23.107.0/24<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w">  </span>proto<span class="w"> </span>kernel<span class="w">  </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.23.107.175
+root@172.23.107.175:/opt/ppmac#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>replace<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span><span class="m">172</span>.23.107.254<span class="w"> </span>dev<span class="w"> </span>eth0
+root@172.23.107.175:/opt/ppmac#<span class="w"> </span>ip<span class="w"> </span>route
+default<span class="w"> </span>via<span class="w"> </span><span class="m">172</span>.23.107.254<span class="w"> </span>dev<span class="w"> </span>eth0
+<span class="m">172</span>.23.107.0/24<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w">  </span>proto<span class="w"> </span>kernel<span class="w">  </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.23.107.175
 </pre></div>
 </div>
 <p>It should bepossible to make this persistent by editing <code class="docutils literal notranslate"><span class="pre">/etc/network/interfaces</span></code> and
