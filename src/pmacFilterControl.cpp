@@ -114,6 +114,7 @@ PMACFilterController::PMACFilterController(
     current_demand_(FILTER_COUNT, 0),
     post_in_demand_(FILTER_COUNT, 0),
     final_demand_(FILTER_COUNT, 0),
+    move_duration_(0),
     // Default config parameter values
     mode_(ControlMode::MANUAL),
     timeout_(3.0),
@@ -376,6 +377,7 @@ void PMACFilterController::_handle_status(json& response) {
     status["version"] = VERSION;
     status["process_duration"] = this->process_duration_;
     status["process_period"] = this->process_period_;
+    status["move_duration"] = this->move_duration_;
     status["last_received_frame"] = this->last_received_frame_;
     status["last_processed_frame"] = this->last_processed_frame_;
     status["time_since_last_message"] = _seconds_since(this->last_message_ts_);
@@ -726,6 +728,8 @@ void PMACFilterController::_set_attenuation(int attenuation) {
 
     // Run the motion program
     CommandTS(RUN_PROG_1);
+
+    this->move_duration = pshm->P[4085];
 #else
     std::cout << "Not changing attenuation " << this->current_attenuation_ << " -> " << attenuation << std::endl;
 #endif
