@@ -729,7 +729,7 @@ void PMACFilterController::_set_attenuation(int attenuation) {
     // Run the motion program
     CommandTS(RUN_PROG_1);
 
-    this->move_duration = pshm->P[4085];
+    this->move_duration_ = pshm->P[4085];
 #else
     std::cout << "Not changing attenuation " << this->current_attenuation_ << " -> " << attenuation << std::endl;
 #endif
