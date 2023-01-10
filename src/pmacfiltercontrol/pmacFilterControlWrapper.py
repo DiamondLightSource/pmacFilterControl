@@ -242,7 +242,7 @@ class Wrapper:
             asyncio.run(while_not_connected())
         self._configure_param({"shutter_closed_position": self.shutter_pos_closed.get()})
         self._set_filter_set(0)
-        self._setup_hist_thresholds()
+        asyncio.run(self._setup_hist_thresholds())
         print("~ Initial Config: Complete")
 
     def _get_autosave(self) -> Dict[str, float]:
@@ -415,7 +415,7 @@ class Wrapper:
         for key, value in self._hist_thresholds.items():
             self._autosave_dict[key] = value
 
-        self._set_hist_thresholds(self._hist_thresholds)
+        await self._set_hist_thresholds(self._hist_thresholds)
 
     async def _get_hist_thresholds(self) -> None:
 
@@ -430,10 +430,10 @@ class Wrapper:
         for key, value in self._hist_thresholds.items():
             self._autosave_dict[key] = value
 
-    def _set_hist_thresholds(self, thresholds) -> None:
+    async def _set_hist_thresholds(self, thresholds) -> None:
 
         for threshold, value in thresholds.items():
-            caput(f"{self.detector}:OD:SUM:Histogram:{threshold}", value)
+            await caput(f"{self.detector}:OD:SUM:Histogram:{threshold}", value)
 
         self.write_autosave()
 
@@ -643,6 +643,8 @@ class Wrapper:
 
         self._configure_param({"pixel_count_thresholds": self.pixel_count_thresholds})
 
+        self.write_autosave()
+
     @_if_connected
     def _set_extreme_high_threshold(self, threshold: int) -> None:
 
@@ -712,7 +714,7 @@ class Wrapper:
                 key: threshold * scale for key, threshold in self._hist_thresholds.items()
             }
 
-        self._set_hist_thresholds(new_thresholds)
+        await self._set_hist_thresholds(new_thresholds)
 
     @_if_connected
     def _set_filter_set(self, filter_set_num: int) -> None:
