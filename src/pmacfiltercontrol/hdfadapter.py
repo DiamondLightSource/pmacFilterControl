@@ -5,10 +5,10 @@ import h5py
 from numpy import int64 as np_int64
 from numpy import issubdtype
 
-ATTENUATION_KEY = "/attenuation"
-ADJUSTMENT_KEY = "/adjustment"
-FRAME_NUMBER_KEY = "/frame_number"
-UID_KEY = "/uid"
+ATTENUATION_KEY = "attenuation"
+ADJUSTMENT_KEY = "adjustment"
+FRAME_NUMBER_KEY = "frame_number"
+UID_KEY = "uid"
 
 
 class HDFAdapter:
