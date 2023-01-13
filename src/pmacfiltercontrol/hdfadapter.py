@@ -77,6 +77,7 @@ class HDFAdapter:
         self.adjustment_dset = _create_dataset(ADJUSTMENT_KEY)
         self.attenuation_dset = _create_dataset(ATTENUATION_KEY)
         self.uid_dataset = _create_dataset(UID_KEY)
+        self.filters_moving_flag_dataset = _create_dataset(FILTERS_MOVING_FLAG_KEY)
 
         assert isinstance(self.file, h5py.File)
         self.file.swmr_mode = True
@@ -90,11 +91,14 @@ class HDFAdapter:
             self.adjustment_dset.resize((dset_size,))
             self.attenuation_dset.resize((dset_size,))
             self.uid_dataset.resize((dset_size,))
+            self.filters_moving_flag_dataset.resize((dset_size,))
 
         self.adjustment_dset[data[FRAME_NUMBER_KEY]] = data[ADJUSTMENT_KEY]
         self.attenuation_dset[data[FRAME_NUMBER_KEY]] = data[ATTENUATION_KEY]
         self.uid_dataset[data[FRAME_NUMBER_KEY]] = int(data[FRAME_NUMBER_KEY]) + 1
+        self.filters_moving_flag_dataset = data[FILTERS_MOVING_FLAG_KEY]
 
         self.adjustment_dset.flush()
         self.attenuation_dset.flush()
         self.uid_dataset.flush()
+        self.filters_moving_flag_dataset.flush()
