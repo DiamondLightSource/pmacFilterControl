@@ -595,7 +595,6 @@ class Wrapper:
 
     @_if_connected
     async def _clear_error(self, _) -> None:
-        print(self.clear_error.get())
 
         if _ == 1:
             clear_error = json.dumps({"command": "clear_error"})
