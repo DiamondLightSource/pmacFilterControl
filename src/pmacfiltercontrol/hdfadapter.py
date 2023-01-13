@@ -9,6 +9,7 @@ ATTENUATION_KEY = "attenuation"
 ADJUSTMENT_KEY = "adjustment"
 FRAME_NUMBER_KEY = "frame_number"
 UID_KEY = "uid"
+FILTERS_MOVING_FLAG_KEY = "filters_moving"
 
 
 class HDFAdapter:
@@ -96,7 +97,10 @@ class HDFAdapter:
         self.adjustment_dset[data[FRAME_NUMBER_KEY]] = data[ADJUSTMENT_KEY]
         self.attenuation_dset[data[FRAME_NUMBER_KEY]] = data[ATTENUATION_KEY]
         self.uid_dataset[data[FRAME_NUMBER_KEY]] = int(data[FRAME_NUMBER_KEY]) + 1
-        self.filters_moving_flag_dataset = data[FILTERS_MOVING_FLAG_KEY]
+        filters_moving = (data[ADJUSTMENT_KEY] < 0 and data[ATTENUATION_KEY] > 0) or (
+            data[ADJUSTMENT_KEY] > 0 and data[ATTENUATION_KEY] < 15
+        )
+        self.filters_moving_flag_dataset[data[FRAME_NUMBER_KEY]] = filters_moving
 
         self.adjustment_dset.flush()
         self.attenuation_dset.flush()
