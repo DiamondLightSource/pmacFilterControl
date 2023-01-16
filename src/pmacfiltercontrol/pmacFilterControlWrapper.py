@@ -242,6 +242,7 @@ class Wrapper:
             asyncio.run(while_not_connected())
         self._configure_param({"shutter_closed_position": self.shutter_pos_closed.get()})
         self._set_filter_set(0)
+        self.attenuation.set(15)
         asyncio.run(self._setup_hist_thresholds())
         print("~ Initial Config: Complete")
 
@@ -567,6 +568,9 @@ class Wrapper:
         self.mode_rbv.set(mode)
 
         self.close_file(1)
+
+        if mode == 0:
+            self.attenuation.set(15)
 
     @_if_connected
     def _set_manual_attenuation(self, attenuation: int) -> None:
