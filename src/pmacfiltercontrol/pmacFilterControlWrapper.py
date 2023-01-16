@@ -7,6 +7,7 @@ from typing import Callable, Dict, Union
 import zmq
 from aioca import caget, caput
 from softioc import builder
+from datetime import datetime as dt
 
 from .hdfadapter import HDFAdapter
 from .zmqadapter import ZeroMQAdapter
@@ -89,7 +90,7 @@ class Wrapper:
         hdf_file_path: str,
     ):
 
-        self._log = logging.getLogger(self.__class__.__name__)
+        #self._log = logging.getLogger(self.__class__.__name__)
 
         self.ip = ip
         self.port = port

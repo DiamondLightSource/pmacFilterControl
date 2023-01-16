@@ -47,8 +47,6 @@ class HDFAdapter:
                 self.file_open = False
             except Exception as e:
                 print(f"* Failed closing file.\n{e}")
-        else:
-            print(f"* No file is open, ignoring close...")
 
     def _check_path(self, file_path: str) -> bool:
         if file_path == "" or file_path is None:
