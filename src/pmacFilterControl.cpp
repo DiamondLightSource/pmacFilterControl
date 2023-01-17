@@ -443,8 +443,6 @@ void PMACFilterController::_process_data_channel() {
     std::string data_str;
     struct timespec process_start_ts;
 
-    _get_time(&this->last_process_ts_);
-
     while (!this->shutdown_) {
         this->_process_state_changes();
 
@@ -553,6 +551,10 @@ void PMACFilterController::_process_singleshot_state() {
 */
 void PMACFilterController::_transition_state(ControlState state) {
     if (state != this->state_) {
+        if (state > 0 and this->state_ == ControlState::IDLE) {
+                _get_time(&this->last_message_ts_);
+                _get_time(&this->last_process_ts_);
+        }
         bool waiting = state == ControlState::WAITING || state == ControlState::SINGLESHOT_WAITING;
         if (state < 1 || (waiting && this->state_ >= 0)) {
             this->_set_attenuation(MAX_ATTENUATION);
