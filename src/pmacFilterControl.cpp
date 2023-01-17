@@ -442,6 +442,9 @@ void PMACFilterController::_process_data_channel() {
 
     std::string data_str;
     struct timespec process_start_ts;
+
+    _get_time(&this->last_process_ts_);
+
     while (!this->shutdown_) {
         this->_process_state_changes();
 
