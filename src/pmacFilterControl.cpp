@@ -491,7 +491,10 @@ void PMACFilterController::_process_state_changes() {
             this->_transition_state(ControlState::WAITING);
         }
     } else if (this->mode_ == ControlMode::SINGLESHOT) {
-        if (this->state_ == ControlState::IDLE || this->state_ == ControlState::WAITING) {
+        // If in singleshot mode, only change to singleshot waiting if not in the middle of the scan
+        if (
+            (this->state_ == ControlState::IDLE || this->state_ == ControlState::WAITING) && !this->singleshot_start_
+        ) {
             this->_transition_state(ControlState::SINGLESHOT_WAITING);
         }
         this->_process_singleshot_state();
@@ -532,7 +535,6 @@ void PMACFilterController::_process_singleshot_state() {
     ) {
         std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
         this->_transition_state(ControlState::SINGLESHOT_COMPLETE);
-        this->singleshot_start_ = false;
     }
     // Start singleshot run
     else if (this->singleshot_start_ && (
@@ -556,6 +558,12 @@ void PMACFilterController::_transition_state(ControlState state) {
                 _get_time(&this->last_process_ts_);
         }
         bool waiting = state == ControlState::WAITING || state == ControlState::SINGLESHOT_WAITING;
+        // If currently in a scan and current state is waiting, or the scan is now complete, reset singleshot start flag
+        if (
+            (this->singleshot_start_ && this->state_ == ControlState::WAITING) || state == ControlState::SINGLESHOT_COMPLETE
+        ) {
+            this->singleshot_start_ = false;
+        }
         if (state < 1 || (waiting && this->state_ >= 0)) {
             this->_set_attenuation(MAX_ATTENUATION);
         }
