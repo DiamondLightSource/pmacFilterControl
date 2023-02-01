@@ -17,12 +17,10 @@ class ZeroMQAdapter:
     zmq_port: int = 5555
     zmq_type: int = zmq.DEALER
     running: bool = False
-    # _send_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
-    # _recv_message_queue: asyncio.Queue = field(default_factory=asyncio.Queue)
 
     async def start_stream(self) -> None:
         """Start the ZeroMQ stream."""
-        # LOGGER.debug("Starting stream...")
+
         print("starting stream...")
 
         self._socket = await aiozmq.create_zmq_stream(
@@ -31,7 +29,7 @@ class ZeroMQAdapter:
         if self.zmq_type == zmq.SUB:
                 self._socket.transport.setsockopt(zmq.SUBSCRIBE, b"")
         self._socket.transport.setsockopt(zmq.LINGER, 0)
-        # LOGGER.debug(f"Stream started. {self._socket}")
+
         print(f"Stream started. {self._socket}")
 
     async def close_stream(self) -> None:
@@ -53,18 +51,25 @@ class ZeroMQAdapter:
 
     async def _read_response(self) -> bytes:
         if self.zmq_type is not zmq.DEALER:
-            resp = await self._socket.read()
-            return resp[0]
+            try:
+                resp = await asyncio.wait_for(self._socket.read(), timeout=20)
+                return resp[0]
+            except asyncio.TimeoutError:
+                pass
         else:
             discard = True
             while discard:
-                multipart_resp = await self._socket.read()
-                if multipart_resp[0] == b'':
-                    discard = False
-                    resp = multipart_resp[1]
-                    return resp
+                try:
+                    multipart_resp = await asyncio.wait_for(self._socket.read(), timeout=20)
+                    if multipart_resp[0] == b'':
+                        discard = False
+                        resp = multipart_resp[1]
+                        return resp
+                except asyncio.TimeoutError:
+                    pass
 
     async def get_response(self) -> bytes:
+
         return await self._recv_message_queue.get()
 
     async def run_forever(self) -> None:
@@ -115,7 +120,6 @@ class ZeroMQAdapter:
                         self._socket.write(message)
                     else:
                         self._socket._transport._zmq_sock.send(b"", flags=zmq.SNDMORE)
-                        #self._socket.write("", flags=zmq.SNDMORE)
                         self._socket.write(message)
                 except zmq.error.ZMQError as e:
                     print("ZMQ Error", e)
@@ -128,7 +132,6 @@ class ZeroMQAdapter:
                 print("Socket closed...")
                 await asyncio.sleep(5)
         else:
-            # LOGGER.debug("No message")
             print("No message")
 
     async def _process_response_queue(self) -> None:
