@@ -546,7 +546,8 @@ class Wrapper:
 
         time_since_last_frame = status["time_since_last_message"]
         self.time_since_last_frame.set(time_since_last_frame)
-        if time_since_last_frame > self.timeout_rbv.get():
+        # Check that at least 1 frame has been received before timing out
+        if time_since_last_frame > self.timeout_rbv.get() and last_received_frame > 1:
             self.close_file(1)
 
         current_attenuation = status["current_attenuation"]
