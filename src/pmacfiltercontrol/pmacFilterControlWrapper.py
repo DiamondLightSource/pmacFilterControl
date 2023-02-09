@@ -7,6 +7,7 @@ from typing import Callable, Dict, Union
 import zmq
 from aioca import caget, caput
 from softioc import builder
+from softioc.builder import records
 from datetime import datetime as dt
 
 from .hdfadapter import HDFAdapter
@@ -71,7 +72,6 @@ def _if_connected(func: Callable) -> Callable:
 
 
 class Wrapper:
-
     POLL_PERIOD = 0.1
     RETRY_PERIOD = 5
 
@@ -89,9 +89,6 @@ class Wrapper:
         autosave_file_path: str,
         hdf_file_path: str,
     ):
-
-        #self._log = logging.getLogger(self.__class__.__name__)
-
         self.ip = ip
         self.port = port
         self.zmq_stream = ZeroMQAdapter(ip, port)
@@ -145,6 +142,13 @@ class Wrapper:
         self.mode_rbv = builder.mbbIn("MODE_RBV", *MODE)
 
         self.reset = builder.boolOut("RESET", on_update=self._reset)
+        self._reset_reset = records.calcout(
+            "RESET:RESET",
+            CALC="A ? 0 : 1",
+            INPA=builder.CP(self.reset),
+            OUT=builder.PP(self.reset),
+            OOPT="When Zero",
+        )
 
         self.timeout = builder.aOut(
             "TIMEOUT", initial_value=3, on_update=self._set_timeout
@@ -152,9 +156,23 @@ class Wrapper:
         self.timeout_rbv = builder.aIn("TIMEOUT_RBV", initial_value=3, EGU="s")
 
         self.clear_error = builder.boolOut("ERROR:CLEAR", on_update=self._clear_error)
+        self._reset_error = records.calcout(
+            "ERROR:RESET",
+            CALC="A ? 0 : 1",
+            INPA=builder.CP(self.clear_error),
+            OUT=builder.PP(self.clear_error),
+            OOPT="When Zero",
+        )
 
         self.singleshot_start = builder.boolOut(
             "SINGLESHOT:START", on_update=self._start_singleshot
+        )
+        self._reset_singelshot = records.calcout(
+            "SINGLESHOT:RESET",
+            CALC="A ? 0 : 1",
+            INPA=builder.CP(self.singleshot_start),
+            OUT=builder.PP(self.singleshot_start),
+            OOPT="When Zero",
         )
 
         self.filter_set = builder.mbbOut(
@@ -232,7 +250,6 @@ class Wrapper:
         self._generate_pixel_threshold_records()
 
     def _send_initial_config(self) -> None:
-
         async def while_not_connected() -> None:
             while not self.connected:
                 await asyncio.sleep(0.5)
@@ -240,7 +257,9 @@ class Wrapper:
         if not self.connected:
             print("~ Initial Config: Waiting For Connection")
             asyncio.run(while_not_connected())
-        self._configure_param({"shutter_closed_position": self.shutter_pos_closed.get()})
+        self._configure_param(
+            {"shutter_closed_position": self.shutter_pos_closed.get()}
+        )
         self._set_filter_set(0)
         self.attenuation.set(15)
         asyncio.run(self._setup_hist_thresholds())
@@ -255,7 +274,6 @@ class Wrapper:
         return pos_dict
 
     def write_autosave(self) -> None:
-
         parent_dir = self.autosave_file.parent
         self.autosave_datetime: dt = dt.now()
         self.autosave_backup_file: Path = parent_dir.joinpath(
@@ -276,7 +294,6 @@ class Wrapper:
         filter_set_total: int,
         filters_per_set: int,
     ) -> None:
-
         self.filter_sets_in = {}
         self.filter_sets_out = {}
         for i in range(1, filter_set_total + 1):
@@ -285,7 +302,6 @@ class Wrapper:
             self.filter_sets_out[filter_set_key] = {}
 
             for j in range(1, filters_per_set + 1):
-
                 IN_KEY = f"FILTER_SET:{i}:IN:{j}"
                 OUT_KEY = f"FILTER_SET:{i}:OUT:{j}"
 
@@ -297,7 +313,9 @@ class Wrapper:
                 in_record: builder.aOut = builder.aOut(
                     IN_KEY,
                     initial_value=in_value,
-                    on_update=lambda val, i=i, in_key=IN_KEY: self._set_pos(i, in_key, val),
+                    on_update=lambda val, i=i, in_key=IN_KEY: self._set_pos(
+                        i, in_key, val
+                    ),
                 )
 
                 out_value: float = (
@@ -308,7 +326,9 @@ class Wrapper:
                 out_record: builder.aOut = builder.aOut(
                     OUT_KEY,
                     initial_value=out_value,
-                    on_update=lambda val, i=i, out_key=OUT_KEY: self._set_pos(i, out_key, val),
+                    on_update=lambda val, i=i, out_key=OUT_KEY: self._set_pos(
+                        i, out_key, val
+                    ),
                 )
 
                 if not self.autosave_file.exists():
@@ -319,7 +339,6 @@ class Wrapper:
                 self.filter_sets_out[filter_set_key][OUT_KEY] = out_record
 
     def _generate_shutter_records(self) -> None:
-
         self.shutter = builder.boolOut(
             "SHUTTER:POS", on_update=self._set_shutter, ZNAM="CLOSED", ONAM="OPEN"
         )
@@ -351,7 +370,6 @@ class Wrapper:
             self._autosave_dict[f"{self.device_name}:SHUTTER:CLOSED"] = 500.0
 
     def _generate_pixel_threshold_records(self) -> None:
-
         self.extreme_high_threshold = builder.aOut(
             "HIGH:THRESHOLD:EXTREME",
             initial_value=100,
@@ -392,9 +410,7 @@ class Wrapper:
             else:
                 record.set(self._autosave_dict[record.name])
 
-
     async def _setup_hist_thresholds(self) -> None:
-
         self._hist_thresholds: Dict[str, float] = {
             "High3": self._autosave_dict["High3"]
             if "High3" in self._autosave_dict.keys()
@@ -419,7 +435,6 @@ class Wrapper:
         await self._set_hist_thresholds(self._hist_thresholds)
 
     async def _get_hist_thresholds(self) -> None:
-
         self._hist_thresholds: Dict[str, float] = {
             "High3": await caget(f"{self.detector}:OD:SUM:Histogram:High3"),
             "High2": await caget(f"{self.detector}:OD:SUM:Histogram:High2"),
@@ -432,14 +447,17 @@ class Wrapper:
             self._autosave_dict[key] = value
 
     async def _set_hist_thresholds(self, thresholds) -> None:
-
         for threshold, value in thresholds.items():
-            await caput(f"{self.detector}:OD:SUM:Histogram:{threshold}", value)
+            await caput(
+                f"{self.detector}:OD:SUM:Histogram:{threshold}",
+                value,
+                wait=False,
+                throw=False,
+            )
 
         self.write_autosave()
 
     async def run_forever(self) -> None:
-
         print("Connecting to ZMQ stream...")
 
         await asyncio.gather(
@@ -454,35 +472,43 @@ class Wrapper:
 
     async def monitor_command_stream(self, zmq_stream: ZeroMQAdapter) -> None:
         while True:
-            if not self.zmq_stream.running:
-                await asyncio.sleep(1)
+            if not zmq_stream.running:
+                print("- Command stream disconnected. Waiting for reconnect...")
+                while not zmq_stream.running:
+                    await asyncio.sleep(1)
+                print("- Command stream (re)connected.")
             else:
                 resp: bytes = await zmq_stream.get_response()
-                resp_json = json.loads(resp)
+                if resp is not None:
+                    resp_json = json.loads(resp)
 
-                if "status" in resp_json:
-                    if not self.connected:
-                        self.connected = True
-                    status = resp_json["status"]
-                    self._handle_status(status)
-                    self.status_recv = True
+                    if "status" in resp_json:
+                        if not self.connected:
+                            self.connected = True
+                        status = resp_json["status"]
+                        self._handle_status(status)
+                        self.status_recv = True
 
     async def monitor_event_stream(self, zmq_stream: ZeroMQAdapter) -> None:
         while True:
-            if not self.zmq_stream.running:
-                await asyncio.sleep(1)
+            if not zmq_stream.running:
+                print("- Event stream disconnected. Waiting for reconnect...")
+                while not zmq_stream.running:
+                    await asyncio.sleep(1)
+                print("- Event stream (re)connected.")
             else:
                 resp: bytes = await zmq_stream.get_response()
-                resp_json = json.loads(resp)
+                if resp is not None:
+                    resp_json = json.loads(resp)
 
-                if "frame_number" in resp_json:
-                    if self.h5f.file_open:
-                        try:
-                            self.h5f._write_to_file(resp_json)
-                        except RuntimeError as e:
-                            print(e)
-                    else:
-                        print("WARNING: HDF5 file not open and frame recieved.")
+                    if "frame_number" in resp_json:
+                        if self.h5f.file_open:
+                            try:
+                                self.h5f._write_to_file(resp_json)
+                            except RuntimeError as e:
+                                print(e)
+                        else:
+                            print("WARNING: HDF5 file not open and frame received.")
 
     @_if_connected
     def open_file(self, _) -> None:
@@ -523,7 +549,6 @@ class Wrapper:
                 await asyncio.sleep(0.1)
 
     def _handle_status(self, status) -> None:
-
         state = status["state"]
         if state < 0:
             state = 16 + state
@@ -556,13 +581,14 @@ class Wrapper:
     def _send_message(self, message: bytes) -> None:
         self.zmq_stream.send_message([message])
 
-    def _configure_param(self, param: Dict[str, Union[int, float, Dict[str, int]]]) -> None:
+    def _configure_param(
+        self, param: Dict[str, Union[int, float, Dict[str, int]]]
+    ) -> None:
         configure = json.dumps({"command": "configure", "params": param})
         self._send_message(codecs.encode(configure, "utf-8"))
 
     @_if_connected
     def _set_mode(self, mode: int) -> None:
-
         # Set mode for PFC
         self._configure_param({"mode": mode})
 
@@ -575,7 +601,6 @@ class Wrapper:
 
     @_if_connected
     def _set_manual_attenuation(self, attenuation: int) -> None:
-
         if self.state.get() == 0 and self.mode_rbv.get() == 0:
             # Set manual attenuation for PFC
             self._configure_param({"attenuation": attenuation})
@@ -589,11 +614,8 @@ class Wrapper:
             reset = b'{"command":"reset"}'
             self._send_message(reset)
 
-            self.reset.set(0)
-
     @_if_connected
     def _set_timeout(self, timeout: int) -> None:
-
         # Set timeout for PFC
         self._configure_param({"timeout": timeout})
 
@@ -601,38 +623,33 @@ class Wrapper:
 
     @_if_connected
     async def _clear_error(self, _) -> None:
-
         if _ == 1:
             clear_error = json.dumps({"command": "clear_error"})
             self._send_message(codecs.encode(clear_error, "utf-8"))
 
-            self.clear_error.set(0)
-
     @_if_connected
     async def _start_singleshot(self, _) -> None:
-
         if _ == 1:
-
             if (
                 self.state.get() == 3 or self.state.get() == 4
             ) and self.mode_rbv.get() == 2:
                 start_singleshot = json.dumps({"command": "singleshot"})
                 self._send_message(codecs.encode(start_singleshot, "utf-8"))
             else:
-                print("ERROR: Must be in SINGLESHOT mode and WAITING state.")
-
-            self.singleshot_start.set(0)
+                print(
+                    f"{dt.now()} - ERROR: Must be in SINGLESHOT mode, and in SINGLESHOT_WAITING/COMPLETE state."
+                )
 
     @_if_connected
     async def _set_shutter(self, shutter_state: int) -> None:
-        if shutter_state == SHUTTER_CLOSED:
+        if shutter_state == 0:  # SHUTTER_CLOSED
             pos = self.shutter_pos_closed.get()
         else:
             pos = self.shutter_pos_open.get()
-        await caput(f"{self.motors}:SHUTTER:POS", pos)
+
+        await caput(f"{self.motors}:SHUTTER", pos, wait=False, throw=False)
 
     def _set_shutter_pos(self, val: float, shutter_state: str) -> None:
-
         if shutter_state == SHUTTER_CLOSED:
             self._configure_param({"shutter_closed_position": val})
 
@@ -646,14 +663,12 @@ class Wrapper:
 
     @_if_connected
     def _set_thresholds(self) -> None:
-
         self._configure_param({"pixel_count_thresholds": self.pixel_count_thresholds})
 
         self.write_autosave()
 
     @_if_connected
     def _set_extreme_high_threshold(self, threshold: int) -> None:
-
         if threshold != self.pixel_count_thresholds["high3"]:
             self.pixel_count_thresholds["high3"] = threshold
 
@@ -662,7 +677,6 @@ class Wrapper:
 
     @_if_connected
     def _set_upper_high_threshold(self, threshold: int) -> None:
-
         if threshold != self.pixel_count_thresholds["high2"]:
             self.pixel_count_thresholds["high2"] = threshold
 
@@ -674,7 +688,6 @@ class Wrapper:
 
     @_if_connected
     def _set_lower_high_threshold(self, threshold: int) -> None:
-
         if threshold != self.pixel_count_thresholds["high1"]:
             self.pixel_count_thresholds["high1"] = threshold
 
@@ -686,7 +699,6 @@ class Wrapper:
 
     @_if_connected
     def _set_upper_low_threshold(self, threshold: int) -> None:
-
         if threshold != self.pixel_count_thresholds["low2"]:
             self.pixel_count_thresholds["low2"] = threshold
 
@@ -698,7 +710,6 @@ class Wrapper:
 
     @_if_connected
     def _set_lower_low_threshold(self, threshold: int) -> None:
-
         if threshold != self.pixel_count_thresholds["low1"]:
             self.pixel_count_thresholds["low1"] = threshold
 
@@ -710,21 +721,20 @@ class Wrapper:
 
     @_if_connected
     async def _set_histogram_scale(self, scale: float) -> None:
-
         new_thresholds = self._hist_thresholds
 
         if scale != 1.0:
             await self._get_hist_thresholds()
 
             new_thresholds = {
-                key: threshold * scale for key, threshold in self._hist_thresholds.items()
+                key: threshold * scale
+                for key, threshold in self._hist_thresholds.items()
             }
 
         await self._set_hist_thresholds(new_thresholds)
 
     @_if_connected
     def _set_filter_set(self, filter_set_num: int) -> None:
-
         in_positions = [
             x.get()
             for x in self.filter_sets_in[f"filter_set_{filter_set_num+1}"].values()
@@ -749,7 +759,6 @@ class Wrapper:
 
     @_if_connected
     def _set_pos(self, filter_set: int, in_out_key: str, val: float) -> None:
-
         self._autosave_dict[f"{self.device_name}:{in_out_key}"] = val
 
         if self.filter_set_rbv.get() == filter_set - 1:
@@ -759,7 +768,6 @@ class Wrapper:
 
     @_if_connected
     def _set_file_path(self, path: str) -> None:
-
         # Set file path for PFC
         self.file_path_rbv.set(path)
 
@@ -767,14 +775,12 @@ class Wrapper:
 
     @_if_connected
     def _set_file_name(self, name: str) -> None:
-
         # Set file name for PFC
         self.file_name_rbv.set(name)
 
         self._combine_file_path_and_name()
 
     def _combine_file_path_and_name(self) -> None:
-
         path: str = self.file_path.get()
         name = self.file_name.get()
 
