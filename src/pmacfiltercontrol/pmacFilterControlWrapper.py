@@ -249,20 +249,18 @@ class Wrapper:
         self._generate_shutter_records()
         self._generate_pixel_threshold_records()
 
-    def _send_initial_config(self) -> None:
-        async def while_not_connected() -> None:
-            while not self.connected:
-                await asyncio.sleep(0.5)
+    async def _send_initial_config(self) -> None:
 
-        if not self.connected:
-            print("~ Initial Config: Waiting For Connection")
-            asyncio.run(while_not_connected())
+        print("~ Initial Config: Waiting For Connection")
+        while not self.connected:
+            await asyncio.sleep(0.5)
+
         self._configure_param(
             {"shutter_closed_position": self.shutter_pos_closed.get()}
         )
         self._set_filter_set(0)
         self.attenuation.set(15)
-        asyncio.run(self._setup_hist_thresholds())
+        asyncio.run_coroutine_threadsafe(self._setup_hist_thresholds(), asyncio.get_event_loop())
         print("~ Initial Config: Complete")
 
     def _get_autosave(self) -> Dict[str, float]:
@@ -459,6 +457,8 @@ class Wrapper:
 
     async def run_forever(self) -> None:
         print("Connecting to ZMQ stream...")
+
+        asyncio.run_coroutine_threadsafe(self._send_initial_config(), asyncio.get_running_loop())
 
         await asyncio.gather(
             *[
