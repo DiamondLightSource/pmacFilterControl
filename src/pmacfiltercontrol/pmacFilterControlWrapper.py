@@ -232,6 +232,14 @@ class Wrapper:
             "ATTENUATION", *ATTENUATION, on_update=self._set_manual_attenuation
         )
 
+        self._hist_thresholds: Dict[str, builder.aOut] = {}
+        for threshold in ("High3", "High2", "High1", "Low2", "Low1"):
+            hist = builder.aOut(
+                f"HIST:{threshold.upper()}",
+                on_update=lambda val, threshold=threshold: self._set_hist(threshold, val),
+            )
+            self._hist_thresholds[threshold] = hist
+
         self.histogram_scale = builder.aOut(
             "HISTOGRAM:SCALE",
             initial_value=1.0,
@@ -409,7 +417,7 @@ class Wrapper:
                 record.set(self._autosave_dict[record.name])
 
     async def _setup_hist_thresholds(self) -> None:
-        self._hist_thresholds: Dict[str, float] = {
+        self._hist_threshold_values: Dict[str, float] = {
             "High3": self._autosave_dict["High3"]
             if "High3" in self._autosave_dict.keys()
             else await caget(f"{self.detector}:OD:SUM:Histogram:High3"),
@@ -427,10 +435,9 @@ class Wrapper:
             else await caget(f"{self.detector}:OD:SUM:Histogram:Low2"),
         }
 
-        for key, value in self._hist_thresholds.items():
+        for key, value in self._hist_thresholds_values.items():
             self._autosave_dict[key] = value
-
-        await self._set_hist_thresholds(self._hist_thresholds)
+            self._hist_thresholds[key].set(value, process=True)
 
     async def _get_hist_thresholds(self) -> None:
         self._hist_thresholds: Dict[str, float] = {
@@ -449,8 +456,6 @@ class Wrapper:
             await caput(
                 f"{self.detector}:OD:SUM:Histogram:{threshold}",
                 value,
-                wait=False,
-                throw=False,
             )
 
         self.write_autosave()
@@ -718,6 +723,17 @@ class Wrapper:
 
         else:
             print(f"Low 1 is already at value {threshold}.")
+
+    @_if_connected
+    async def _set_hist(self, hist_name: str, hist_val: int) -> None:
+        self._hist_thresholds[hist_name] = hist_val
+        self._autosave_dict[hist_name] = hist_val
+        await caput(
+                f"{self.detector}:OD:SUM:Histogram:{hist_name}",
+                hist_val,
+        )
+
+        self.write_autosave()
 
     @_if_connected
     async def _set_histogram_scale(self, scale: float) -> None:
