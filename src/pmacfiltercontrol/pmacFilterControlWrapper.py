@@ -521,7 +521,7 @@ class Wrapper:
             self.h5f._open_file()
 
         if self.file_close.get() != 0:
-            self.file_close.set(0)
+            self.file_close.set(0, process=False)
 
     @_if_connected
     def close_file(self, _) -> None:
@@ -529,7 +529,7 @@ class Wrapper:
             self.h5f._close_file()
 
         if self.file_open.get() != 0:
-            self.file_open.set(0)
+            self.file_open.set(0, process=False)
 
     def _req_status(self) -> None:
         req_status = b'{"command":"status"}'
