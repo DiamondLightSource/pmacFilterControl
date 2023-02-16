@@ -236,7 +236,9 @@ class Wrapper:
         for threshold in ("High3", "High2", "High1", "Low2", "Low1"):
             hist = builder.aOut(
                 f"HIST:{threshold.upper()}",
-                on_update=lambda val, threshold=threshold: self._set_hist(threshold, val),
+                on_update=lambda val, threshold=threshold: self._set_hist(
+                    threshold, val
+                ),
             )
             self._hist_thresholds[threshold] = hist
 
@@ -258,7 +260,6 @@ class Wrapper:
         self._generate_pixel_threshold_records()
 
     async def _send_initial_config(self) -> None:
-
         print("~ Initial Config: Waiting For Connection")
         while not self.connected:
             await asyncio.sleep(0.5)
@@ -266,9 +267,16 @@ class Wrapper:
         self._configure_param(
             {"shutter_closed_position": self.shutter_pos_closed.get()}
         )
-        self._set_filter_set(0)
+
+        if f"{self.device_name}:FILTER_SET" in self._autosave_dict.keys():
+            self._set_filter_set(self._autosave_dict[f"{self.device_name}:FILTER_SET"])
+        else:
+            self._set_filter_set(0)
+
         self.attenuation.set(15)
-        asyncio.run_coroutine_threadsafe(self._setup_hist_thresholds(), asyncio.get_event_loop())
+        asyncio.run_coroutine_threadsafe(
+            self._setup_hist_thresholds(), asyncio.get_event_loop()
+        )
         print("~ Initial Config: Complete")
 
     def _get_autosave(self) -> Dict[str, float]:
@@ -463,7 +471,9 @@ class Wrapper:
     async def run_forever(self) -> None:
         print("Connecting to ZMQ stream...")
 
-        asyncio.run_coroutine_threadsafe(self._send_initial_config(), asyncio.get_running_loop())
+        asyncio.run_coroutine_threadsafe(
+            self._send_initial_config(), asyncio.get_running_loop()
+        )
 
         await asyncio.gather(
             *[
@@ -729,8 +739,8 @@ class Wrapper:
         self._hist_thresholds[hist_name] = hist_val
         self._autosave_dict[hist_name] = hist_val
         await caput(
-                f"{self.detector}:OD:SUM:Histogram:{hist_name}",
-                hist_val,
+            f"{self.detector}:OD:SUM:Histogram:{hist_name}",
+            hist_val,
         )
 
         self.write_autosave()
@@ -772,6 +782,9 @@ class Wrapper:
         self._configure_param({"in_positions": in_pos, "out_positions": out_pos})
 
         self.filter_set_rbv.set(filter_set_num)
+
+        self._autosave_dict[f"{self.device_name}:FILTER_SET"] = filter_set_num
+        self.write_autosave()
 
     @_if_connected
     def _set_pos(self, filter_set: int, in_out_key: str, val: float) -> None:
