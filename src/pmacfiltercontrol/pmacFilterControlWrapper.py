@@ -1,6 +1,9 @@
+"""The PMAC Filter Control wrapper."""
+
 import asyncio
 import codecs
 import json
+from datetime import datetime as dt
 from pathlib import Path
 from typing import Callable, Dict, Union
 
@@ -8,7 +11,6 @@ import zmq
 from aioca import caget, caput
 from softioc import builder
 from softioc.builder import records
-from datetime import datetime as dt
 
 from .hdfadapter import HDFAdapter
 from .zmqadapter import ZeroMQAdapter
@@ -52,7 +54,11 @@ SHUTTER_OPEN = "OPEN"
 
 
 def _if_connected(func: Callable) -> Callable:
-    """Decorator function to check if connected to device before calling function.
+    """
+    Check connection decorator before function call.
+
+    Decorator function to check if the wrapper is connected to the motion controller
+    device before calling the attached function.
 
     Args:
         func (Callable): Function to call if connected to device
@@ -72,6 +78,12 @@ def _if_connected(func: Callable) -> Callable:
 
 
 class Wrapper:
+    """Wrapper object for PMAC Filter Control.
+
+    The wrapper object for PMAC Filter Control, which initialises all of the CA records
+    with relevant python functions attached and initialises the asyncio logic loops.
+    """
+
     POLL_PERIOD = 0.1
     RETRY_PERIOD = 5
 
@@ -89,6 +101,22 @@ class Wrapper:
         autosave_file_path: str,
         hdf_file_path: str,
     ):
+        """
+        PMAC Filter Control wrapper constuctor.
+
+        Args:
+            ip (str): IP address of PowerBrick
+            port (int): Port of ZeroMQ command stream
+            event_stream_port (int): Port of ZeroMQ event stream
+            builder (builder): SoftIOC builder object
+            device_name (str): Name of the PFC device
+            filter_set_total (int): Number of filter sets
+            filters_per_set (int): Number of filters per filter set
+            detector (str): Detector PV prefix
+            motors (str): Motor IOC PV prefix
+            autosave_file_path (str): Autosave file location and name
+            hdf_file_path (str): HDF5 file path for attenuation data
+        """
         self.ip = ip
         self.port = port
         self.zmq_stream = ZeroMQAdapter(ip, port)
@@ -260,6 +288,12 @@ class Wrapper:
         self._generate_pixel_threshold_records()
 
     async def _send_initial_config(self) -> None:
+        """
+        Send initial configuration settings.
+
+        Send initial configuration settings on startup once a connection is
+        established to the PowerBrick program.
+        """
         print("~ Initial Config: Waiting For Connection")
         while not self.connected:
             await asyncio.sleep(0.5)
@@ -284,14 +318,27 @@ class Wrapper:
         print("~ Initial Config: Complete")
 
     def _get_autosave(self) -> Dict[str, float]:
-        pos_dict = {}
+        """Read the autosave file.
+
+        Opens the autosave file and reads the saved values into a dictionary.
+
+        Returns:
+            Dict[str, float]: Dictionary of the values from the autosave file.
+        """
+        autosave_dict = {}
         with self.autosave_file.open("r") as autosave_file:
             for line in autosave_file:
-                line = line.strip().split(" ")
-                pos_dict[line[0]] = float(line[1])
-        return pos_dict
+                line_ = line.strip().split(" ")
+                autosave_dict[line_[0]] = float(line_[1])
+        return autosave_dict
 
     def write_autosave(self) -> None:
+        """
+        Write to autosave files.
+
+        Write the current autosave dictionary to the autosave files, with a
+        ' ' delimiter between key/value and each separated by a newline.
+        """
         parent_dir = self.autosave_file.parent
         self.autosave_datetime: dt = dt.now()
         self.autosave_backup_file: Path = parent_dir.joinpath(
@@ -312,8 +359,19 @@ class Wrapper:
         filter_set_total: int,
         filters_per_set: int,
     ) -> None:
-        self.filter_sets_in = {}
-        self.filter_sets_out = {}
+        """
+        Generate filter position records.
+
+        Generate the filter in/out position records for each filter set, based on the
+        values provided by filter_set_total and filters_per_set.
+
+        Args:
+            filter_set_total (int): The number of filter sets
+            filters_per_set (int): The number of filters per filter set
+        """
+        self.filter_sets_in: Dict[str, Dict[str, builder.aOut]] = {}
+        self.filter_sets_out: Dict[str, Dict[str, builder.aOut]] = {}
+
         for i in range(1, filter_set_total + 1):
             filter_set_key = f"filter_set_{i}"
             self.filter_sets_in[filter_set_key] = {}
@@ -357,6 +415,11 @@ class Wrapper:
                 self.filter_sets_out[filter_set_key][OUT_KEY] = out_record
 
     def _generate_shutter_records(self) -> None:
+        """
+        Generate fast shutter records.
+
+        Generate records associated with the fast shutter positions.
+        """
         self.shutter = builder.boolOut(
             "SHUTTER:POS", on_update=self._set_shutter, ZNAM="CLOSED", ONAM="OPEN"
         )
@@ -388,6 +451,11 @@ class Wrapper:
             self._autosave_dict[f"{self.device_name}:SHUTTER:CLOSED"] = 500.0
 
     def _generate_pixel_threshold_records(self) -> None:
+        """
+        Generate pixel threshold records.
+
+        Generate records associated with the pixel threshold values.
+        """
         self.extreme_high_threshold = builder.aOut(
             "HIGH:THRESHOLD:EXTREME",
             initial_value=100,
@@ -429,8 +497,14 @@ class Wrapper:
                 record.set(self._autosave_dict[record.name])
 
     async def _setup_hist_thresholds(self) -> None:
-        self._hist_threshold_values: Dict[str, int] = {
-            "High3": int(self._autosave_dict["High3"])
+        """
+        Histogram threshold value setup.
+
+        Setup the values for the histogram thresholds based on Odin records if no
+        autosave exists.
+        """
+        self._hist_threshold_values: Dict[str, float] = {
+            "High3": self._autosave_dict["High3"]
             if "High3" in self._autosave_dict.keys()
             else await caget(f"{self.detector}:OD:SUM:Histogram:High3"),
             "High2": int(self._autosave_dict["High2"])
@@ -452,7 +526,12 @@ class Wrapper:
             self._hist_thresholds[key].set(value, process=True)
 
     async def _get_hist_thresholds(self) -> None:
-        self._hist_thresholds: Dict[str, float] = {
+        """
+        Histogram threshold value fetch.
+
+        Fetch the current histogram threshold values from Odin.
+        """
+        non_scaled_hist_thresholds: Dict[str, float] = {
             "High3": await caget(f"{self.detector}:OD:SUM:Histogram:High3"),
             "High2": await caget(f"{self.detector}:OD:SUM:Histogram:High2"),
             "High1": await caget(f"{self.detector}:OD:SUM:Histogram:High1"),
@@ -460,10 +539,16 @@ class Wrapper:
             "Low2": await caget(f"{self.detector}:OD:SUM:Histogram:Low2"),
         }
 
-        for key, value in self._hist_thresholds.items():
+        for key, value in non_scaled_hist_thresholds.items():
             self._autosave_dict[key] = value
 
-    async def _set_hist_thresholds(self, thresholds) -> None:
+    async def _set_hist_thresholds(self, thresholds: Dict[str, int]) -> None:
+        """
+        Set histogram thresholds.
+
+        Args:
+            thresholds (Dict[str, int]): Dictionary of histogram thresholds to set
+        """
         for threshold, value in thresholds.items():
             await caput(
                 f"{self.detector}:OD:SUM:Histogram:{threshold}",
@@ -473,6 +558,7 @@ class Wrapper:
         self.write_autosave()
 
     async def run_forever(self) -> None:
+        """Run asyncio background tasks until program exit."""
         print("Connecting to ZMQ stream...")
 
         asyncio.run_coroutine_threadsafe(
@@ -490,6 +576,14 @@ class Wrapper:
         )
 
     async def monitor_command_stream(self, zmq_stream: ZeroMQAdapter) -> None:
+        """
+        Command stream monitor loop.
+
+        Loop to forever monitor the command stream for responses.
+
+        Args:
+            zmq_stream (ZeroMQAdapter): Command stream ZeroMQ object
+        """
         while True:
             if not zmq_stream.running:
                 print("- Command stream disconnected. Waiting for reconnect...")
@@ -509,6 +603,14 @@ class Wrapper:
                         self.status_recv = True
 
     async def monitor_event_stream(self, zmq_stream: ZeroMQAdapter) -> None:
+        """
+        Event stream monitor loop.
+
+        Loop to forever monitor the event stream for responses.
+
+        Args:
+            zmq_stream (ZeroMQAdapter): Event stream ZeroMQ object
+        """
         while True:
             if not zmq_stream.running:
                 print("- Event stream disconnected. Waiting for reconnect...")
@@ -530,7 +632,15 @@ class Wrapper:
                             print("WARNING: HDF5 file not open and frame received.")
 
     @_if_connected
-    def open_file(self, _) -> None:
+    def open_file(self, _: int) -> None:
+        """
+        File open function.
+
+        Opens the HDF5 attenuation file.
+
+        Args:
+            _ (int): EPICS record processing value
+        """
         if _ == 1:
             self.h5f._open_file()
 
@@ -538,7 +648,15 @@ class Wrapper:
             self.file_close.set(0, process=False)
 
     @_if_connected
-    def close_file(self, _) -> None:
+    def close_file(self, _: int) -> None:
+        """
+        File close function.
+
+        Closes the HDF5 attenuation file.
+
+        Args:
+            _ (int): EPICS record processing value
+        """
         if _ == 1:
             self.h5f._close_file()
 
@@ -546,10 +664,12 @@ class Wrapper:
             self.file_open.set(0, process=False)
 
     def _req_status(self) -> None:
+        """Send status request command to PowerBrick program."""
         req_status = b'{"command":"status"}'
         self._send_message(req_status)
 
     async def _query_status(self) -> None:
+        """Query the status of the PowerBrick program every 0.1s."""
         while True:
             if not self.zmq_stream.running:
                 print("Zmq stream not running. waiting...")
@@ -567,7 +687,13 @@ class Wrapper:
                     print("Reconnected and status recieved.")
                 await asyncio.sleep(0.1)
 
-    def _handle_status(self, status) -> None:
+    def _handle_status(self, status: Dict[str, int]) -> None:
+        """
+        Handle status returned from PowerBrick program.
+
+        Args:
+            status (Dict[str, int]): Status dictionary returned from PowerBrick program
+        """
         state = status["state"]
         if state < 0:
             state = 16 + state
@@ -598,16 +724,36 @@ class Wrapper:
         self.current_attenuation.set(current_attenuation)
 
     def _send_message(self, message: bytes) -> None:
+        """
+        Send ZMQ stream message.
+
+        Args:
+            message (bytes): Message to send over the zmq stream
+        """
         self.zmq_stream.send_message([message])
 
     def _configure_param(
         self, param: Dict[str, Union[int, float, Dict[str, int]]]
     ) -> None:
+        """
+        Configure PowerBrick program parameter.
+
+        Args:
+            param (Dict[str, Union[int, float, Dict[str, int]]]): Parameter to configure
+        """
         configure = json.dumps({"command": "configure", "params": param})
         self._send_message(codecs.encode(configure, "utf-8"))
 
     @_if_connected
     def _set_mode(self, mode: int) -> None:
+        """
+        Set mode of PMAC Filter Controller.
+
+        Closes any open HDF5 file, and sets max attenuation if mode == Manual.
+
+        Args:
+            mode (int): Mode to set
+        """
         # Set mode for PFC
         self._configure_param({"mode": mode})
 
@@ -620,6 +766,12 @@ class Wrapper:
 
     @_if_connected
     def _set_manual_attenuation(self, attenuation: int) -> None:
+        """
+        Set manual attenuation of PMAC Filter Controller.
+
+        Args:
+            attenuation (int): Attenuation to set
+        """
         if self.state.get() == 0 and self.mode_rbv.get() == 0:
             # Set manual attenuation for PFC
             self._configure_param({"attenuation": attenuation})
@@ -628,26 +780,49 @@ class Wrapper:
             print("ERROR: Must be in MANUAL mode and IDLE state.")
 
     @_if_connected
-    async def _reset(self, _) -> None:
+    async def _reset(self, _: int) -> None:
+        """
+        Reset frame number of PMAC Filter Controller.
+
+        Args:
+            _ (int): EPICS record processing value
+        """
         if _ == 1:
             reset = b'{"command":"reset"}'
             self._send_message(reset)
 
     @_if_connected
     def _set_timeout(self, timeout: int) -> None:
-        # Set timeout for PFC
+        """
+        Set timeout of PMAC Filter Controller.
+
+        Args:
+            timeout (int): Timeout to set
+        """
         self._configure_param({"timeout": timeout})
 
         self.timeout_rbv.set(timeout)
 
     @_if_connected
-    async def _clear_error(self, _) -> None:
+    async def _clear_error(self, _: int) -> None:
+        """
+        Clear error state of PMAC Filter Controller.
+
+        Args:
+            _ (int): EPICS record processing value
+        """
         if _ == 1:
             clear_error = json.dumps({"command": "clear_error"})
             self._send_message(codecs.encode(clear_error, "utf-8"))
 
     @_if_connected
-    async def _start_singleshot(self, _) -> None:
+    async def _start_singleshot(self, _: int) -> None:
+        """
+        Trigger Singleshot logic in PMAC Filter Controller.
+
+        Args:
+            _ (int): EPICS record processing value
+        """
         if _ == 1:
             if (
                 self.state.get() == 3 or self.state.get() == 4
@@ -656,11 +831,18 @@ class Wrapper:
                 self._send_message(codecs.encode(start_singleshot, "utf-8"))
             else:
                 print(
-                    f"{dt.now()} - ERROR: Must be in SINGLESHOT mode, and in SINGLESHOT_WAITING/COMPLETE state."
+                    "ERROR: Must be in SINGLESHOT mode, and in \
+                        SINGLESHOT_WAITING/COMPLETE state."
                 )
 
     @_if_connected
     async def _set_shutter(self, shutter_state: int) -> None:
+        """
+        Set state of the fast shutter.
+
+        Args:
+            shutter_state (int): The state to set
+        """
         if shutter_state == 0:  # SHUTTER_CLOSED
             pos = self.shutter_pos_closed.get()
         else:
@@ -669,6 +851,13 @@ class Wrapper:
         await caput(f"{self.motors}:SHUTTER", pos, wait=False, throw=False)
 
     def _set_shutter_pos(self, val: float, shutter_state: str) -> None:
+        """
+        Set the shutter position count value.
+
+        Args:
+            val (float): Count value of the shutter position
+            shutter_state (str): The state of the shutter to set the position for
+        """
         if shutter_state == SHUTTER_CLOSED:
             self._configure_param({"shutter_closed_position": val})
 
@@ -682,24 +871,35 @@ class Wrapper:
 
     @_if_connected
     def _set_thresholds(self) -> None:
+        """Set pixel threshold values for PMAC Filter Controller."""
         self._configure_param({"pixel_count_thresholds": self.pixel_count_thresholds})
 
         self.write_autosave()
 
     @_if_connected
     def _set_extreme_high_threshold(self, threshold: int) -> None:
+        """
+        Set extreme high pixel threshold value.
+
+        Args:
+            threshold (int): New threshold value
+        """
         if threshold != self.pixel_count_thresholds["high3"]:
             self.pixel_count_thresholds["high3"] = threshold
 
-            # Set upper high threshold for PFC
             self._set_thresholds()
 
     @_if_connected
     def _set_upper_high_threshold(self, threshold: int) -> None:
+        """
+        Set upper high pixel threshold value.
+
+        Args:
+            threshold (int): New threshold value
+        """
         if threshold != self.pixel_count_thresholds["high2"]:
             self.pixel_count_thresholds["high2"] = threshold
 
-            # Set upper high threshold for PFC
             self._set_thresholds()
 
         else:
@@ -707,10 +907,15 @@ class Wrapper:
 
     @_if_connected
     def _set_lower_high_threshold(self, threshold: int) -> None:
+        """
+        Set lower high pixel threshold value.
+
+        Args:
+            threshold (int): New threshold value
+        """
         if threshold != self.pixel_count_thresholds["high1"]:
             self.pixel_count_thresholds["high1"] = threshold
 
-            # Set lower high threshold for PFC
             self._set_thresholds()
 
         else:
@@ -718,10 +923,15 @@ class Wrapper:
 
     @_if_connected
     def _set_upper_low_threshold(self, threshold: int) -> None:
+        """
+        Set upper low pixel threshold value.
+
+        Args:
+            threshold (int): New threshold value
+        """
         if threshold != self.pixel_count_thresholds["low2"]:
             self.pixel_count_thresholds["low2"] = threshold
 
-            # Set upper high threshold for PFC
             self._set_thresholds()
 
         else:
@@ -729,10 +939,15 @@ class Wrapper:
 
     @_if_connected
     def _set_lower_low_threshold(self, threshold: int) -> None:
+        """
+        Set lower low pixel threshold value.
+
+        Args:
+            threshold (int): New threshold value
+        """
         if threshold != self.pixel_count_thresholds["low1"]:
             self.pixel_count_thresholds["low1"] = threshold
 
-            # Set upper high threshold for PFC
             self._set_thresholds()
 
         else:
@@ -740,6 +955,13 @@ class Wrapper:
 
     @_if_connected
     async def _set_hist(self, hist_name: str, hist_val: int) -> None:
+        """
+        Set histogram threshold value.
+
+        Args:
+            hist_name (str): Name of the histogram threshold to set
+            hist_val (int): Value to set the histogram threshold to
+        """
         self._hist_thresholds[hist_name] = hist_val
         self._autosave_dict[hist_name] = hist_val
         await caput(
@@ -751,6 +973,12 @@ class Wrapper:
 
     @_if_connected
     async def _set_histogram_scale(self, scale: float) -> None:
+        """
+        Scale the histogram values by a factor.
+
+        Args:
+            scale (float): Scale factor
+        """
         new_thresholds = self._hist_thresholds
 
         if scale != 1.0:
@@ -765,6 +993,12 @@ class Wrapper:
 
     @_if_connected
     def _set_filter_set(self, filter_set_num: int) -> None:
+        """
+        Set filter set positions based on the filter set.
+
+        Args:
+            filter_set_num (int): Filter set to set positions for
+        """
         in_positions = [
             x.get()
             for x in self.filter_sets_in[f"filter_set_{filter_set_num+1}"].values()
@@ -792,6 +1026,14 @@ class Wrapper:
 
     @_if_connected
     def _set_pos(self, filter_set: int, in_out_key: str, val: float) -> None:
+        """
+        Set position of a filter.
+
+        Args:
+            filter_set (int): Filter set of the filter
+            in_out_key (str): The key to identify the filter in the filter set
+            val (float): Position to set the filter position to
+        """
         self._autosave_dict[f"{self.device_name}:{in_out_key}"] = val
 
         if self.filter_set_rbv.get() == filter_set - 1:
@@ -801,19 +1043,30 @@ class Wrapper:
 
     @_if_connected
     def _set_file_path(self, path: str) -> None:
-        # Set file path for PFC
+        """
+        Set file path of HDF5 attenuation file.
+
+        Args:
+            path (str): File path of HDF5 attenuation file
+        """
         self.file_path_rbv.set(path)
 
         self._combine_file_path_and_name()
 
     @_if_connected
     def _set_file_name(self, name: str) -> None:
-        # Set file name for PFC
+        """
+        Set file name of HDF5 attenuation file.
+
+        Args:
+            name (str): File name to set
+        """
         self.file_name_rbv.set(name)
 
         self._combine_file_path_and_name()
 
     def _combine_file_path_and_name(self) -> None:
+        """Combine the file path and name into a full path."""
         path: str = self.file_path.get()
         name = self.file_name.get()
 

@@ -1,12 +1,11 @@
+"""ZeroMQ adapter for use in a stream device."""
+
 import asyncio
-import logging
-from dataclasses import dataclass#, field
-from typing import Iterable
+from dataclasses import dataclass
+from typing import Iterable, List
 
 import aiozmq
 import zmq
-
-# LOGGER = logging.getLogger("ZmqAdapter")
 
 
 @dataclass
@@ -20,14 +19,13 @@ class ZeroMQAdapter:
 
     async def start_stream(self) -> None:
         """Start the ZeroMQ stream."""
-
         print("starting stream...")
 
         self._socket = await aiozmq.create_zmq_stream(
             self.zmq_type, connect=f"tcp://{self.zmq_host}:{self.zmq_port}"
         )  # type: ignore
         if self.zmq_type == zmq.SUB:
-                self._socket.transport.setsockopt(zmq.SUBSCRIBE, b"")
+            self._socket.transport.setsockopt(zmq.SUBSCRIBE, b"")
         self._socket.transport.setsockopt(zmq.LINGER, 0)
 
         print(f"Stream started. {self._socket}")
@@ -38,8 +36,9 @@ class ZeroMQAdapter:
 
         self.running = False
 
-    def send_message(self, message: bytes) -> None:
-        """Send a message down the ZeroMQ stream.
+    def send_message(self, message: List[bytes]) -> None:
+        """
+        Send a message down the ZeroMQ stream.
 
         Sets up an asyncio task to put the message on the message queue, before
         being processed.
@@ -50,6 +49,12 @@ class ZeroMQAdapter:
         self._send_message_queue.put_nowait(message)
 
     async def _read_response(self) -> bytes:
+        """
+        Read and return a response once received on the socket.
+
+        Returns:
+            bytes: If received, a response is returned
+        """
         if self.zmq_type is not zmq.DEALER:
             try:
                 resp = await asyncio.wait_for(self._socket.read(), timeout=20)
@@ -60,8 +65,10 @@ class ZeroMQAdapter:
             discard = True
             while discard:
                 try:
-                    multipart_resp = await asyncio.wait_for(self._socket.read(), timeout=20)
-                    if multipart_resp[0] == b'':
+                    multipart_resp = await asyncio.wait_for(
+                        self._socket.read(), timeout=20
+                    )
+                    if multipart_resp[0] == b"":
                         discard = False
                         resp = multipart_resp[1]
                         return resp
@@ -69,12 +76,16 @@ class ZeroMQAdapter:
                     pass
 
     async def get_response(self) -> bytes:
+        """
+        Get response from the received message queue.
 
+        Returns:
+            bytes: Received response message
+        """
         return await self._recv_message_queue.get()
 
     async def run_forever(self) -> None:
-        """Runs the ZeroMQ adapter continuously."""
-
+        """Run the ZeroMQ adapter continuously."""
         self._send_message_queue: asyncio.Queue = asyncio.Queue()
         self._recv_message_queue: asyncio.Queue = asyncio.Queue()
 
@@ -101,10 +112,11 @@ class ZeroMQAdapter:
             )
 
     def check_if_running(self):
-        """Returns the running state of the adapter."""
+        """Return the running state of the adapter."""
         return self.running
 
     async def _process_message_queue(self) -> None:
+        """Process message queue for sending messages over the ZeroMQ stream."""
         print("Processing message queue...")
         running = True
         while running:
@@ -113,6 +125,11 @@ class ZeroMQAdapter:
             running = self.check_if_running()
 
     async def _process_message(self, message: Iterable[bytes]) -> None:
+        """Process message to send over the ZeroMQ stream.
+
+        Args:
+            message (Iterable[bytes]): Message to send over the ZeroMQ stream.
+        """
         if message is not None:
             if not self._socket._closing:
                 try:
@@ -135,6 +152,7 @@ class ZeroMQAdapter:
             print("No message")
 
     async def _process_response_queue(self) -> None:
+        """Process response message queue from the ZeroMQ stream."""
         print("Processing response queue...")
         running = True
         while running:
