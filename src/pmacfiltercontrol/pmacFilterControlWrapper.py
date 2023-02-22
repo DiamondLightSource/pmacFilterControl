@@ -429,25 +429,25 @@ class Wrapper:
                 record.set(self._autosave_dict[record.name])
 
     async def _setup_hist_thresholds(self) -> None:
-        self._hist_threshold_values: Dict[str, float] = {
-            "High3": self._autosave_dict["High3"]
+        self._hist_threshold_values: Dict[str, int] = {
+            "High3": int(self._autosave_dict["High3"])
             if "High3" in self._autosave_dict.keys()
             else await caget(f"{self.detector}:OD:SUM:Histogram:High3"),
-            "High2": self._autosave_dict["High2"]
+            "High2": int(self._autosave_dict["High2"])
             if "High2" in self._autosave_dict.keys()
             else await caget(f"{self.detector}:OD:SUM:Histogram:High2"),
-            "High1": self._autosave_dict["High1"]
+            "High1": int(self._autosave_dict["High1"])
             if "High1" in self._autosave_dict.keys()
             else await caget(f"{self.detector}:OD:SUM:Histogram:High1"),
-            "Low1": self._autosave_dict["Low1"]
+            "Low1": int(self._autosave_dict["Low1"])
             if "Low1" in self._autosave_dict.keys()
             else await caget(f"{self.detector}:OD:SUM:Histogram:Low1"),
-            "Low2": self._autosave_dict["Low2"]
+            "Low2": int(self._autosave_dict["Low2"])
             if "Low2" in self._autosave_dict.keys()
             else await caget(f"{self.detector}:OD:SUM:Histogram:Low2"),
         }
 
-        for key, value in self._hist_thresholds_values.items():
+        for key, value in self._hist_threshold_values.items():
             self._autosave_dict[key] = value
             self._hist_thresholds[key].set(value, process=True)
 
