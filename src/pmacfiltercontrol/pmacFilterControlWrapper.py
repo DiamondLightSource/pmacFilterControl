@@ -269,7 +269,11 @@ class Wrapper:
         )
 
         if f"{self.device_name}:FILTER_SET" in self._autosave_dict.keys():
-            self._set_filter_set(self._autosave_dict[f"{self.device_name}:FILTER_SET"])
+            autosaved_filter_set: int = int(
+                self._autosave_dict[f"{self.device_name}:FILTER_SET"]
+            )
+            print(f"~ Restoring with filter set: {FILTER_SET[autosaved_filter_set]}")
+            self._set_filter_set(autosaved_filter_set)
         else:
             self._set_filter_set(0)
 
