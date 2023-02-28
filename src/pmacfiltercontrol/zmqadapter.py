@@ -2,7 +2,7 @@
 
 import asyncio
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 import aiozmq
 import zmq
@@ -48,12 +48,12 @@ class ZeroMQAdapter:
         """
         self._send_message_queue.put_nowait(message)
 
-    async def _read_response(self) -> bytes:
+    async def _read_response(self) -> Optional[bytes]:
         """
         Read and return a response once received on the socket.
 
         Returns:
-            bytes: If received, a response is returned
+            Optional[bytes]: If received, a response is returned, else None
         """
         if self.zmq_type is not zmq.DEALER:
             try:
@@ -74,6 +74,7 @@ class ZeroMQAdapter:
                         return resp
                 except asyncio.TimeoutError:
                     pass
+        return None
 
     async def get_response(self) -> bytes:
         """
@@ -157,5 +158,7 @@ class ZeroMQAdapter:
         running = True
         while running:
             resp = await self._read_response()
+            if resp is None:
+                continue
             self._recv_message_queue.put_nowait(resp)
             running = self.check_if_running()
