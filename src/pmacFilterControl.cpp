@@ -326,9 +326,9 @@ bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_
 
 /**
  * @brief Update the given shutter closed position from the given value
- * 
+ *
  * @param[in] shutter_closed_position shutter closed position
- * 
+ *
  * @return true if the position was set, else false
  */
 bool PMACFilterController::_set_shutter_closed_position(int shutter_closed_position) {
@@ -668,7 +668,7 @@ bool PMACFilterController::_process_data(const json& data) {
     @brief Close shutter
 */
 void PMACFilterController::_close_shutter() {
-    
+
     char* temp = strdup(this->shutter_close_string_.c_str());
 
 #ifdef __ARM_ARCH

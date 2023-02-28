@@ -120,6 +120,7 @@ html_theme_options = dict(
     github_url=f"https://github.com/{github_user}/{github_repo}",
     page_sidebar_items=["page-toc"],
     navbar_end=["theme-switcher", "icon-links"],
+    icon_links=[]
 )
 
 # Add any paths that contain custom static files (such as style sheets) here,
