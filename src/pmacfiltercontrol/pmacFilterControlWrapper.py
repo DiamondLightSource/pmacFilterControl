@@ -307,6 +307,7 @@ class Wrapper:
                 self._autosave_dict[f"{self.device_name}:FILTER_SET"]
             )
             print(f"~ Restoring with filter set: {FILTER_SET[autosaved_filter_set]}")
+            self.filter_set.set(autosaved_filter_set, process=False)
             self._set_filter_set(autosaved_filter_set)
         else:
             self._set_filter_set(0)
