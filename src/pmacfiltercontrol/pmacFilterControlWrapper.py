@@ -999,6 +999,9 @@ class Wrapper:
         Args:
             filter_set_num (int): Filter set to set positions for
         """
+        self._set_mode(0)
+        self.mode.set(0, process=False)
+
         in_positions = [
             x.get()
             for x in self.filter_sets_in[f"filter_set_{filter_set_num+1}"].values()
