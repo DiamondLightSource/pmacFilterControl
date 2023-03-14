@@ -307,6 +307,7 @@ class Wrapper:
                 self._autosave_dict[f"{self.device_name}:FILTER_SET"]
             )
             print(f"~ Restoring with filter set: {FILTER_SET[autosaved_filter_set]}")
+            self.filter_set.set(autosaved_filter_set, process=False)
             self._set_filter_set(autosaved_filter_set)
         else:
             self._set_filter_set(0)
@@ -999,6 +1000,9 @@ class Wrapper:
         Args:
             filter_set_num (int): Filter set to set positions for
         """
+        self._set_mode(0)
+        self.mode.set(0, process=False)
+
         in_positions = [
             x.get()
             for x in self.filter_sets_in[f"filter_set_{filter_set_num+1}"].values()
