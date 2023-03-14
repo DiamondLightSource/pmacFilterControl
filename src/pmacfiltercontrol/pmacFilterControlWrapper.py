@@ -1000,9 +1000,6 @@ class Wrapper:
         Args:
             filter_set_num (int): Filter set to set positions for
         """
-        self._set_mode(0)
-        self.mode.set(0, process=False)
-
         in_positions = [
             x.get()
             for x in self.filter_sets_in[f"filter_set_{filter_set_num+1}"].values()
@@ -1024,6 +1021,12 @@ class Wrapper:
         self._configure_param({"in_positions": in_pos, "out_positions": out_pos})
 
         self.filter_set_rbv.set(filter_set_num)
+
+        if self.mode.get() > 0:
+            self._set_mode(0)
+            self.mode.set(0, process=False)
+        else:
+            self._set_manual_attenuation(15)
 
         self._autosave_dict[f"{self.device_name}:FILTER_SET"] = filter_set_num
         self.write_autosave()
