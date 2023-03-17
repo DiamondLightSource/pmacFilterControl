@@ -557,7 +557,11 @@ void PMACFilterController::_process_state_changes()
         {
             this->_transition_state(ControlState::SINGLESHOT_WAITING);
         }
-        this->_process_singleshot_state();
+        // We only want to process the state at the beginning of a scan or after attenuation is stabilised
+        else if (this->singleshot_start_ || this->last_adjustment_ >= 0)
+        {
+            this->_process_singleshot_state();
+        }
     }
 
     // Set max attenuation and stop if timeout reached
