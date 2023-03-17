@@ -597,7 +597,7 @@ void PMACFilterController::_process_singleshot_state()
 {
     // Complete if singleshot run has stablised
     if (this->state_ == ControlState::ACTIVE && (this->last_received_frame_ >= this->last_processed_frame_ + 2 ||
-                                                 this->current_attenuation_ == 0 || this->last_adjustment_ >= 0))
+                                                 this->current_attenuation_ == 0 || this->last_adjustment_ > 0))
     {
         std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
         this->_transition_state(ControlState::SINGLESHOT_COMPLETE);
