@@ -1,8 +1,8 @@
 import json
 import os
-from shutil import which
 import subprocess
 from pathlib import Path
+from shutil import which
 from time import sleep
 from typing import Any, Dict, Iterator
 
@@ -11,7 +11,6 @@ import zmq
 
 from pmacfiltercontrol.detector_sim import DetectorSim
 from pmacfiltercontrol.event_subscriber import EventSubscriber
-
 
 DEFAULT_TIMEOUT_MS = 1000
 
@@ -36,7 +35,7 @@ class PMACFilterControlWrapper:
         self.poller.register(self.socket, zmq.POLLIN)
 
     def start(self):
-        """Start the application, give it some time to start and test a status request"""
+        """Start the application, give it time to start and test a status request"""
         cmd = [
             PMAC_FILTER_CONTROL,
             str(self.control_socket),
@@ -94,7 +93,7 @@ class PMACFilterControlWrapper:
 
         """
         delay = 0.2
-        elapsed = 0
+        elapsed = 0.0
         while elapsed < timeout:
             sleep(delay)
             elapsed += delay
@@ -532,3 +531,30 @@ def test_singleshot_scan(
     # Check correct state after timeout clear
     pfc.request({"command": "clear_error"})
     pfc.assert_status_equal({"mode": 2, "state": 3})
+
+
+def test_singleshot_scan_increase_attenuation(
+    sim: DetectorSim,
+    pfc: PMACFilterControlWrapper,
+):
+    pfc.configure({"timeout": 3})
+    pfc.configure({"mode": 2})
+
+    # Check in SINGLESHOT_WAITING state
+    pfc.assert_status_equal({"mode": 2, "state": 3, "current_attenuation": 15})
+
+    # Start singleshot run
+    pfc.request({"command": "singleshot"})
+    pfc.assert_status_equal({"mode": 2, "state": 1, "current_attenuation": 15})
+
+    # Reduce attenuation
+    sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
+    pfc.assert_status_equal({"mode": 2, "state": 2, "current_attenuation": 13})
+
+    sim.send_blank()
+    pfc.assert_status_equal({"mode": 2, "state": 2})
+
+    # Increase attenuation
+    sim.send_frame({"high2": 0, "high1": 10, "low1": 0, "low2": 0})
+    # Stablise for increasing attenuation
+    pfc.assert_status_equal({"mode": 2, "state": 4, "current_attenuation": 14})
