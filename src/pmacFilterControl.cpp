@@ -1,20 +1,20 @@
 // An application to listen on a ZMQ channel for histograms and adjust a filter set
 
-#include <iostream>  // std::cout
-#include <functional>  // std::bind
-#include <time.h>  // timespec, CLOCK_REALTIME
-#include <sstream>  // std::stringstream, std::getline
+#include <iostream>   // std::cout
+#include <functional> // std::bind
+#include <time.h>     // timespec, CLOCK_REALTIME
+#include <sstream>    // std::stringstream, std::getline
 
 #include "pmacFilterControl.h"
 #include "version.h"
 
 #ifdef __ARM_ARCH
-#include "gplib.h"  // pshm, CommandTS
+#include "gplib.h" // pshm, CommandTS
 #endif
 
-const int MAX_ATTENUATION = 15;  // All filters in: 1 + 2 + 4 + 8
+const int MAX_ATTENUATION = 15; // All filters in: 1 + 2 + 4 + 8
 const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
-const int FILTER_COUNT = 4;  // Number of filters
+const int FILTER_COUNT = 4;     // Number of filters
 
 // Command to send to motion controller to execute the motion program and move to the set demands
 char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
@@ -30,7 +30,7 @@ const std::string COMMAND_RESET = "reset";
 const std::string COMMAND_CLEAR_ERROR = "clear_error";
 const std::string COMMAND_SINGLESHOT_START = "singleshot";
 const std::string PARAMS = "params";
-const std::string CONFIG_MODE = "mode";  // Values defined by ControlMode
+const std::string CONFIG_MODE = "mode"; // Values defined by ControlMode
 const std::string CONFIG_IN_POSITIONS = "in_positions";
 const std::string CONFIG_OUT_POSITIONS = "out_positions";
 const std::string CONFIG_SHUTTER_CLOSED_POSITION = "shutter_closed_position";
@@ -45,8 +45,7 @@ const std::map<std::string, int> FILTER_MAP = {
     {FILTER_1_KEY, 0},
     {FILTER_2_KEY, 1},
     {FILTER_3_KEY, 2},
-    {FILTER_4_KEY, 3}
-};
+    {FILTER_4_KEY, 3}};
 
 // Data message keys
 const std::string FRAME_NUMBER = "frame_number";
@@ -68,12 +67,10 @@ const std::string ATTENUATION = "attenuation";
 // PARAM_LOW1 -> Subtract 1 level of attenuation
 // PARAM_LOW2 -> Subtract 2 levels of attenuation
 const std::map<std::string, int> THRESHOLD_ADJUSTMENTS = {
-    {PARAM_HIGH3, 15}, {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}
-};
+    {PARAM_HIGH3, 15}, {PARAM_HIGH2, 2}, {PARAM_HIGH1, 1}, {PARAM_LOW2, -2}, {PARAM_LOW1, -1}};
 
 // An initial invalid value to compare with `last_processed_frame_` that always passes the ignore frame checks
 const int64_t NO_FRAMES_PROCESSED = -2;
-
 
 /*!
     @brief Constructor
@@ -85,9 +82,9 @@ const int64_t NO_FRAMES_PROCESSED = -2;
     @param[in] subscribe_endpoints Vector of endpoints (`IP`:`PORT`) to subscribe on for data messages
 */
 PMACFilterController::PMACFilterController(
-    const std::string& control_port,
-    const std::string& publish_port,
-    const std::vector<std::string>& subscribe_endpoints
+    const std::string &control_port,
+    const std::string &publish_port,
+    const std::vector<std::string> &subscribe_endpoints
 ) :
     control_channel_endpoint_("tcp://*:" + control_port),
     publish_channel_endpoint_("tcp://*:" + publish_port),
@@ -126,7 +123,8 @@ PMACFilterController::PMACFilterController(
     this->zmq_publish_socket_.bind(publish_channel_endpoint_.c_str());
 
     // Open sockets to subscribe to data endpoints
-    for (size_t idx = 0; idx != this->subscribe_channel_endpoints_.size(); idx++) {
+    for (size_t idx = 0; idx != this->subscribe_channel_endpoints_.size(); idx++)
+    {
         this->zmq_subscribe_sockets_.push_back(zmq::socket_t(this->zmq_context_, ZMQ_SUB));
         // Only recv most recent message
         const int conflate = 1;
@@ -143,11 +141,13 @@ PMACFilterController::PMACFilterController(
     Close ZeroMQ sockets
 
 */
-PMACFilterController::~PMACFilterController() {
+PMACFilterController::~PMACFilterController()
+{
     this->zmq_control_socket_.close();
     this->zmq_publish_socket_.close();
     std::vector<zmq::socket_t>::iterator it;
-    for (it = this->zmq_subscribe_sockets_.begin(); it != this->zmq_subscribe_sockets_.end(); it++) {
+    for (it = this->zmq_subscribe_sockets_.begin(); it != this->zmq_subscribe_sockets_.end(); it++)
+    {
         it->close();
     }
 }
@@ -164,44 +164,65 @@ PMACFilterController::~PMACFilterController() {
 
     @return true if the request was applied successfully, else false
 */
-bool PMACFilterController::_handle_request(const json& request, json& response) {
-    if (!_is_valid_request(request)) {
+bool PMACFilterController::_handle_request(const json &request, json &response)
+{
+    if (!_is_valid_request(request))
+    {
         return false;
     }
 
     bool success = true;
-    if (request[COMMAND] == COMMAND_SHUTDOWN) {
+    if (request[COMMAND] == COMMAND_SHUTDOWN)
+    {
         std::cout << "Received shutdown command" << std::endl;
         this->shutdown_ = true;
         success = true;
-    } else if (request[COMMAND] == COMMAND_RESET) {
+    }
+    else if (request[COMMAND] == COMMAND_RESET)
+    {
         std::cout << "Resetting frame counter" << std::endl;
         this->last_received_frame_ = NO_FRAMES_PROCESSED;
         this->last_processed_frame_ = NO_FRAMES_PROCESSED;
         success = true;
-    } else if (request[COMMAND] == COMMAND_CLEAR_ERROR) {
+    }
+    else if (request[COMMAND] == COMMAND_CLEAR_ERROR)
+    {
         this->clear_error_ = true;
-    } else if (request[COMMAND] == COMMAND_SINGLESHOT_START) {
+    }
+    else if (request[COMMAND] == COMMAND_SINGLESHOT_START)
+    {
         this->singleshot_start_ = true;
         success = true;
-    } else if (request[COMMAND] == COMMAND_STATUS) {
+    }
+    else if (request[COMMAND] == COMMAND_STATUS)
+    {
         this->_handle_status(response);
         success = true;
-    } else if (request[COMMAND] == COMMAND_CONFIGURE) {
-        if (request.contains(PARAMS)) {
+    }
+    else if (request[COMMAND] == COMMAND_CONFIGURE)
+    {
+        if (request.contains(PARAMS))
+        {
             json config = request[PARAMS];
             std::cout << "Received new config: " << config.dump() << std::endl;
-            try {
+            try
+            {
                 success = this->_handle_config(config);
-            } catch (json::type_error& e) {
+            }
+            catch (json::type_error &e)
+            {
                 std::cout << "Type error when handling config" << std::endl;
                 success = false;
             }
-        } else {
+        }
+        else
+        {
             std::cout << "Received config command with no parameters" << std::endl;
             success = false;
         }
-    } else {
+    }
+    else
+    {
         std::cout << "Invalid command" << std::endl;
         success = false;
     }
@@ -218,38 +239,50 @@ bool PMACFilterController::_handle_request(const json& request, json& response) 
 
     @return true if all given parameters applied successfully, false if one or more failed or no parameters found
 */
-bool PMACFilterController::_handle_config(const json& config) {
+bool PMACFilterController::_handle_config(const json &config)
+{
     bool success = false;
 
-    if (config.contains(CONFIG_MODE)) {
+    if (config.contains(CONFIG_MODE))
+    {
         success = this->_set_mode(config[CONFIG_MODE]);
     }
-    if (config.contains(CONFIG_IN_POSITIONS)) {
+    if (config.contains(CONFIG_IN_POSITIONS))
+    {
         success = this->_set_positions(this->in_positions_, config[CONFIG_IN_POSITIONS]);
     }
-    if (config.contains(CONFIG_OUT_POSITIONS)) {
+    if (config.contains(CONFIG_OUT_POSITIONS))
+    {
         success = this->_set_positions(this->out_positions_, config[CONFIG_OUT_POSITIONS]);
     }
-    if (config.contains(CONFIG_SHUTTER_CLOSED_POSITION)) {
+    if (config.contains(CONFIG_SHUTTER_CLOSED_POSITION))
+    {
         success = this->_set_shutter_closed_position(config[CONFIG_SHUTTER_CLOSED_POSITION]);
     }
-    if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLDS)) {
+    if (config.contains(CONFIG_PIXEL_COUNT_THRESHOLDS))
+    {
         success = this->_set_pixel_count_thresholds(config[CONFIG_PIXEL_COUNT_THRESHOLDS]);
     }
-    if (config.contains(CONFIG_ATTENUATION)) {
-        if (this->mode_ == ControlMode::MANUAL) {
+    if (config.contains(CONFIG_ATTENUATION))
+    {
+        if (this->mode_ == ControlMode::MANUAL)
+        {
             this->_set_attenuation(config[CONFIG_ATTENUATION]);
             success = true;
-        } else {
+        }
+        else
+        {
             std::cout << "Can only set attenuation in MANUAL mode" << std::endl;
             success = false;
         }
     }
-    if (config.contains(CONFIG_TIMEOUT)) {
+    if (config.contains(CONFIG_TIMEOUT))
+    {
         success = this->_set_timeout(config[CONFIG_TIMEOUT]);
     }
 
-    if (!success) {
+    if (!success)
+    {
         std::cout << "Given configuration failed or found no valid config parameters" << std::endl;
     }
 
@@ -263,16 +296,19 @@ bool PMACFilterController::_handle_config(const json& config) {
 
     @return true if the mode was set successfully, else false
 */
-bool PMACFilterController::_set_mode(ControlMode mode) {
+bool PMACFilterController::_set_mode(ControlMode mode)
+{
     bool success = true;
 
     std::cout << "Changing to mode " << mode << std::endl;
 
-    if (mode < ControlMode::CONTROL_MODE_SIZE) {
+    if (mode < ControlMode::CONTROL_MODE_SIZE)
+    {
         this->mode_ = mode;
-    } else {
-        std::cout << "Unknown mode: " << mode <<
-            ". Allowed modes: 0 - " << ControlMode::CONTROL_MODE_SIZE - 1 << std::endl;
+    }
+    else
+    {
+        std::cout << "Unknown mode: " << mode << ". Allowed modes: 0 - " << ControlMode::CONTROL_MODE_SIZE - 1 << std::endl;
         success = false;
     }
 
@@ -286,14 +322,17 @@ bool PMACFilterController::_set_mode(ControlMode mode) {
 
     @return true if the mode was set successfully, else false
 */
-bool PMACFilterController::_set_timeout(float timeout) {
+bool PMACFilterController::_set_timeout(float timeout)
+{
     bool success = true;
 
-    if (timeout < 0.0) {
+    if (timeout < 0.0)
+    {
         std::cout << "Timeout must be >= 0.0 (seconds)" << std::endl;
         success = false;
     }
-    else {
+    else
+    {
         std::cout << "Changing timeout to " << timeout << " seconds" << std::endl;
         this->timeout_ = timeout;
     }
@@ -310,12 +349,15 @@ bool PMACFilterController::_set_timeout(float timeout) {
 
     @return true if at least one position was set, else false
 */
-bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_positions) {
+bool PMACFilterController::_set_positions(std::vector<int> &positions, json new_positions)
+{
     bool success = false;
 
     std::map<std::string, int>::const_iterator item;
-    for(item = FILTER_MAP.begin(); item != FILTER_MAP.end(); ++item) {
-        if (new_positions.contains(item->first)) {
+    for (item = FILTER_MAP.begin(); item != FILTER_MAP.end(); ++item)
+    {
+        if (new_positions.contains(item->first))
+        {
             positions[item->second] = new_positions[item->first];
             success = true;
         }
@@ -331,7 +373,8 @@ bool PMACFilterController::_set_positions(std::vector<int>& positions, json new_
  *
  * @return true if the position was set, else false
  */
-bool PMACFilterController::_set_shutter_closed_position(int shutter_closed_position) {
+bool PMACFilterController::_set_shutter_closed_position(int shutter_closed_position)
+{
     bool success = true;
 
     std::string shutter_close_string = "";
@@ -352,12 +395,15 @@ bool PMACFilterController::_set_shutter_closed_position(int shutter_closed_posit
 
     @return true if at least one threshold was set, else false
 */
-bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
+bool PMACFilterController::_set_pixel_count_thresholds(json thresholds)
+{
     bool success = false;
 
     std::map<std::string, int>::const_iterator it;
-    for(it = THRESHOLD_ADJUSTMENTS.begin(); it != THRESHOLD_ADJUSTMENTS.end(); ++it) {
-        if (thresholds.contains(it->first)) {
+    for (it = THRESHOLD_ADJUSTMENTS.begin(); it != THRESHOLD_ADJUSTMENTS.end(); ++it)
+    {
+        if (thresholds.contains(it->first))
+        {
             this->pixel_count_thresholds_[it->first] = thresholds[it->first];
             success = true;
         }
@@ -371,7 +417,8 @@ bool PMACFilterController::_set_pixel_count_thresholds(json thresholds) {
 
     @param[out] response json object to add status to
 */
-void PMACFilterController::_handle_status(json& response) {
+void PMACFilterController::_handle_status(json &response)
+{
     json status;
     // Read-only status items
     status["version"] = VERSION;
@@ -396,18 +443,19 @@ void PMACFilterController::_handle_status(json& response) {
 /*!
     @brief Spawn data monitor thread and listen for control requests until shutdown
 */
-void PMACFilterController::run() {
+void PMACFilterController::run()
+{
     // Start data handler and event stream threads
     this->subscribe_thread_ = std::thread(
-        std::bind(&PMACFilterController::_process_data_channel, this)
-    );
+        std::bind(&PMACFilterController::_process_data_channel, this));
 
     // Listen for control messages
     std::string request_str;
-    while (!this->shutdown_) {
+    while (!this->shutdown_)
+    {
         zmq::message_t request_msg;
         this->zmq_control_socket_.recv(&request_msg);
-        request_str = std::string(static_cast<char*>(request_msg.data()), request_msg.size());
+        request_str = std::string(static_cast<char *>(request_msg.data()), request_msg.size());
 
         json request, response;
         request = _parse_json_string(request_str);
@@ -430,10 +478,12 @@ void PMACFilterController::run() {
     This method should be run in a spawned thread and will return when `shutdown_`
     is set to `true`
 */
-void PMACFilterController::_process_data_channel() {
+void PMACFilterController::_process_data_channel()
+{
     // Construct pollitems for data sockets
     zmq::pollitem_t pollitems[this->zmq_subscribe_sockets_.size()];
-    for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++) {
+    for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++)
+    {
         zmq::pollitem_t pollitem = {this->zmq_subscribe_sockets_[idx], 0, ZMQ_POLLIN, 0};
         pollitems[idx] = pollitem;
     }
@@ -443,19 +493,23 @@ void PMACFilterController::_process_data_channel() {
     std::string data_str;
     struct timespec process_start_ts;
 
-    while (!this->shutdown_) {
+    while (!this->shutdown_)
+    {
         this->_process_state_changes();
 
         // Poll data sockets
         zmq::poll(&pollitems[0], this->zmq_subscribe_sockets_.size(), POLL_TIMEOUT);
-        for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++) {
-            if (_message_queued(pollitems[idx])) {
+        for (size_t idx = 0; idx != this->zmq_subscribe_sockets_.size(); idx++)
+        {
+            if (_message_queued(pollitems[idx]))
+            {
                 _get_time(&process_start_ts);
 
                 zmq::message_t data_message;
                 this->zmq_subscribe_sockets_[idx].recv(&data_message);
 
-                if (!(this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE)) {
+                if (!(this->state_ == ControlState::WAITING || this->state_ == ControlState::ACTIVE))
+                {
                     // Receive and ignore messages to keep the sockets clear
                     continue;
                 }
@@ -464,7 +518,8 @@ void PMACFilterController::_process_data_channel() {
 
                 this->process_duration_ = (this->process_duration_ + _useconds_since(process_start_ts)) / 2;
 
-                if (this->state_ == ControlState::WAITING) {
+                if (this->state_ == ControlState::WAITING)
+                {
                     // Change from waiting to active to enable timeout monitoring
                     this->_transition_state(ControlState::ACTIVE);
                 }
@@ -476,25 +531,30 @@ void PMACFilterController::_process_data_channel() {
 /*!
     @brief Update state based on mode changes from control thread and internal logic
 */
-void PMACFilterController::_process_state_changes() {
+void PMACFilterController::_process_state_changes()
+{
     // Manual mode disables monitoring of data channel
-    if (this->mode_ == ControlMode::MANUAL) {
+    if (this->mode_ == ControlMode::MANUAL)
+    {
         this->_transition_state(ControlState::IDLE);
     }
 
     // Transition state to waiting depending on mode change
-    if (this->mode_ == ControlMode::CONTINUOUS) {
+    if (this->mode_ == ControlMode::CONTINUOUS)
+    {
         if (this->state_ == ControlState::IDLE ||
             this->state_ == ControlState::SINGLESHOT_COMPLETE ||
-            this->state_ == ControlState::SINGLESHOT_WAITING
-        ) {
+            this->state_ == ControlState::SINGLESHOT_WAITING)
+        {
             this->_transition_state(ControlState::WAITING);
         }
-    } else if (this->mode_ == ControlMode::SINGLESHOT) {
+    }
+    else if (this->mode_ == ControlMode::SINGLESHOT)
+    {
         // If in singleshot mode, only change to singleshot waiting if not in the middle of the scan
         if (
-            (this->state_ == ControlState::IDLE || this->state_ == ControlState::WAITING) && !this->singleshot_start_
-        ) {
+            (this->state_ == ControlState::IDLE || this->state_ == ControlState::WAITING) && !this->singleshot_start_)
+        {
             this->_transition_state(ControlState::SINGLESHOT_WAITING);
         }
         this->_process_singleshot_state();
@@ -503,19 +563,22 @@ void PMACFilterController::_process_state_changes() {
     // Set max attenuation and stop if timeout reached
     if (
         (this->state_ == ControlState::ACTIVE || this->state_ == ControlState::SINGLESHOT_COMPLETE) &&
-         _seconds_since(this->last_message_ts_) >= this->timeout_
-    ) {
+        _seconds_since(this->last_message_ts_) >= this->timeout_)
+    {
         std::cout << "Timeout waiting for messages" << std::endl;
         this->_transition_state(ControlState::TIMEOUT);
     }
     // Clear timeout if requested from control thread
-    else if (this->state_ < 0 && this->clear_error_) {
+    else if (this->state_ < 0 && this->clear_error_)
+    {
         std::cout << "Error cleared - waiting for messages" << std::endl;
         this->clear_error_ = false;
-        if (this->mode_ == ControlMode::SINGLESHOT) {
+        if (this->mode_ == ControlMode::SINGLESHOT)
+        {
             this->_transition_state(ControlState::SINGLESHOT_WAITING);
         }
-        else {
+        else
+        {
             this->_transition_state(ControlState::WAITING);
         }
     }
@@ -526,22 +589,19 @@ void PMACFilterController::_process_state_changes() {
 
     This method assumes the controller is in singleshot mode
 */
-void PMACFilterController::_process_singleshot_state() {
+void PMACFilterController::_process_singleshot_state()
+{
     // Complete if singleshot run has stablised
-    if (this->state_ == ControlState::ACTIVE && (
-            this->last_received_frame_ >= this->last_processed_frame_ + 2 ||
-            this->current_attenuation_ == 0
-        )
-    ) {
+    if (this->state_ == ControlState::ACTIVE && (this->last_received_frame_ >= this->last_processed_frame_ + 2 ||
+                                                 this->current_attenuation_ == 0))
+    {
         std::cout << "Attenuation stabilised at " << this->current_attenuation_ << std::endl;
         this->_transition_state(ControlState::SINGLESHOT_COMPLETE);
     }
     // Start singleshot run
-    else if (this->singleshot_start_ && (
-        this->state_ == ControlState::SINGLESHOT_WAITING ||
-        this->state_ == ControlState::SINGLESHOT_COMPLETE
-        )
-    ) {
+    else if (this->singleshot_start_ && (this->state_ == ControlState::SINGLESHOT_WAITING ||
+                                         this->state_ == ControlState::SINGLESHOT_COMPLETE))
+    {
         // Set max attenuation and trigger the next run
         this->_transition_state(ControlState::WAITING);
         std::cout << "Starting a new singleshot run" << std::endl;
@@ -551,20 +611,24 @@ void PMACFilterController::_process_singleshot_state() {
 /*!
     @brief Transition to the given state applying relevant logic for specific transitions
 */
-void PMACFilterController::_transition_state(ControlState state) {
-    if (state != this->state_) {
-        if (state > 0 and this->state_ == ControlState::IDLE) {
-                _get_time(&this->last_message_ts_);
-                _get_time(&this->last_process_ts_);
+void PMACFilterController::_transition_state(ControlState state)
+{
+    if (state != this->state_)
+    {
+        if (state > 0 and this->state_ == ControlState::IDLE)
+        {
+            _get_time(&this->last_message_ts_);
+            _get_time(&this->last_process_ts_);
         }
         bool waiting = state == ControlState::WAITING || state == ControlState::SINGLESHOT_WAITING;
         // If currently in a scan and current state is waiting, or the scan is now complete, reset singleshot start flag
         if (
-            (this->singleshot_start_ && this->state_ == ControlState::WAITING) || state == ControlState::SINGLESHOT_COMPLETE
-        ) {
+            (this->singleshot_start_ && this->state_ == ControlState::WAITING) || state == ControlState::SINGLESHOT_COMPLETE)
+        {
             this->singleshot_start_ = false;
         }
-        if (state < 1 || (waiting && this->state_ >= 0)) {
+        if (state < 1 || (waiting && this->state_ >= 0))
+        {
             this->_set_attenuation(MAX_ATTENUATION);
         }
     }
@@ -577,11 +641,13 @@ void PMACFilterController::_transition_state(ControlState state) {
 
     @param[in] data_message Message containing histogram data
 */
-void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
-    std::string data_str = std::string(static_cast<char*>(data_message.data()), data_message.size());
+void PMACFilterController::_handle_data_message(zmq::message_t &data_message)
+{
+    std::string data_str = std::string(static_cast<char *>(data_message.data()), data_message.size());
     std::cout << "Data received: " << data_str << std::endl;
     json data = _parse_json_string(data_str);
-    if (data.is_null()) {
+    if (data.is_null())
+    {
         std::cout << "Not processing null data message" << std::endl;
         return;
     }
@@ -594,11 +660,14 @@ void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
     // This represents the state during the exposure of this frame
     this->_publish_event(frame_number);
 
-    if (this->_process_data(data)) {
+    if (this->_process_data(data))
+    {
         this->last_processed_frame_ = frame_number;
         this->process_period_ = _useconds_since(this->last_process_ts_);
         _get_time(&this->last_process_ts_);
-    } else {
+    }
+    else
+    {
         // Record that no adjustment was made for the most recent frame
         this->last_adjustment_ = 0;
     }
@@ -616,9 +685,11 @@ void PMACFilterController::_handle_data_message(zmq::message_t& data_message) {
 
     @return true if an attenuation change was made, else false
 */
-bool PMACFilterController::_process_data(const json& data) {
+bool PMACFilterController::_process_data(const json &data)
+{
     // Validate the data message
-    if (!(data.contains(FRAME_NUMBER) && data.contains(PARAMETERS))) {
+    if (!(data.contains(FRAME_NUMBER) && data.contains(PARAMETERS)))
+    {
         std::cout << "Ignoring message - Does not have keys " << FRAME_NUMBER << " and " << PARAMETERS << std::endl;
         return false;
     }
@@ -626,7 +697,8 @@ bool PMACFilterController::_process_data(const json& data) {
     json histogram = data[PARAMETERS];
 
     // Close shutter if PARAM_HIGH3 threshold exceeded
-    if (histogram[PARAM_HIGH3] > this->pixel_count_thresholds_[PARAM_HIGH3]) {
+    if (histogram[PARAM_HIGH3] > this->pixel_count_thresholds_[PARAM_HIGH3])
+    {
         this->_close_shutter();
 
         this->_trigger_threshold(PARAM_HIGH3);
@@ -637,27 +709,39 @@ bool PMACFilterController::_process_data(const json& data) {
         return true;
     }
     // Possibly ignore if PARAM_HIGH3 OK
-    else if (data[FRAME_NUMBER] <= this->last_processed_frame_) {
-        std::cout << "Ignoring message " << " - Already processed " << this->last_processed_frame_ << std::endl;
+    else if (data[FRAME_NUMBER] <= this->last_processed_frame_)
+    {
+        std::cout << "Ignoring message "
+                  << " - Already processed " << this->last_processed_frame_ << std::endl;
         return false;
-    } else if (data[FRAME_NUMBER] == this->last_processed_frame_ + 1) {
+    }
+    else if (data[FRAME_NUMBER] == this->last_processed_frame_ + 1)
+    {
         std::cout << "Ignoring message - Processed preceding frame" << std::endl;
         return false;
     }
 
     // Process logic for the most appropriate threshold
     // - Too many counts above high thresholds -> increase attenuation
-    if (histogram[PARAM_HIGH2] > this->pixel_count_thresholds_[PARAM_HIGH2]) {
+    if (histogram[PARAM_HIGH2] > this->pixel_count_thresholds_[PARAM_HIGH2])
+    {
         this->_trigger_threshold(PARAM_HIGH2);
-    } else if (histogram[PARAM_HIGH1] > this->pixel_count_thresholds_[PARAM_HIGH1]) {
+    }
+    else if (histogram[PARAM_HIGH1] > this->pixel_count_thresholds_[PARAM_HIGH1])
+    {
         this->_trigger_threshold(PARAM_HIGH1);
     }
     // - Too few counts above low thresholds -> decrease attenuation
-    else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2]) {
+    else if (histogram[PARAM_LOW2] < this->pixel_count_thresholds_[PARAM_LOW2])
+    {
         this->_trigger_threshold(PARAM_LOW2);
-    } else if (histogram[PARAM_LOW1] < this->pixel_count_thresholds_[PARAM_LOW1]) {
+    }
+    else if (histogram[PARAM_LOW1] < this->pixel_count_thresholds_[PARAM_LOW1])
+    {
         this->_trigger_threshold(PARAM_LOW1);
-    } else {
+    }
+    else
+    {
         return false;
     }
 
@@ -667,16 +751,16 @@ bool PMACFilterController::_process_data(const json& data) {
 /*!
     @brief Close shutter
 */
-void PMACFilterController::_close_shutter() {
+void PMACFilterController::_close_shutter()
+{
 
-    char* temp = strdup(this->shutter_close_string_.c_str());
+    char *temp = strdup(this->shutter_close_string_.c_str());
 
 #ifdef __ARM_ARCH
-        CommandTS(temp);
+    CommandTS(temp);
 #endif
 
     free(temp);
-
 }
 
 /*!
@@ -684,7 +768,8 @@ void PMACFilterController::_close_shutter() {
 
     @param[in] threshold Name of threshold to trigger
 */
-void PMACFilterController::_trigger_threshold(const std::string threshold) {
+void PMACFilterController::_trigger_threshold(const std::string threshold)
+{
     std::cout << threshold << " threshold triggered" << std::endl;
 
     int adjustment = THRESHOLD_ADJUSTMENTS.at(threshold);
@@ -703,16 +788,21 @@ void PMACFilterController::_trigger_threshold(const std::string threshold) {
 
     @param[in] attenuation Attenuation level to change to [0,15]
 */
-void PMACFilterController::_set_attenuation(int attenuation) {
-    if (attenuation <= 0) {
+void PMACFilterController::_set_attenuation(int attenuation)
+{
+    if (attenuation <= 0)
+    {
         std::cout << "Min attenuation reached" << std::endl;
         attenuation = 0;
-    } else if (attenuation >= MAX_ATTENUATION) {
+    }
+    else if (attenuation >= MAX_ATTENUATION)
+    {
         std::cout << "Max attenuation reached" << std::endl;
         attenuation = MAX_ATTENUATION;
     }
 
-    for (int idx = 0; idx < FILTER_COUNT; ++idx) {
+    for (int idx = 0; idx < FILTER_COUNT; ++idx)
+    {
         // Bit shift to get IN/OUT state of each filter
         this->final_demand_[idx] = (attenuation >> idx) & 1;
         // Prevent moving filters OUT in first move - if demand is OUT but current is IN, then stay IN until final move
@@ -723,7 +813,8 @@ void PMACFilterController::_set_attenuation(int attenuation) {
     std::cout << "Changing attenuation: " << this->current_attenuation_ << " -> " << attenuation << std::endl;
 
     // Set demands on ppmac (P407{1,2,3,4} and P408{1,2,3,4})
-    for (int idx = 0; idx < FILTER_COUNT; ++idx) {
+    for (int idx = 0; idx < FILTER_COUNT; ++idx)
+    {
         // ppmac position = IN position if demand == 1 else OUT position
         pshm->P[4071 + idx] = this->post_in_demand_[idx] ? this->in_positions_[idx] : this->out_positions_[idx];
         pshm->P[4081 + idx] = this->final_demand_[idx] ? this->in_positions_[idx] : this->out_positions_[idx];
@@ -738,7 +829,8 @@ void PMACFilterController::_set_attenuation(int attenuation) {
 #endif
 
     // Update current values for next incremental change
-    for (int idx = 0; idx < FILTER_COUNT; ++idx) {
+    for (int idx = 0; idx < FILTER_COUNT; ++idx)
+    {
         this->current_demand_[idx] = this->final_demand_[idx];
     }
     this->current_attenuation_ = attenuation;
@@ -749,12 +841,12 @@ void PMACFilterController::_set_attenuation(int attenuation) {
 
     @param[in] frame_number Frame number of event
 */
-void PMACFilterController::_publish_event(int frame_number) {
+void PMACFilterController::_publish_event(int frame_number)
+{
     json event = {
         {FRAME_NUMBER, frame_number},
         {ADJUSTMENT, this->last_adjustment_},
-        {ATTENUATION, this->current_attenuation_}
-    };
+        {ATTENUATION, this->current_attenuation_}};
 
     std::string event_str = event.dump();
     zmq::message_t event_msg(event_str.size());
@@ -769,12 +861,15 @@ void PMACFilterController::_publish_event(int frame_number) {
 
     @return 0 when shutdown cleanly, 1 when given invalid arguments
 */
-int main(int argc, char** argv) {
-    if (argc != 4) {
+int main(int argc, char **argv)
+{
+    if (argc != 4)
+    {
         std::cout << "Usage: " << argv[0] << " control_port publish_endpoint subscribe_endpoints\n"
-            << "e.g. '" << argv[0] << " 9000 9001 127.0.0.1:10009,127.0.0.1:10019'" << std::endl;
+                  << "e.g. '" << argv[0] << " 9000 9001 127.0.0.1:10009,127.0.0.1:10019'" << std::endl;
 
-        if (argc == 2 && std::string(argv[1]) == "--help") {
+        if (argc == 2 && std::string(argv[1]) == "--help")
+        {
             return 0;
         }
         return 1;
@@ -802,7 +897,6 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-
 /* Helper Methods */
 
 /*!
@@ -815,14 +909,19 @@ int main(int argc, char** argv) {
 
     @return json object parsed from string
 */
-json _parse_json_string(const std::string& json_string) {
+json _parse_json_string(const std::string &json_string)
+{
     json json;
     // Call json::accept first to determine if the string is valid json, without throwing an exception, before calling
     // json::parse, which does throw an exception for invalid json
-    if (json::accept(json_string)) {
+    if (json::accept(json_string))
+    {
         json = json::parse(json_string);
-    } else {
-        std::cout << "Not valid JSON:\n" << json_string << std::endl;
+    }
+    else
+    {
+        std::cout << "Not valid JSON:\n"
+                  << json_string << std::endl;
     }
 
     return json;
@@ -835,12 +934,14 @@ json _parse_json_string(const std::string& json_string) {
 
     @return Vector of endpoints
 */
-std::vector<std::string> _parse_endpoints(std::string endpoint_arg) {
+std::vector<std::string> _parse_endpoints(std::string endpoint_arg)
+{
     std::stringstream stream(endpoint_arg);
 
     std::vector<std::string> endpoint_vector;
     std::string endpoint;
-    while (std::getline(stream, endpoint, ',')) {
+    while (std::getline(stream, endpoint, ','))
+    {
         endpoint_vector.push_back("tcp://" + endpoint);
     }
 
@@ -856,7 +957,8 @@ std::vector<std::string> _parse_endpoints(std::string endpoint_arg) {
 
     @return true if there is a message queued on the socket, else false
 */
-bool _message_queued(zmq::pollitem_t& pollitem) {
+bool _message_queued(zmq::pollitem_t &pollitem)
+{
     return pollitem.revents & ZMQ_POLLIN;
 }
 
@@ -868,13 +970,17 @@ bool _message_queued(zmq::pollitem_t& pollitem) {
     @return true if the request is valid, else false
 */
 
-bool _is_valid_request(const json& request) {
+bool _is_valid_request(const json &request)
+{
     bool success = true;
 
-    if (request.is_null()) {
+    if (request.is_null())
+    {
         std::cout << "Failed to parse request as json" << std::endl;
         success = false;
-    } else if (!request.contains(COMMAND)) {
+    }
+    else if (!request.contains(COMMAND))
+    {
         std::cout << "Request did not contain a '" << COMMAND << "' field" << std::endl;
         success = false;
     }
@@ -888,7 +994,8 @@ bool _is_valid_request(const json& request) {
     @param[out] ts Timespec to update with current time
 */
 
-void _get_time(struct timespec* ts) {
+void _get_time(struct timespec *ts)
+{
     clock_gettime(CLOCK_REALTIME, ts);
 }
 
@@ -900,7 +1007,8 @@ void _get_time(struct timespec* ts) {
     @return Microseconds since start time
 */
 
-unsigned long _useconds_since(const struct timespec& start_ts) {
+unsigned long _useconds_since(const struct timespec &start_ts)
+{
     struct timespec end_ts;
     long diff_s, diff_ns;
     clock_gettime(CLOCK_REALTIME, &end_ts);
@@ -922,7 +1030,8 @@ unsigned long _useconds_since(const struct timespec& start_ts) {
     @return Seconds since start time
 */
 
-unsigned long _seconds_since(const struct timespec& start_ts) {
+unsigned long _seconds_since(const struct timespec &start_ts)
+{
     struct timespec end_ts;
     clock_gettime(CLOCK_REALTIME, &end_ts);
 
