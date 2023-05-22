@@ -624,16 +624,26 @@ void PMACFilterController::_transition_state(ControlState state)
             _get_time(&this->last_message_ts_);
             _get_time(&this->last_process_ts_);
         }
-        bool waiting = state == ControlState::WAITING || state == ControlState::SINGLESHOT_WAITING;
+
+        bool entering_waiting_state = state == ControlState::WAITING || state == ControlState::SINGLESHOT_WAITING;
+
+        // Set max attenuation if
+        bool set_max_attenuation = false;
+        //   - Moving to an idle or error state
+        set_max_attenuation |= state < 1;
+        //   - or first entering a waiting state, i.e. not from a previously completed singleshot run
+        set_max_attenuation |= (entering_waiting_state && this->state_ != ControlState::SINGLESHOT_COMPLETE);
+
+        if (set_max_attenuation)
+        {
+            this->_set_attenuation(MAX_ATTENUATION);
+        }
+
         // If currently in a scan and current state is waiting, or the scan is now complete, reset singleshot start flag
         if (
             (this->singleshot_start_ && this->state_ == ControlState::WAITING) || state == ControlState::SINGLESHOT_COMPLETE)
         {
             this->singleshot_start_ = false;
-        }
-        if (state < 1 || (waiting && this->state_ >= 0))
-        {
-            this->_set_attenuation(MAX_ATTENUATION);
         }
     }
 

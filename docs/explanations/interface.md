@@ -87,7 +87,9 @@ If the system is put into `SINGLESHOT` mode, maximum attenuation is set and the
 Once data messages start, the system adjusts attenuation as normal until a message is
 received that does not cause an adjustment. At this point the attenuation level is
 considered stable and the `SINGLESHOT_COMPELETE` state is entered, which pauses the
-adjustment at the current attenuation level without timing out.
+adjustment at the current attenuation level without timing out. Max attenuation will
+only be set at the beginning of the first run, or if an error state is entered. Between
+runs, the attenuation will be kept at the previously stable value.
 
 This mode allows higher level software to use the automatic attenuation to optimise the
 attenuation level and then capture a single optimal image at that attenuation.

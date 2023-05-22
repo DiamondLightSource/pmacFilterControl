@@ -510,11 +510,11 @@ def test_singleshot_scan(
 
     # Repeat for next run
     pfc.request({"command": "singleshot"})
-    pfc.assert_status_equal({"mode": 2, "state": 1})
+    pfc.assert_status_equal({"mode": 2, "state": 1, "current_attenuation": 13})
 
     # Reduce attenuation
     sim.send_frame({"high2": 0, "high1": 0, "low2": 0})
-    pfc.assert_status_equal({"mode": 2, "state": 2, "current_attenuation": 13})
+    pfc.assert_status_equal({"mode": 2, "state": 2, "current_attenuation": 11})
 
     # Stablise for timeout duration
     sim.send_blank()
