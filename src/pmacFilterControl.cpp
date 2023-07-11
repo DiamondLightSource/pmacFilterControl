@@ -17,7 +17,10 @@ const long POLL_TIMEOUT = 100;  // Length of ZMQ poll in milliseconds
 const int FILTER_COUNT = 4;     // Number of filters
 
 // Command to send to motion controller to execute the motion program and move to the set demands
-char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
+//char RUN_PROG_1[] = "&2 #1,2,3,4J/ B1R";
+
+//we moved axis 1 to axis 6
+char RUN_PROG_1[] = "&2 #2,3,4,6J/ B1R";
 
 const std::string CLOSE_SHUTTER_STR = "#5J=";
 
