@@ -161,6 +161,7 @@ class Wrapper:
             THVL=3,
             FRVL=4,
         )
+        self.state.add_metadata("archiver 1 Monitor")
 
         self.mode = builder.mbbOut(
             "MODE",
