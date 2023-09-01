@@ -889,7 +889,7 @@ class Wrapper:
         if threshold != self.pixel_count_thresholds["high3"]:
             self.pixel_count_thresholds["high3"] = threshold
 
-	    self._autosave_dict[self.extreme_high_threshold.name] = threshold
+            self._autosave_dict[self.extreme_high_threshold.name] = threshold
             self._set_thresholds()
 
     @_if_connected
@@ -903,7 +903,7 @@ class Wrapper:
         if threshold != self.pixel_count_thresholds["high2"]:
             self.pixel_count_thresholds["high2"] = threshold
 
-	    self._autosave_dict[self.upper_high_threshold.name] = threshold
+            self._autosave_dict[self.upper_high_threshold.name] = threshold
             self._set_thresholds()
 
         else:
@@ -920,7 +920,7 @@ class Wrapper:
         if threshold != self.pixel_count_thresholds["high1"]:
             self.pixel_count_thresholds["high1"] = threshold
 
-	    self._autosave_dict[self.lower_high_threshold.name] = threshold
+            self._autosave_dict[self.lower_high_threshold.name] = threshold
             self._set_thresholds()
 
         else:
@@ -937,7 +937,7 @@ class Wrapper:
         if threshold != self.pixel_count_thresholds["low2"]:
             self.pixel_count_thresholds["low2"] = threshold
 
-	    self._autosave_dict[self.upper_low_threshold.name] = threshold
+            self._autosave_dict[self.upper_low_threshold.name] = threshold
             self._set_thresholds()
 
         else:
@@ -954,7 +954,7 @@ class Wrapper:
         if threshold != self.pixel_count_thresholds["low1"]:
             self.pixel_count_thresholds["low1"] = threshold
 
-	    self._autosave_dict[self.lower_low_threshold.name] = threshold
+            self._autosave_dict[self.lower_low_threshold.name] = threshold
             self._set_thresholds()
 
         else:
