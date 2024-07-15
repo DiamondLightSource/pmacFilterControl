@@ -112,7 +112,7 @@ html_theme = "pydata_sphinx_theme"
 
 # Options for theme
 github_repo = project
-github_user = "dls-controls"
+github_user = "DiamondLightSource"
 html_theme_options = dict(
     logo=dict(
         text=project,
